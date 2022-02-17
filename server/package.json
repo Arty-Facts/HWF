@@ -1,0 +1,23 @@
+{
+  "name": "hwf",
+  "version": "1.0.0",
+  "description": "Hardware Farmer",
+  "main": "server.js",
+  "scripts": {
+    "test": "",
+    "start": "ts-node-dev --respawn src/server.ts",
+    "build": "tsc --esModuleInterop"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.2",
+    "ws": "^8.5.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.3",
+    "@types/node": "^17.0.18",
+    "@types/ws": "^8.2.2",
+    "ts-node-dev": "^1.1.8"
+  }
+}
