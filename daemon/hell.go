@@ -48,11 +48,11 @@ func main() {
 	for {
 		select {
 		case data := <-ch:
-			// om ch innehåller något
+			// if ch contains something
 			fmt.Println(string(data))
 
 		case err := <-errCh:
-			// om vi har fått en error under read
+			// if we got an error during read
 			fmt.Println(err)
 			break
 		}
@@ -61,7 +61,7 @@ func main() {
 
 // WIP
 func run_daemon() {
-	// för att göra background thread?
+	// to make a background thread?
 	//ctx := context.Background()
 
 }
@@ -75,7 +75,7 @@ func tcp_init(addr string) net.Conn {
 	//"udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only),
 	//"unix", "unixgram" and "unixpacket".
 
-	// felhantering
+	// error-handling
 	if err != nil {
 		panic(err)
 	}

@@ -12,34 +12,31 @@ const wss:WebSocketServer = new ws.Server({ server:server });
 
 app.use(express.json())
 
-// TODO: Implementera cors? Behövs det?
+// TODO: Implement cors? Is it even needed?
 // app.use(cors({
 //     origin:"*",
 //     methods: ["GET", "POST", "PUT", "OPTIONS"],
 //     allowedHeaders: ["Content-Type", "*"]
 // }))
 
-//TODO: Kolla upp hur man gör "asynchronously" så att man kan ta emot flera sockets
+//TODO:Look up how to recieve several sockets asynchronously
 // req is a httpincomingmessage -> https://www.w3schools.com/nodejs/obj_http_incomingmessage.asp
 
-//TODOs & Nils funderingar: 
-    //Bättre id-system
-    //Hur skiljer vi på agent(demon)klienter och användarklienter? Behövs det?  
-    //Ska agenter få namnge sig själva vid anslutning? Demonen kan t.ex plocka datorns namn och skicka med det (typ "Kalles ubuntu-testdator").
-    //Man borde kanske spara info om agenter även om de frånkopplas? Så kan man t.ex reservera ett ID för en agent ifall den tillfälligt tappar anslutningen.
-    //ws stänger (enligt vad jag har läst) inte en socket om klienten frånkopplas på fel sätt, t.ex om en kabel dras ut. Hur löser vi ett sånt problem?
-    //ska en användare kunna avbryta en agents körning av ett program (eller kanske sätta en tidsgräns för programmet)? T.ex om ett program fastnar i en loop.
-    //Ska något loggas till fil? Sånt som inte redan ska läggas i databasen alltså, t.ex fel, allmänna loggmeddelanden och sånt 
-    //Ska loggmeddelanden skriva ut dåvarande tid också eller är det onödigt? ("Error: bla bla bla" vs "[2022-03-13, 16:33:24] Error: bla bla bla")
-    //Måste användare autentisera sig för att få använda agenterna? Hur?
-    //Ska servern veta vem som startade ett uppdrag (och ev. spara det i databasen senare)?
-    //Testning? Hur, var, och när?
-    //
-    //Idé: Skicka en notis när ett uppdrag är färdigt/avbrutet/misslyckat. Inte relevant nu med tanke på att det lär göras via webbsidan
+//TODOs & General thoughts: 
     
-    var idnum:number = 1
+    //How do we differentiate agent-clients and user-clients? Is this even needed in practice?
+    //Should agents be able to name themselved when connecting? The daemon could maybe pick the systems own name automatically when first connecting
+    //We should save info about connected agents even after they disconnect (currently nothing is saved for a disconnected client). That way their name, id & info could be "reserved" in case of a temporary diconnect
+    //According to what i've read ws doesn't propely close a socket if it's disconnected improperly (such as a network cable getting unplugged). We should test this (and solve it if necessary)
+    //Should something be logged to a file? That being things that aren't saved in the DB, such as connects/disconnects.
+    //Maybe add timestamps to log messages? ("[2022-03-13, 16:33:24] Error: bla bla bla")
+    //Should the server know which user started a task, or is it anonymous?
+    //Testing, how, when?
+    
+var idnum:number = 1
 
-//Utökar WebSocket med stöd för id, namn och specs. TODO: Specs keys borde egentligen bara kunna ta emot string (och kanske undefined beroende på hur man vill hantera tomma fält)
+//Extends ws's WebSocket with support for id, name and specs
+//TODO: Specs keys should really only store strings or possibly undefined depending on how empty fields are handled in the future. So string[] should be gotten rid of.
 interface NamedWebSocket extends WebSocket {
     name:string;
     id:number;
@@ -53,18 +50,19 @@ interface NamedWebSocket extends WebSocket {
 }
 wss.on('connection', (ws:NamedWebSocket, req:http.IncomingMessage) =>{
    
-    //Sätter id och namn på en socket
+    //Gives a WebSocket a name and an incrementing id.
+    //TODO: Improve ID-system
     ws.id = idnum
     ws.name = "testname" + idnum 
     idnum++
 
-    //socket.remoteAddress ger klientens IP-address
+    //socket.remoteAddress gets the connecting client's IP
     console.log(`New client "${ws.name}" connected from ${req.socket.remoteAddress}. Given id ${ws.id} `)
     
     ws.send("You have connected to the server!")
     
 
-    //Sparar de specs som skickas med i URL, TODO: borde ha någon felhantering för t.ex tomma/saknde fält
+    //Saves the specs that were sent in the URL. TODO: Proper handling of empty or missing fields
     let queries:ParsedUrlQuery = url.parse(req.url!, true).query
     ws.specs = {"os": queries["os"], "gpu": queries["gpu"], "cpu": queries["cpu"], "ram": queries["ram"],}
     console.log("Agent specs:")
@@ -82,8 +80,7 @@ wss.on('connection', (ws:NamedWebSocket, req:http.IncomingMessage) =>{
     })
 })
 
-
-//Hämtar agent med visst ID från wss.client. Baserat på ID:t som gavs ut vid anslutning
+//Gets the agent with matching ID from wss.client. This is based on the ID given when the agent connected.
 function getAgent(agentId:number){
     
     let matchedAgent:WebSocket | undefined = undefined;
@@ -99,7 +96,8 @@ function getAgent(agentId:number){
 }
 
 
-//TODO: Serialisera data med vald metod
+//TODO: Serialize (or rather handle recieved data that is already serialized) with the chosen method. 
+//TODO: This can be cleaned up and done with fewer if-statements
 function sendToAgent(data:Data, agentId:number) {
 
 
@@ -129,7 +127,7 @@ function sendToAgent(data:Data, agentId:number) {
 
 }
 
-//Hämtar specs för alla anslutna agenter
+//Gets the specs for all currently connected clients
 app.get('/specs', (req:Request, res:Response) => {
     
     console.log("retrieving agents specs")
@@ -157,15 +155,16 @@ app.get('/specs', (req:Request, res:Response) => {
 
 })
 
-//Skickar data till en agent med matchande ID
-//TODO: Felkontroll (ogiltligt id, ingen data, etc)
+//Sends data to the agent with matching ID
+//TODO: Error-handling (no data, invalid ID format/type etc...)
 app.post('/sendToAgent', (req:Request,res:Response) => {
 
-    //Detta känns som en lite ful lösning för att få statuskoder, men det funkar
+    //This solution could probably be done cleaner
     res.sendStatus(sendToAgent(req.body["data"], req.body["id"]))
     
 })
 
+//TODO: implement this
 app.post('/createNewJob', (req, res) => {
     let newMessage = req.body.message //string
     let newHardwareParameters = req.body.hardwareParameters //array
@@ -173,11 +172,18 @@ app.post('/createNewJob', (req, res) => {
     //call function to find appropriate client -> return correct websocket
     //ws.send send message to client
     //wait for response
-    //spara data i databasen
-    //res.status(200).json({status: true, time: siffra })
+    //save data in database
+    //res.status(200).json({status: true, time: number })
 })
 
+//TODO: implement this
+app.get('/abortTask'), (req:Request, res:Response) => {
+    //Get ID, send "cancelling message" to agent, wait for confirmation from agent.
+    return;
+}
+
 app.get('/', (req,res) => res.send("bla"))
+
 
 server.listen(3000, () => {
 
@@ -186,32 +192,32 @@ server.listen(3000, () => {
 
 
 //TODO:
-//Användare ska kunna skicka ett "jobb"
+//Users send tasks
 /*
-    - servern tar emot request på godtycklig endpoint, dvs ngn "/någonting" 
-    - kolla vilken av de uppkopplade klienterna som passar requestens parametrar
-    - Om ingen passar svara användaren
+    - Server recieves request on appropriate endpoint ("/something")
+    - Checks if one of the connected clients fit the users required specs
+    - If no matching agent is found, notify the user
 */
 
-//klient ska kunna koppla upp sig mot servern 
+//A client should connect to the server
 /*
-    - Server ska lyssna på port 3000 och ta emot inkommande WS kopplingar
-    - Spara info om koppling på något godtyckligt ställe
+    - The server listend on port 3000 and saves incoming WebSocket connections
+    - Saves info about the connection in a good place (currently wss.clients)
 */
 
-//server ska kunna skicka job ifrån användare till klient
+//The server can send a task from a user to an agent
 /*
-    - Om användarrequest matcher en klients specifikationer skicka till klient
+    - If the users spec requirements matches an agent then the task is sent onwards
     
  */
 
-//man ska kunna spara data i en databas
+//The server should save info in a database
 /*
-    - vid svar från klient logga datan i en databas 
+    - Save data from an agents response in the database
 */
 
-//Man ska kunna hämta data ifrån en databas
+//You should be able to get data from the database
 /* 
-    - frontenden ska kunna requesta sin användares data ifrån serverns databas
+    - The frontend should be able to request its users data from the database
 */
 

@@ -1,12 +1,13 @@
 # readme
 
-## Instruktioner för att starta server
+## Instructions for starting server
 
-1. kör `npm install` om det inte redan har gjorts 
-2. sen `node dist/server.js`
-3. Lyssnar på port 3000 som standard
+1. Run `npm install` if it hasn't already been done previously
+2. Then run `node dist/server.js`
+3. The server listens on port 3000 by default
 
-## Instruktioner för att kompilera
+## Instructions for compiling
 
-1. navigera till `/src`
-2. kör `tsc`
+1. Run `npm install` if it hasn't already been done previously
+2. Navigate to the `src/` folder
+3. Run `tsc`
