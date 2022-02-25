@@ -9,6 +9,7 @@ import (
 	"log"
 
 	"github.com/gorilla/websocket"
+	data "test.com/test"
 )
 
 // gorilla websocket
@@ -49,7 +50,8 @@ func main() {
 		select {
 		case data := <-ch:
 			// if ch contains something
-			fmt.Println(string(data))
+			//fmt.Println(string(data))
+			build_message(data)
 
 		case err := <-errCh:
 			// if we got an error during read
@@ -57,6 +59,12 @@ func main() {
 			break
 		}
 	}
+}
+
+// what is param type for the data??
+func build_message(msg []byte) {
+	test := data.GetRootAsData(msg, 0)
+	fmt.Println(string(test.Name()))
 }
 
 // WIP
