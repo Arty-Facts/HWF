@@ -40,14 +40,14 @@ git checkout <name of the task>
 * Friend checkout the branch
 * Friend runs test
 * Friend looks att the code 
-* Friend writes some commensts and tests 
+* Friend writes some comments and tests 
 * Friend breaks the code
 * We think 
 * We fix the code
 * We merge main branch to ours 
 * We fix merge conflicts 
 * We run tests
-* Friend writes some commensts and tests
+* Friend writes some comments and tests
 * Friend breaks the code 
 * We think
 * We fix the code
