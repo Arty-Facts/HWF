@@ -4,11 +4,15 @@ import ws, {Data, WebSocket, WebSocketServer} from 'ws'
 import express, {Request, Response,} from 'express'
 import url from "url"
 import { ParsedUrlQuery } from "querystring";
+import * as flatbuffers from "flatbuffers"
+import * as fs from "fs"
+import { Message } from "./message"
+import * as bodyparser from "body-parser";
 
+//let bodyparser = express.raw()
 const app = express()
 const server = http.createServer(app)
 const wss:WebSocketServer = new ws.Server({ server:server });
-
 
 app.use(express.json())
 
@@ -96,16 +100,17 @@ function getAgent(agentId:number){
 }
 
 
-//TODO: Serialize (or rather handle recieved data that is already serialized) with the chosen method. 
-//TODO: This can be cleaned up and done with fewer if-statements
-function sendToAgent(data:Data, agentId:number) {
+//TODO: Read agent id from incoming data, then send to agent
+//TODO: This can probably be cleaned up and done with fewer if/else-statements
+function sendToAgent(data:Uint8Array, agentId:number) {
 
-
+    //From data, read agent id
     let agent:WebSocket | undefined = getAgent(agentId)
 
     if (agent) {
 
         try {
+            //Send data onwards to agent
             (agent as unknown as WebSocket).send(data)
             console.log(`Data sent to agent ${agentId}`)
             return 200
@@ -129,6 +134,7 @@ function sendToAgent(data:Data, agentId:number) {
 
 //Gets the specs for all currently connected clients
 app.get('/specs', (req:Request, res:Response) => {
+    
     
     console.log("retrieving agents specs")
 
@@ -154,13 +160,18 @@ app.get('/specs', (req:Request, res:Response) => {
     return res.json(result)   
 
 })
-
+                                                                                                                                                                
 //Sends data to the agent with matching ID
 //TODO: Error-handling (no data, invalid ID format/type etc...)
-app.post('/sendToAgent', (req:Request,res:Response) => {
+app.post('/sendToAgent', bodyparser.raw(), (req:Request,res:Response) => {
+    
+    //Parses the incoming byte-array using the flatbuffers schema for these messages, then reads the agent id the message will be sent onwards to
+    let reqBodyBytes = new Uint8Array(req.body)
+    let buf = new flatbuffers.ByteBuffer(reqBodyBytes)
+    let msg = Message.getRootAsMessage(buf)
+    let agentId:number = msg.agentId()
 
-    //This solution could probably be done cleaner
-    res.sendStatus(sendToAgent(req.body["data"], req.body["id"]))
+    res.sendStatus(sendToAgent(reqBodyBytes, agentId))
     
 })
 

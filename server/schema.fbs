@@ -1,0 +1,7 @@
+namespace HelloWorld;
+
+table HelloWorld {
+    msg:string;
+}
+
+root_type HelloWorld;
