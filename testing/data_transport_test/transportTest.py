@@ -1,10 +1,11 @@
+from venv import create
 import flatbuffers
 import HWFMessage
 import requests
+from websocket import create_connection
 
 binFile = "dataToSend.bin"
 ImgFile = "smallImg.png"
-
 targetAgentId = 1
 headers = {
         "Content-Type": "application/octet-stream",
@@ -44,9 +45,8 @@ def SendBinaryFromSourceFile(srcFile):
     fbb.Finish(readyMsg)
     buf = fbb.Output()
 
-    res = requests.post("http://localhost:3000/sendToAgent", data = buf, headers = headers)    
-
-    print(res.text)
+    ws = create_connection("ws://localhost:3001")
+    ws.send_binary(buf)
 
 #Sends a binary file to the hub
 def SendBinary(srcFile):
@@ -54,9 +54,11 @@ def SendBinary(srcFile):
     with open(srcFile, "rb") as bin:
         buf = bin.read()
 
-    res = requests.post("http://localhost:3000/sendToAgent", data = buf, headers = headers)    
+    ws = create_connection("ws://localhost:3001")
+    ws.send_binary(buf)
+
 
 if __name__ == "__main__":
-    CreateBinary(binFile)
-    SendBinary(binFile)
-    #SendBinaryFromSourceFile(ImgFile)
+    # CreateBinary(binFile)
+    # SendBinary(binFile)
+    SendBinaryFromSourceFile(ImgFile)

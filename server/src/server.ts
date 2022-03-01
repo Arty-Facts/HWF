@@ -14,6 +14,10 @@ const app = express()
 const server = http.createServer(app)
 const wss:WebSocketServer = new ws.Server({ server:server });
 
+//const userApp = express()
+const userServer = http.createServer(app)
+const userWss = new ws.Server({server:userServer})
+
 app.use(express.json())
 
 // TODO: Implement cors? Is it even needed?
@@ -83,6 +87,22 @@ wss.on('connection', (ws:NamedWebSocket, req:http.IncomingMessage) =>{
         
     })
 })
+
+userWss.on("connection", (ws, req) => {
+
+    ws.on("message", (message:Uint8Array) => {
+        // console.log("User message: ", message)
+        // console.log("typeof: ", typeof message)
+        // let reqBodyBytes = new Uint8Array(message as )
+        let buf = new flatbuffers.ByteBuffer(message)
+        let msg = Message.getRootAsMessage(buf)
+        let agentId:number = msg.agentId()
+    
+        sendToAgent((message), agentId)
+    })
+
+})
+
 
 //Gets the agent with matching ID from wss.client. This is based on the ID given when the agent connected.
 function getAgent(agentId:number){
@@ -195,7 +215,9 @@ app.get('/abortTask'), (req:Request, res:Response) => {
 
 app.get('/', (req,res) => res.send("bla"))
 
-
+userServer.listen(3001, () => {
+    console.log("Userserver listening on port: 3001")
+})
 server.listen(3000, () => {
 
     console.log("Listening on port: 3000") 

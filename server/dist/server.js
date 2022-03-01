@@ -21,6 +21,9 @@ const bodyparser = __importStar(require("body-parser"));
 const app = express_1.default();
 const server = http_1.default.createServer(app);
 const wss = new ws_1.default.Server({ server: server });
+//const userApp = express()
+const userServer = http_1.default.createServer(app);
+const userWss = new ws_1.default.Server({ server: userServer });
 app.use(express_1.default.json());
 // TODO: Implement cors? Is it even needed?
 // app.use(cors({
@@ -61,6 +64,17 @@ wss.on('connection', (ws, req) => {
     });
     ws.on('close', () => {
         console.log(`Client "${ws.name}" (id ${ws.id}) disconnected`);
+    });
+});
+userWss.on("connection", (ws, req) => {
+    ws.on("message", (message) => {
+        // console.log("User message: ", message)
+        // console.log("typeof: ", typeof message)
+        // let reqBodyBytes = new Uint8Array(message as )
+        let buf = new flatbuffers.ByteBuffer(message);
+        let msg = message_1.Message.getRootAsMessage(buf);
+        let agentId = msg.agentId();
+        sendToAgent((message), agentId);
     });
 });
 //Gets the agent with matching ID from wss.client. This is based on the ID given when the agent connected.
@@ -150,6 +164,9 @@ app.get('/abortTask'), (req, res) => {
     return;
 };
 app.get('/', (req, res) => res.send("bla"));
+userServer.listen(3001, () => {
+    console.log("Userserver listening on port: 3001");
+});
 server.listen(3000, () => {
     console.log("Listening on port: 3000");
 });
