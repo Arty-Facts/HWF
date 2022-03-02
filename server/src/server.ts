@@ -1,12 +1,15 @@
 
-import http from "http"
-import ws, {Data, WebSocket, WebSocketServer} from 'ws'
-import express, {Request, Response,} from 'express'
-import url from "url"
+import * as  http from "http"
+import * as  ws from 'ws'
+import {Data, WebSocket, WebSocketServer} from 'ws'
+import {Request, Response,} from 'express'
+import * as express from 'express'
+import * as  url from "url"
 import { ParsedUrlQuery } from "querystring";
 import * as flatbuffers from "flatbuffers"
 import * as fs from "fs"
 import { Message } from "./message"
+import { HelloWorld } from "./schema_generated"
 import * as bodyparser from "body-parser";
 
 //let bodyparser = express.raw()
@@ -77,7 +80,9 @@ wss.on('connection', (ws:NamedWebSocket, req:http.IncomingMessage) =>{
     console.log(ws.specs)
     
     wss.clients.forEach((client) => {console.log((client as NamedWebSocket).id)})
+    
     ws.on("message", (message) => {
+        console.log("ws.onMessage jhfdgjkhsgfkjsdhgkjhdflkgjhdfkjgh")
         console.log(`Recieved message from ${ws.name}: "${message}"`)
         ws.send("The server recieved your message")
     })
@@ -95,8 +100,11 @@ userWss.on("connection", (ws, req) => {
         // console.log("typeof: ", typeof message)
         // let reqBodyBytes = new Uint8Array(message as )
         let buf = new flatbuffers.ByteBuffer(message)
-        let msg = Message.getRootAsMessage(buf)
-        let agentId:number = msg.agentId()
+        //let msg = Message.getRootAsMessage(buf)
+        //let msg = HelloWorld.getRootAsHelloWorld(buf)
+        let msg = HelloWorld.HelloWorld.getRootAsHelloWorld(buf)
+        //let agentId:number = msg.agentId()
+        let agentId:number = 999
     
         sendToAgent((message), agentId)
     })

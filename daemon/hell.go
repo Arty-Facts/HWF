@@ -3,19 +3,16 @@ package main
 import (
 	//"context"
 	"fmt"
-	"net"
 	"net/url"
 
 	"log"
 
+	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
 	data "test.com/test"
 )
 
-// gorilla websocket
-func main() {
-	// test IP
-
+func connect() *websocket.Conn {
 	u := url.URL{
 		Scheme: "ws",
 		Host:   "localhost:3000",
@@ -26,13 +23,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// close connection once we go out of scope?
-	defer connection.Close()
+	return connection
+}
 
-	var msg = []byte("hello world!")
-	// there is also websocket.BinaryMessage
-	connection.WriteMessage(websocket.TextMessage, msg)
-
+func listen(connection *websocket.Conn) {
 	ch := make(chan []byte)
 	errCh := make(chan error)
 
@@ -50,8 +44,8 @@ func main() {
 		select {
 		case data := <-ch:
 			// if ch contains something
-			//fmt.Println(string(data))
-			build_message(data)
+			fmt.Println(string(data))
+			//build_message(data)
 
 		case err := <-errCh:
 			// if we got an error during read
@@ -61,33 +55,42 @@ func main() {
 	}
 }
 
-// what is param type for the data??
-func build_message(msg []byte) {
-	test := data.GetRootAsData(msg, 0)
-	fmt.Println(string(test.Name()))
+// gorilla websocket
+func main() {
+	connection := connect()
+
+	// close connection once we go out of scope
+	defer connection.Close()
+
+	//var msg = []byte("hello world!")
+	connection.WriteMessage(websocket.BinaryMessage, write_message("hello world!222"))
+	//connection.WriteMessage(websocket.TextMessage, msg)
+
+	listen(connection)
 }
+
+// what is param type for the data??
+func read_message(msg []byte) {
+	test := data.GetRootAsHelloWorld(msg, 0)
+	fmt.Println(string(test.Msg()))
+}
+
+func write_message(msg string) []byte {
+	builder := flatbuffers.NewBuilder(1024)
+	hello := builder.CreateString(msg)
+	data.HelloWorldStart(builder)
+	data.HelloWorldAddMsg(builder, hello)
+	message := data.HelloWorldEnd(builder)
+	builder.Finish(message)
+	buf := builder.FinishedBytes()
+	return buf
+}
+
+// WIP
 
 // WIP
 func run_daemon() {
 	// to make a background thread?
 	//ctx := context.Background()
 
-}
-
-func tcp_init(addr string) net.Conn {
-
-	conn, err := net.Dial("tcp", addr)
-	//"tcp", "udp", "ip4:1", "ip6:ipv6-icmp", "ip6:58"
-
-	//Known networks are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp",
-	//"udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only),
-	//"unix", "unixgram" and "unixpacket".
-
-	// error-handling
-	if err != nil {
-		panic(err)
-	}
-
-	// connection OK
-	return conn
 }
