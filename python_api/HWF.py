@@ -16,7 +16,7 @@ class Stage:
                  data = None,
                  cmd = None,
                  timeit = True,
-                 ram_usege = True,
+                 ram_usage = True,
                  comment="" ):
         pass
 
