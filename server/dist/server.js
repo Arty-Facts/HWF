@@ -92,23 +92,63 @@ userWss.on("connection", (ws, req) => {
         /*let msg = HelloWorld.HelloWorld.getRootAsHelloWorld(buf)*/
         let agentId = msg.agentId();
         /*let agentId:number = 999*/
-        sendToAgent((message), agentId);
+        //sendToAgent((message), agentId)
+        sendToAgent(message);
     });
 });
-//Gets the agent with matching ID from wss.client. This is based on the ID given when the agent connected.
+function getAvailableAgent() {
+    //let matchedAgent:WebSocket | undefined = undefined;
+    /*
+    // to-do: change this to a get of first elem?
+    // does this actually work? are all wss.clients still connected?
+    wss.clients.forEach(client => {
+        // return the first agent
+        matchedAgent = client
+        return
+    });
+    */
+    let [agent] = wss.clients;
+    return agent;
+}
+// Gets the agent with matching ID from wss.client. This is based on the ID given when the agent connected.
 function getAgent(agentId) {
     let matchedAgent = undefined;
     wss.clients.forEach(client => {
-        if (client.id == agentId) {
+        if (client.OPEN == agentId) {
             matchedAgent = client;
             return;
         }
     });
     return matchedAgent;
 }
+function sendToAgent(data) {
+    let agent = getAvailableAgent();
+    if (agent) {
+        let named_agent = agent;
+        try {
+            //Send data onwards to agent
+            named_agent.send(data);
+            console.log(`Data sent to agent ${named_agent.id}`);
+            return 200;
+        }
+        catch (err) {
+            console.error("Could not send data to agent");
+            console.error(err);
+            return 500;
+        }
+    }
+    else if (!agent) {
+        console.error("Agent with given id could not be found");
+        return 404;
+    }
+    else {
+        console.error("You should not be here");
+        return 500;
+    }
+}
 //TODO: Read agent id from incoming data, then send to agent
 //TODO: This can probably be cleaned up and done with fewer if/else-statements
-function sendToAgent(data, agentId) {
+function sendToAgentWithId(data, agentId) {
     //From data, read agent id
     let agent = getAgent(agentId);
     if (agent) {
@@ -160,7 +200,8 @@ app.post('/sendToAgent', bodyparser.raw(), (req, res) => {
     let buf = new flatbuffers.ByteBuffer(reqBodyBytes);
     let msg = message_1.Message.getRootAsMessage(buf);
     let agentId = msg.agentId();
-    res.sendStatus(sendToAgent(reqBodyBytes, agentId));
+    //res.sendStatus(sendToAgent(reqBodyBytes, agentId))
+    res.sendStatus(sendToAgent(reqBodyBytes));
 });
 /*
 // :D

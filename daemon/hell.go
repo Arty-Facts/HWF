@@ -3,15 +3,16 @@ package main
 import (
 	//"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/url"
-	"os"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
 	message "test.com/test"
 )
 
+//connect to the server via websockets
 func connect() *websocket.Conn {
 	u := url.URL{
 		Scheme: "ws",
@@ -27,28 +28,29 @@ func connect() *websocket.Conn {
 }
 
 func listen(connection *websocket.Conn) {
-	ch := make(chan []byte)
+	received_bytes := make(chan []byte)
 	errCh := make(chan error)
 
-	go func(ch chan []byte, errCh chan error) {
+	go func(received_bytes chan []byte, errCh chan error) {
 		for {
 			_, message, err := connection.ReadMessage()
 			if err != nil {
 				errCh <- err
 			}
-			ch <- message
+			received_bytes <- message
 		}
-	}(ch, errCh)
+	}(received_bytes, errCh)
 
 	for {
 		select {
-		case data := <-ch:
-			// if ch contains something
-			fmt.Println(string(data))
-			//build_message(data)
+		case data := <-received_bytes:
+			// if received_bytes contains something
 
-			// to-do: make sure server doesn't send something bad
+			send_message(connection, []byte("Received data, now processing..."))
+
 			read_message(data)
+
+			send_message(connection, []byte("Done reading data."))
 
 		case err := <-errCh:
 			// if we got an error during read
@@ -58,59 +60,46 @@ func listen(connection *websocket.Conn) {
 	}
 }
 
-// gorilla websocket
 func main() {
 	connection := connect()
 
 	// close connection once we go out of scope
 	defer connection.Close()
 
-	//var msg = []byte("hello world!")
-	connection.WriteMessage(websocket.BinaryMessage, write_message("hello world!222"))
-	//connection.WriteMessage(websocket.TextMessage, msg)
-
+	// wait for requests from server
 	listen(connection)
 }
 
-// what is param type for the data??
+func send_message(connection *websocket.Conn, msg []byte) {
+	connection.WriteMessage(websocket.TextMessage, msg)
+}
+
 func read_message(msg []byte) {
-	//test := data.GetRootAsHelloWorld(msg, 0)
-	//fmt.Println(string(test.Msg()))
+
 	test := message.GetRootAsMessage(msg, 0)
+	var arr = make([]byte, test.DataLength())
 
-	// TO-DO:
-	// get file from data somehow?
-	// right now Data() returns int8?
-	arr := test.Data(0)
-
-	// create new file named hellgo.jpg
-	f, err := os.Create("/hellgo.jpg")
-	// check(err)
-	if err != nil {
-		// error handling
+	// save all bytes in Data array to arr
+	for i := 0; i < test.DataLength(); i++ {
+		arr[i] = byte(test.Data(i))
 	}
 
-	// write arr to the new file
-	n, err := f.Write(arr)
-	// check(err)
+	// save arr to file "hellgo.png"
+	err := ioutil.WriteFile("hellgo.png", arr, 0644)
+
 	if err != nil {
-		// error handling
+		fmt.Println("ERROR WRITING FILE")
+		log.Fatal(err)
 	}
 
-	fmt.Printf("wrote %d bytes\n", n)
-
-	// close file after this function returns
-	defer f.Close()
+	// print the contents of cmd
 	fmt.Println(string(test.Cmd()))
 }
 
 func write_message(msg string) []byte {
+
 	builder := flatbuffers.NewBuilder(1024)
 	hello := builder.CreateString(msg)
-
-	//data.HelloWorldStart(builder)
-	//data.HelloWorldAddMsg(builder, hello)
-	//message := data.HelloWorldEnd(builder)
 
 	message.MessageStart(builder)
 	message.MessageAddAgentId(builder, 1)

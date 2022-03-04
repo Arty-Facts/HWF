@@ -7,7 +7,7 @@ import requests
 from websocket import create_connection
 
 binFile = "dataToSend.bin"
-ImgFile = "hellgo.jpg"
+ImgFile = "hellgo.png"
 targetAgentId = 1
 headers = {
         "Content-Type": "application/octet-stream",
@@ -16,13 +16,24 @@ headers = {
 # Creates a HWFMessage with param info, returns builder output
 def build_binary_message(_agentId, _cmd, _srcFile):
     fbb = flatbuffers.Builder(1024)
+
+    # create cmd string
     cmd = fbb.CreateString(_cmd)
+
+    # create srcfile byte arr
+    with open(_srcFile, "rb") as bin:
+        readBytes = bin.read()
+
+    byteVector = fbb.CreateByteVector(readBytes)
     
+
     HWFMessage.Start(fbb)
 
     # agent id is temporary since server doesn't assign tasks yet
     HWFMessage.AddAgentId(fbb, _agentId)
     HWFMessage.AddCmd(fbb, cmd)
+    HWFMessage.AddData(fbb, byteVector)
+
     readyMsg = HWFMessage.End(fbb)
     fbb.Finish(readyMsg)
     return fbb.Output()
@@ -96,4 +107,4 @@ if __name__ == "__main__":
     # what cmd command to run?
 
     # what file to send?
-    send_request("echo hello world", "hellgo.jpg")
+    send_request("echo hello world", "hellgo.png")

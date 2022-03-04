@@ -116,19 +116,37 @@ userWss.on("connection", (ws, req) => {
 
         /*let agentId:number = 999*/
     
-        sendToAgent((message), agentId)
+        //sendToAgent((message), agentId)
+        sendToAgent(message)
     })
 
 })
 
+function getAvailableAgent(){
+    //let matchedAgent:WebSocket | undefined = undefined;
+    
+    /*
+    // to-do: change this to a get of first elem?
+    // does this actually work? are all wss.clients still connected?
+    wss.clients.forEach(client => {
+        // return the first agent
+        matchedAgent = client
+        return
+    });
+    */
 
-//Gets the agent with matching ID from wss.client. This is based on the ID given when the agent connected.
+    let [agent] = wss.clients
+
+    return agent
+}
+
+// Gets the agent with matching ID from wss.client. This is based on the ID given when the agent connected.
 function getAgent(agentId:number){
     
     let matchedAgent:WebSocket | undefined = undefined;
-    
+
     wss.clients.forEach(client => {
-        if ((client as NamedWebSocket).id == agentId) {
+        if ((client as NamedWebSocket).OPEN == agentId) {
             matchedAgent = client
             return
         }  
@@ -138,9 +156,38 @@ function getAgent(agentId:number){
 }
 
 
+function sendToAgent(data:Uint8Array) {
+    let agent:WebSocket | undefined = getAvailableAgent()
+
+    if (agent) {
+
+        let named_agent = (agent as unknown as NamedWebSocket)
+
+        try {
+            //Send data onwards to agent
+            named_agent.send(data)
+            console.log(`Data sent to agent ${named_agent.id}`)
+            return 200
+        }
+        catch (err) {
+            console.error("Could not send data to agent")
+            console.error(err)
+            return 500
+        }
+    }
+    else if (!agent){
+        console.error("Agent with given id could not be found")
+        return 404
+    }
+    else {
+        console.error("You should not be here")
+        return 500
+    }
+}
+
 //TODO: Read agent id from incoming data, then send to agent
 //TODO: This can probably be cleaned up and done with fewer if/else-statements
-function sendToAgent(data:Uint8Array, agentId:number) {
+function sendToAgentWithId(data:Uint8Array, agentId:number) {
 
     //From data, read agent id
     let agent:WebSocket | undefined = getAgent(agentId)
@@ -203,9 +250,11 @@ app.post('/sendToAgent', bodyparser.raw(), (req:Request,res:Response) => {
     let agentId:number = msg.agentId()
 
 
-    res.sendStatus(sendToAgent(reqBodyBytes, agentId))
+    //res.sendStatus(sendToAgent(reqBodyBytes, agentId))
+    res.sendStatus(sendToAgent(reqBodyBytes))
     
 })
+
 /*
 // :D
 //TODO: implement this
