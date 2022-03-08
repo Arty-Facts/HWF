@@ -11,6 +11,8 @@ import * as fs from "fs"
 import { Message } from "./message"
 import { HelloWorld } from "./schema_generated"
 import * as bodyparser from "body-parser";
+import { dbAdapter } from "./db/mongo_db"
+
 
 //let bodyparser = express.raw()
 const app = express()
@@ -319,4 +321,6 @@ server.listen(3000, () => {
 /* 
     - The frontend should be able to request its users data from the database
 */
+
+// ===================
 
