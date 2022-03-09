@@ -61,6 +61,33 @@ interface NamedWebSocket extends WebSocket {
     };
 
 }
+
+class Task {
+    id:string; // <- should we have an id for each task?
+    timestamp:string;
+
+    cmd:string;
+    files:string[];
+
+    // if the task has been assigned:
+    daemon:string;
+    status:string;
+}
+
+class Agent {
+    id:string;
+    ip:string;
+
+    os:string;
+    gpu:string;
+    cpu:string;
+    ram:string;
+
+    // currently assigned info:
+    task:string;
+    timestamp:string; // when task was assigned
+}
+
 wss.on('connection', (ws:NamedWebSocket, req:http.IncomingMessage) =>{
    
     //Gives a WebSocket a name and an incrementing id.
