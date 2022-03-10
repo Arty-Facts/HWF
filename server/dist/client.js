@@ -14,7 +14,7 @@ const ws_1 = __importDefault(require("ws"));
 const message_1 = require("./message");
 const flatbuffers = __importStar(require("flatbuffers"));
 const fs = __importStar(require("fs"));
-const client = new ws_1.default('ws://localhost:3000?os=windows10&gpu=5700xt&cpu=r5_3600&ram=16gb');
+const client = new ws_1.default('ws://localhost:9000?os=windows10&gpu=5700xt&cpu=r5_3600&ram=16gb');
 client.on("open", () => {
     client.send("I'm an agent sending a message");
 });

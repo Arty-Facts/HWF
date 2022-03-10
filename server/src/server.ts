@@ -8,7 +8,7 @@ import * as flatbuffers from "flatbuffers"
 import * as fs from "fs"
 import { Message } from "./message"
 import * as bodyparser from "body-parser";
-
+import cors from "cors"
 //let bodyparser = express.raw()
 const app = express()
 const server = http.createServer(app)
@@ -21,11 +21,12 @@ const userWss = new ws.Server({server:userServer})
 app.use(express.json())
 
 // TODO: Implement cors? Is it even needed?
-// app.use(cors({
-//     origin:"*",
-//     methods: ["GET", "POST", "PUT", "OPTIONS"],
-//     allowedHeaders: ["Content-Type", "*"]
-// }))
+
+app.use(cors({
+     origin:"*",
+     methods: ["GET", "POST", "PUT", "OPTIONS"],
+     allowedHeaders: ["Content-Type", "*"]
+ }))
 
 //TODO:Look up how to recieve several sockets asynchronously
 // req is a httpincomingmessage -> https://www.w3schools.com/nodejs/obj_http_incomingmessage.asp
@@ -177,10 +178,30 @@ app.get('/specs', (req:Request, res:Response) => {
             }
         })
     })
+    console.log(result)
     return res.json(result)   
 
 })
-                                                                                                                                                                
+         
+/*
+[
+    {
+        "id": 1,
+        "name": "testname1",
+        "specs": {}
+    },
+    {
+        "id": 2,
+        "name": "testname2",
+        "specs": {
+            "os": "windows10",
+            "gpu": "5700xt",
+            "cpu": "r5_3600",
+            "ram": "16gb"
+        }
+    }
+]
+*/
 //Sends data to the agent with matching ID
 //TODO: Error-handling (no data, invalid ID format/type etc...)
 app.post('/sendToAgent', bodyparser.raw(), (req:Request,res:Response) => {
@@ -218,9 +239,9 @@ app.get('/', (req,res) => res.send("bla"))
 userServer.listen(3001, () => {
     console.log("Userserver listening on port: 3001")
 })
-server.listen(3000, () => {
+server.listen(9000, () => {
 
-    console.log("Listening on port: 3000") 
+    console.log("Listening on port: 9000") 
 })
 
 
