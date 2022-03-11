@@ -1,5 +1,4 @@
 "use strict";
-//https://www.mongodb.com/compatibility/using-typescript-with-mongodb-tutorial
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
@@ -28,22 +27,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dbAdapter = exports.dbRouter = exports.collections = void 0;
+exports.dbAdapter = exports.collections = void 0;
+//import { MongoClient} from "mongodb"
 const mongoDB = __importStar(require("mongodb"));
-const express_1 = __importDefault(require("express"));
+//https://www.mongodb.com/compatibility/using-typescript-with-mongodb-tutorial
 exports.collections = {};
-exports.dbRouter = express_1.default.Router();
-exports.dbRouter.use(express_1.default.json());
 //DB_CONN_STRING="???"
 //DB_NAME="tasksDB"
 //TASKS_NAME="tasks"
 class dbAdapter {
-    constructor() {
-        // try to connect to the database:
+    connectToDatabase() {
+        //:D
         this.connect();
     }
     connect() {
@@ -64,6 +59,10 @@ class dbAdapter {
             //we need a env file 
             //this.tasks = this.db.collection(process.env.TASKS_NAME)
         });
+    }
+    addDaemon(id, ip) {
+    }
+    addResult(daemon, status, timestamp) {
     }
 }
 exports.dbAdapter = dbAdapter;

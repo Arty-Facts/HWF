@@ -30,7 +30,7 @@ const flatbuffers = __importStar(require("flatbuffers"));
 const message_1 = require("./message");
 const bodyparser = __importStar(require("body-parser"));
 //let bodyparser = express.raw()
-const app = (0, express_1.default)();
+const app = express_1.default();
 const server = http.createServer(app);
 const wss = new ws.Server({ server: server });
 //const userApp = express()
@@ -55,6 +55,10 @@ app.use(express_1.default.json());
 //Should the server know which user started a task, or is it anonymous?
 //Testing, how, when?
 var idnum = 1;
+class Task {
+}
+class Agent {
+}
 wss.on('connection', (ws, req) => {
     //Gives a WebSocket a name and an incrementing id.
     //TODO: Improve ID-system
@@ -256,3 +260,4 @@ server.listen(3000, () => {
 /*
     - The frontend should be able to request its users data from the database
 */
+// ===================
