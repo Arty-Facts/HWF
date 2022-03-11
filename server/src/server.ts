@@ -23,6 +23,9 @@ const wss:WebSocketServer = new ws.Server({ server:server });
 const userServer = http.createServer(app)
 const userWss = new ws.Server({server:userServer})
 
+//connect to the database:
+const db = new dbAdapter()
+
 app.use(express.json())
 
 // TODO: Implement cors? Is it even needed?

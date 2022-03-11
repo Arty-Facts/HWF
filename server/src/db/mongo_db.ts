@@ -15,12 +15,19 @@ export const collections: {tasks?: mongoDB.Collection} = {}
 
 
 export class dbAdapter <T extends dbInterface> {
-    SERVER_URL : "mongodb://localhost:27017/test"
-    DB_NAME : "idk"
+    SERVER_URL : string
+    DB_NAME : string
 
     client : mongoDB.MongoClient
     db : mongoDB.Db
     tasks : mongoDB.Collection 
+
+    constructor() {
+        this.SERVER_URL = "mongodb://localhost:27017/test"
+        this.DB_NAME = "test"
+
+        this.connect()
+    }
     
     connectToDatabase():void {
         //:D
@@ -37,6 +44,7 @@ export class dbAdapter <T extends dbInterface> {
                 this.db = this.client.db(this.DB_NAME);
 
                 console.log('db client created successfully');
+                this.tasks = this.db.collection("helloworld")
             }
 
         } 
@@ -46,6 +54,10 @@ export class dbAdapter <T extends dbInterface> {
         }
         //we need a env file 
         //this.tasks = this.db.collection(process.env.TASKS_NAME)
+        
+    }
+
+    addTask(cmd:string):void {
         
     }
 
