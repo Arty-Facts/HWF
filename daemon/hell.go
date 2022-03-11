@@ -3,19 +3,17 @@ package main
 import (
 	//"context"
 	"fmt"
-	"net"
+	"io/ioutil"
+	"log"
 	"net/url"
 
-	"log"
-
+	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
-	data "test.com/test"
+	message "test.com/test"
 )
 
-// gorilla websocket
-func main() {
-	// test IP
-
+//connect to the server via websockets
+func connect() *websocket.Conn {
 	u := url.URL{
 		Scheme: "ws",
 		Host:   "localhost:3000",
@@ -26,32 +24,33 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// close connection once we go out of scope?
-	defer connection.Close()
+	return connection
+}
 
-	var msg = []byte("hello world!")
-	// there is also websocket.BinaryMessage
-	connection.WriteMessage(websocket.TextMessage, msg)
-
-	ch := make(chan []byte)
+func listen(connection *websocket.Conn) {
+	received_bytes := make(chan []byte)
 	errCh := make(chan error)
 
-	go func(ch chan []byte, errCh chan error) {
+	go func(received_bytes chan []byte, errCh chan error) {
 		for {
 			_, message, err := connection.ReadMessage()
 			if err != nil {
 				errCh <- err
 			}
-			ch <- message
+			received_bytes <- message
 		}
-	}(ch, errCh)
+	}(received_bytes, errCh)
 
 	for {
 		select {
-		case data := <-ch:
-			// if ch contains something
-			//fmt.Println(string(data))
-			build_message(data)
+		case data := <-received_bytes:
+			// if received_bytes contains something
+
+			send_message(connection, []byte("Received data, now processing..."))
+
+			read_message(data)
+
+			send_message(connection, []byte("Done reading data."))
 
 		case err := <-errCh:
 			// if we got an error during read
@@ -61,33 +60,61 @@ func main() {
 	}
 }
 
-// what is param type for the data??
-func build_message(msg []byte) {
-	test := data.GetRootAsData(msg, 0)
-	fmt.Println(string(test.Name()))
+func main() {
+	connection := connect()
+
+	// close connection once we go out of scope
+	defer connection.Close()
+
+	// wait for requests from server
+	listen(connection)
 }
+
+func send_message(connection *websocket.Conn, msg []byte) {
+	connection.WriteMessage(websocket.TextMessage, msg)
+}
+
+func read_message(msg []byte) {
+
+	test := message.GetRootAsMessage(msg, 0)
+	var arr = make([]byte, test.DataLength())
+
+	// save all bytes in Data array to arr
+	for i := 0; i < test.DataLength(); i++ {
+		arr[i] = byte(test.Data(i))
+	}
+
+	// save arr to file "hellgo.png"
+	err := ioutil.WriteFile("hellgo.png", arr, 0644)
+
+	if err != nil {
+		fmt.Println("ERROR WRITING FILE")
+		log.Fatal(err)
+	}
+
+	// print the contents of cmd
+	fmt.Println(string(test.Cmd()))
+}
+
+func write_message(msg string) []byte {
+
+	builder := flatbuffers.NewBuilder(1024)
+	hello := builder.CreateString(msg)
+
+	message.MessageStart(builder)
+	message.MessageAddAgentId(builder, 1)
+	message.MessageAddCmd(builder, hello)
+	binMsg := message.MessageEnd(builder)
+	builder.Finish(binMsg)
+	buf := builder.FinishedBytes()
+	return buf
+}
+
+// WIP
 
 // WIP
 func run_daemon() {
 	// to make a background thread?
 	//ctx := context.Background()
 
-}
-
-func tcp_init(addr string) net.Conn {
-
-	conn, err := net.Dial("tcp", addr)
-	//"tcp", "udp", "ip4:1", "ip6:ipv6-icmp", "ip6:58"
-
-	//Known networks are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp",
-	//"udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only),
-	//"unix", "unixgram" and "unixpacket".
-
-	// error-handling
-	if err != nil {
-		panic(err)
-	}
-
-	// connection OK
-	return conn
 }
