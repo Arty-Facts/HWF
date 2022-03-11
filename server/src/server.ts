@@ -1,12 +1,15 @@
 
-import http from "http"
-import ws, {Data, WebSocket, WebSocketServer} from 'ws'
-import express, {Request, Response,} from 'express'
-import url from "url"
+import * as  http from "http"
+import * as  ws from 'ws'
+import {Data, WebSocket, WebSocketServer} from 'ws'
+import {Request, Response,} from 'express'
+import express from 'express'
+import * as  url from "url"
 import { ParsedUrlQuery } from "querystring";
 import * as flatbuffers from "flatbuffers"
 import * as fs from "fs"
 import { Message } from "./message"
+import { HelloWorld } from "./schema_generated"
 import * as bodyparser from "body-parser";
 import cors from "cors"
 //let bodyparser = express.raw()
@@ -64,11 +67,13 @@ wss.on('connection', (ws:NamedWebSocket, req:http.IncomingMessage) =>{
     ws.id = idnum
     ws.name = "testname" + idnum 
     idnum++
-
+    
     //socket.remoteAddress gets the connecting client's IP
     console.log(`New client "${ws.name}" connected from ${req.socket.remoteAddress}. Given id ${ws.id} `)
     
-    ws.send("You have connected to the server!")
+    // don't send this message right now, 
+    // we only want to send Message bin for testing
+    // ws.send("You have connected to the server!")
     
 
     //Saves the specs that were sent in the URL. TODO: Proper handling of empty or missing fields
@@ -78,10 +83,15 @@ wss.on('connection', (ws:NamedWebSocket, req:http.IncomingMessage) =>{
     console.log(ws.specs)
     
     wss.clients.forEach((client) => {console.log((client as NamedWebSocket).id)})
+    
+    
     ws.on("message", (message) => {
+        console.log("ws.onMessage jhfdgjkhsgfkjsdhgkjhdflkgjhdfkjgh")
         console.log(`Recieved message from ${ws.name}: "${message}"`)
-        ws.send("The server recieved your message")
+        
+        //ws.send("The server recieved your message")
     })
+    
 
     ws.on('close', () => {
         console.log(`Client "${ws.name}" (id ${ws.id}) disconnected`)
@@ -94,24 +104,50 @@ userWss.on("connection", (ws, req) => {
     ws.on("message", (message:Uint8Array) => {
         // console.log("User message: ", message)
         // console.log("typeof: ", typeof message)
-        // let reqBodyBytes = new Uint8Array(message as )
+        //let reqBodyBytes = new Uint8Array(message as )
+
         let buf = new flatbuffers.ByteBuffer(message)
         let msg = Message.getRootAsMessage(buf)
+
+        //let msg = HelloWorld.getRootAsHelloWorld(buf)
+
+        /*let msg = HelloWorld.HelloWorld.getRootAsHelloWorld(buf)*/
+
         let agentId:number = msg.agentId()
+
+        /*let agentId:number = 999*/
     
-        sendToAgent((message), agentId)
+        //sendToAgent((message), agentId)
+        sendToAgent(message)
     })
 
 })
 
+function getAvailableAgent(){
+    //let matchedAgent:WebSocket | undefined = undefined;
+    
+    /*
+    // to-do: change this to a get of first elem?
+    // does this actually work? are all wss.clients still connected?
+    wss.clients.forEach(client => {
+        // return the first agent
+        matchedAgent = client
+        return
+    });
+    */
 
-//Gets the agent with matching ID from wss.client. This is based on the ID given when the agent connected.
+    let [agent] = wss.clients
+
+    return agent
+}
+
+// Gets the agent with matching ID from wss.client. This is based on the ID given when the agent connected.
 function getAgent(agentId:number){
     
     let matchedAgent:WebSocket | undefined = undefined;
-    
+
     wss.clients.forEach(client => {
-        if ((client as NamedWebSocket).id == agentId) {
+        if ((client as NamedWebSocket).OPEN == agentId) {
             matchedAgent = client
             return
         }  
@@ -121,9 +157,38 @@ function getAgent(agentId:number){
 }
 
 
+function sendToAgent(data:Uint8Array) {
+    let agent:WebSocket | undefined = getAvailableAgent()
+
+    if (agent) {
+
+        let named_agent = (agent as unknown as NamedWebSocket)
+
+        try {
+            //Send data onwards to agent
+            named_agent.send(data)
+            console.log(`Data sent to agent ${named_agent.id}`)
+            return 200
+        }
+        catch (err) {
+            console.error("Could not send data to agent")
+            console.error(err)
+            return 500
+        }
+    }
+    else if (!agent){
+        console.error("Agent with given id could not be found")
+        return 404
+    }
+    else {
+        console.error("You should not be here")
+        return 500
+    }
+}
+
 //TODO: Read agent id from incoming data, then send to agent
 //TODO: This can probably be cleaned up and done with fewer if/else-statements
-function sendToAgent(data:Uint8Array, agentId:number) {
+function sendToAgentWithId(data:Uint8Array, agentId:number) {
 
     //From data, read agent id
     let agent:WebSocket | undefined = getAgent(agentId)
@@ -152,6 +217,7 @@ function sendToAgent(data:Uint8Array, agentId:number) {
     }
 
 }
+
 
 //Gets the specs for all currently connected clients
 app.get('/specs', (req:Request, res:Response) => {
@@ -202,6 +268,31 @@ app.get('/specs', (req:Request, res:Response) => {
     }
 ]
 */
+
+// ws.send("The server recieved your message")
+
+//         return res.sendStatus(404)
+//     }
+
+//     let result:{}[] = []
+//     wss.clients.forEach( (client) => {
+//         const {id, name, specs} = (client as NamedWebSocket)
+//         result.push({
+//             "id": id, 
+//             "name": name, 
+//             "specs":{
+//                 "os": specs.os, 
+//                 "gpu": specs.gpu, 
+//                 "cpu": specs.cpu, 
+//                 "ram": specs.ram
+//             }
+//         })
+//     })
+//     return res.json(result)   
+
+// })
+                                                                                                                                                                
+
 //Sends data to the agent with matching ID
 //TODO: Error-handling (no data, invalid ID format/type etc...)
 app.post('/sendToAgent', bodyparser.raw(), (req:Request,res:Response) => {
@@ -212,10 +303,14 @@ app.post('/sendToAgent', bodyparser.raw(), (req:Request,res:Response) => {
     let msg = Message.getRootAsMessage(buf)
     let agentId:number = msg.agentId()
 
-    res.sendStatus(sendToAgent(reqBodyBytes, agentId))
+
+    //res.sendStatus(sendToAgent(reqBodyBytes, agentId))
+    res.sendStatus(sendToAgent(reqBodyBytes))
     
 })
 
+/*
+// :D
 //TODO: implement this
 app.post('/createNewJob', (req, res) => {
     let newMessage = req.body.message //string
@@ -226,20 +321,25 @@ app.post('/createNewJob', (req, res) => {
     //wait for response
     //save data in database
     //res.status(200).json({status: true, time: number })
-})
+})*/
 
+/*
 //TODO: implement this
 app.get('/abortTask'), (req:Request, res:Response) => {
     //Get ID, send "cancelling message" to agent, wait for confirmation from agent.
     return;
-}
+}*/
 
+/*
 app.get('/', (req,res) => res.send("bla"))
+*/
 
 userServer.listen(3001, () => {
     console.log("Userserver listening on port: 3001")
 })
+
 server.listen(9000, () => {
+
 
     console.log("Listening on port: 9000") 
 })

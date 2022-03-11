@@ -16,7 +16,7 @@ test1 = HWF.CreateTask(
         name = "run cool stuff",
         cmd = "run.exe in.raw out.raw > log.txt" # run the command
         timeit = True,
-        ram_usege = True,
+        ram_usage = True,
         comment="extre info store in db and web"
     )
     HWF.Artifacts( # get some files back
@@ -47,7 +47,7 @@ for result in hub.get_jobs(id_test, wait=True): # get the jobs with strategy fir
         failed = True
 
     if (ram := result.stage("run cool stuff").ram) > 2**20:
-        print(f"failed on ram usege for hardware: {ram}b  on {result.hardware}")
+        print(f"failed on ram usage for hardware: {ram}b  on {result.hardware}")
         failed = True
 
     if failed:
