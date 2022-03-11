@@ -29,13 +29,16 @@ const url = __importStar(require("url"));
 const flatbuffers = __importStar(require("flatbuffers"));
 const message_1 = require("./message");
 const bodyparser = __importStar(require("body-parser"));
+const mongo_db_1 = require("./db/mongo_db");
 //let bodyparser = express.raw()
-const app = express_1.default();
+const app = (0, express_1.default)();
 const server = http.createServer(app);
 const wss = new ws.Server({ server: server });
 //const userApp = express()
 const userServer = http.createServer(app);
 const userWss = new ws.Server({ server: userServer });
+//connect to the database:
+const db = new mongo_db_1.dbAdapter();
 app.use(express_1.default.json());
 // TODO: Implement cors? Is it even needed?
 // app.use(cors({

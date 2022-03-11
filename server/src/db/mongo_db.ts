@@ -1,9 +1,7 @@
 import { dbInterface } from './db_interface'
 //import { MongoClient} from "mongodb"
 import * as mongoDB from "mongodb"
-
-
-import { ObjectId } from 'mongodb'
+import { ObjectId } from "mongodb"
 
 //https://www.mongodb.com/compatibility/using-typescript-with-mongodb-tutorial
 
@@ -45,6 +43,12 @@ export class dbAdapter <T extends dbInterface> {
 
                 console.log('db client created successfully');
                 this.tasks = this.db.collection("helloworld")
+
+                // debug: now try adding new task
+                this.addTask("hello world!")
+
+                // debug: now try finding the newly added task
+                this.findTask("622b23e7bec9c63a78067581")
             }
 
         } 
@@ -58,8 +62,54 @@ export class dbAdapter <T extends dbInterface> {
     }
 
     addTask(cmd:string):void {
+        try {
+            this.tasks.insertOne({'cmd': cmd})
+            console.log('inserted new task successfully!')
+        }
+        catch(error) {
+            console.log('error adding task to db!');
+            console.error(error);
+        }
+    }
+
+    async findTask(id:string) {
+        try{
+            
+
+            this.tasks.findOne({_id: new ObjectId(id)}, (err, result) => {
+                console.log(":DDD")
+                console.log(result)
+            })
+
+            const result = await this.tasks.findOne({_id: id})
+
+            if (result)
+            {
+                console.log("found task with message:")
+                console.log(result)
+            }
+            else {
+                console.log("couldn't find anything pepehands")
+            }
+        }
+        catch(error) {
+            console.log('error finding task with id!');
+            console.error(error);
+        }
         
     }
+
+    updateTask(id:string) {
+        
+
+    }
+
+    DeleteTask(id:string) {
+        
+
+    }
+
+    
 
     addDaemon(id:string, ip:string):void {
 

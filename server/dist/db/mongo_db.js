@@ -31,12 +31,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.dbAdapter = exports.collections = void 0;
 //import { MongoClient} from "mongodb"
 const mongoDB = __importStar(require("mongodb"));
+const mongodb_1 = require("mongodb");
 //https://www.mongodb.com/compatibility/using-typescript-with-mongodb-tutorial
 exports.collections = {};
 //DB_CONN_STRING="???"
 //DB_NAME="tasksDB"
 //TASKS_NAME="tasks"
 class dbAdapter {
+    constructor() {
+        this.SERVER_URL = "mongodb://localhost:27017/test";
+        this.DB_NAME = "test";
+        this.connect();
+    }
     connectToDatabase() {
         //:D
         this.connect();
@@ -50,6 +56,11 @@ class dbAdapter {
                     yield this.client.connect();
                     this.db = this.client.db(this.DB_NAME);
                     console.log('db client created successfully');
+                    this.tasks = this.db.collection("helloworld");
+                    // debug: now try adding new task
+                    this.addTask("hello world!");
+                    // debug: now try finding the newly added task
+                    this.findTask("622b23e7bec9c63a78067581");
                 }
             }
             catch (error) {
@@ -59,6 +70,42 @@ class dbAdapter {
             //we need a env file 
             //this.tasks = this.db.collection(process.env.TASKS_NAME)
         });
+    }
+    addTask(cmd) {
+        try {
+            this.tasks.insertOne({ 'cmd': cmd });
+            console.log('inserted new task successfully!');
+        }
+        catch (error) {
+            console.log('error adding task to db!');
+            console.error(error);
+        }
+    }
+    findTask(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                this.tasks.findOne({ _id: new mongodb_1.ObjectId(id) }, (err, result) => {
+                    console.log(":DDD");
+                    console.log(result);
+                });
+                const result = yield this.tasks.findOne({ _id: id });
+                if (result) {
+                    console.log("found task with message:");
+                    console.log(result);
+                }
+                else {
+                    console.log("couldn't find anything pepehands");
+                }
+            }
+            catch (error) {
+                console.log('error finding task with id!');
+                console.error(error);
+            }
+        });
+    }
+    updateTask(id) {
+    }
+    DeleteTask(id) {
     }
     addDaemon(id, ip) {
     }
