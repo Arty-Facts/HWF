@@ -27,14 +27,14 @@ def build_binary_message(_agentId, _cmd, _srcFile):
     byteVector = fbb.CreateByteVector(readBytes)
     
 
-    HWFMessage.Start(fbb)
+    HWFMessage.MessageStart(fbb)
 
     # agent id is temporary since server doesn't assign tasks yet
-    HWFMessage.AddAgentId(fbb, _agentId)
-    HWFMessage.AddCmd(fbb, cmd)
-    HWFMessage.AddData(fbb, byteVector)
+    HWFMessage.MessageAddAgentId(fbb, _agentId)
+    HWFMessage.MessageAddCmd(fbb, cmd)
+    HWFMessage.MessageAddData(fbb, byteVector)
 
-    readyMsg = HWFMessage.End(fbb)
+    readyMsg = HWFMessage.MessageEnd(fbb)
     fbb.Finish(readyMsg)
     return fbb.Output()
 

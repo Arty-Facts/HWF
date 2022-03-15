@@ -1,7 +1,7 @@
 namespace HWF.Message;
 
 table Message{
-    agent_id:int;
+    agent_id:string;
     cmd:string;
     data:[byte];
 }

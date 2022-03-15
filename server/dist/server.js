@@ -18,6 +18,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -31,7 +40,7 @@ const message_1 = require("./message");
 const bodyparser = __importStar(require("body-parser"));
 const mongo_db_1 = require("./db/mongo_db");
 //let bodyparser = express.raw()
-const app = (0, express_1.default)();
+const app = express_1.default();
 const server = http.createServer(app);
 const wss = new ws.Server({ server: server });
 //const userApp = express()
@@ -62,18 +71,21 @@ class Task {
 }
 class Agent {
 }
-wss.on('connection', (ws, req) => {
+wss.on('connection', (ws, req) => __awaiter(void 0, void 0, void 0, function* () {
     //Gives a WebSocket a name and an incrementing id.
     //TODO: Improve ID-system
-    ws.id = idnum;
-    ws.name = "testname" + idnum;
-    idnum++;
+    //ws.id = idnum
+    //ws.name = "testname" + idnum 
+    //idnum++
     //socket.remoteAddress gets the connecting client's IP
     console.log(`New client "${ws.name}" connected from ${req.socket.remoteAddress}. Given id ${ws.id} `);
     // save the new daemon in the database
     let ip = req.socket.remoteAddress;
     if (ip !== undefined) {
-        let id = db.addDaemon(ip);
+        let id = yield db.addDaemon(ip);
+        console.log(`added new daemon with id: "${id}"`);
+        ws.id = id;
+        ws.name = "testname (" + id + ")";
     }
     // don't send this message right now, 
     // we only want to send Message bin for testing
@@ -92,17 +104,17 @@ wss.on('connection', (ws, req) => {
     ws.on('close', () => {
         console.log(`Client "${ws.name}" (id ${ws.id}) disconnected`);
     });
-});
+}));
 userWss.on("connection", (ws, req) => {
     ws.on("message", (message) => {
         // console.log("User message: ", message)
         // console.log("typeof: ", typeof message)
         //let reqBodyBytes = new Uint8Array(message as )
-        let buf = new flatbuffers.ByteBuffer(message);
-        let msg = message_1.Message.getRootAsMessage(buf);
+        //let buf = new flatbuffers.ByteBuffer(message)
+        //let msg = Message.getRootAsMessage(buf)
         //let msg = HelloWorld.getRootAsHelloWorld(buf)
         /*let msg = HelloWorld.HelloWorld.getRootAsHelloWorld(buf)*/
-        let agentId = msg.agentId();
+        //let agentId:number = msg.agentId()
         /*let agentId:number = 999*/
         //sendToAgent((message), agentId)
         sendToAgent(message);
@@ -126,7 +138,8 @@ function getAvailableAgent() {
 function getAgent(agentId) {
     let matchedAgent = undefined;
     wss.clients.forEach(client => {
-        if (client.OPEN == agentId) {
+        // ((client as NamedWebSocket).OPEN
+        if (client.id == agentId) {
             matchedAgent = client;
             return;
         }
@@ -216,9 +229,9 @@ function sendToAgentWithId(data, agentId) {
 app.post('/sendToAgent', bodyparser.raw(), (req, res) => {
     //Parses the incoming byte-array using the flatbuffers schema for these messages, then reads the agent id the message will be sent onwards to
     let reqBodyBytes = new Uint8Array(req.body);
-    let buf = new flatbuffers.ByteBuffer(reqBodyBytes);
-    let msg = message_1.Message.getRootAsMessage(buf);
-    let agentId = msg.agentId();
+    //let buf = new flatbuffers.ByteBuffer(reqBodyBytes)
+    //let msg = Message.getRootAsMessage(buf)
+    //let agentId:string|null = msg.agentId()
     //res.sendStatus(sendToAgent(reqBodyBytes, agentId))
     res.sendStatus(sendToAgent(reqBodyBytes));
 });
