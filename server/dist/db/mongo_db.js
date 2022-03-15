@@ -56,11 +56,12 @@ class dbAdapter {
                     yield this.client.connect();
                     this.db = this.client.db(this.DB_NAME);
                     console.log('db client created successfully');
-                    this.tasks = this.db.collection("helloworld");
-                    // debug: now try adding new task
-                    this.addTask("hello world!");
+                    this.tasks = this.db.collection("tasks");
+                    this.daemons = this.db.collection("daemons");
                     // debug: now try finding the newly added task
-                    this.findTask("622b23e7bec9c63a78067581");
+                    //this.findTask("622b23e7bec9c63a78067581")
+                    //this.DeleteTask("622b28ede0fadc37259f536e")
+                    // this.UpdateTask("622b297f01b58c4489a0d7b5", "test!!!!")
                 }
             }
             catch (error) {
@@ -88,14 +89,15 @@ class dbAdapter {
                     console.log(":DDD");
                     console.log(result);
                 });
-                const result = yield this.tasks.findOne({ _id: id });
-                if (result) {
-                    console.log("found task with message:");
-                    console.log(result);
-                }
-                else {
-                    console.log("couldn't find anything pepehands");
-                }
+                // const result = await this.tasks.findOne({_id: id})
+                // if (result)
+                // {
+                //     console.log("found task with message:")
+                //     console.log(result)
+                // }
+                // else {
+                //     console.log("couldn't find anything pepehands")
+                // }
             }
             catch (error) {
                 console.log('error finding task with id!');
@@ -103,11 +105,39 @@ class dbAdapter {
             }
         });
     }
-    updateTask(id) {
-    }
     DeleteTask(id) {
+        try {
+            this.tasks.deleteOne({ _id: new mongodb_1.ObjectId(id) });
+            const result = this.tasks.deleteOne({ _id: id });
+            if (result) {
+                console.log("deleted a task");
+                console.log(result);
+            }
+            else {
+                console.log("deleting failed");
+            }
+        }
+        catch (error) {
+            console.log('wrong id');
+            console.error(error);
+        }
     }
-    addDaemon(id, ip) {
+    UpdateTask(id, command) {
+        try {
+            this.tasks.updateOne({ _id: new mongodb_1.ObjectId(id) }, { $set: { 'cmd': command } });
+            console.log("updated task successfully :)");
+        }
+        catch (error) {
+            console.log('error updating task');
+            console.error(error);
+        }
+    }
+    addDaemon(ip) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let id;
+            let result = yield this.daemons.insertOne({ 'ip': ip });
+            return result.insertedId.toString();
+        });
     }
     addResult(daemon, status, timestamp) {
     }

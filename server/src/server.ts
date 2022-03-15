@@ -81,10 +81,12 @@ class Agent {
     id:string;
     ip:string;
 
-    os:string;
-    gpu:string;
-    cpu:string;
-    ram:string;
+    specs:{
+        "os": string | string[] | undefined, 
+        "gpu": string | string[] | undefined, 
+        "cpu": string | string[] | undefined, 
+        "ram": string | string[] | undefined
+    };
 
     // currently assigned info:
     task:string;
@@ -101,7 +103,14 @@ wss.on('connection', (ws:NamedWebSocket, req:http.IncomingMessage) =>{
     
     //socket.remoteAddress gets the connecting client's IP
     console.log(`New client "${ws.name}" connected from ${req.socket.remoteAddress}. Given id ${ws.id} `)
-    
+
+    // save the new daemon in the database
+    let ip = req.socket.remoteAddress
+    if (ip !== undefined){
+        let id = db.addDaemon(ip)
+        console.log(`added new daemon with ip: "${id}"`)
+    }
+
     // don't send this message right now, 
     // we only want to send Message bin for testing
     // ws.send("You have connected to the server!")
@@ -196,9 +205,20 @@ function sendToAgent(data:Uint8Array) {
         let named_agent = (agent as unknown as NamedWebSocket)
 
         try {
-            //Send data onwards to agent
+            // Send data onwards to agent
             named_agent.send(data)
             console.log(`Data sent to agent ${named_agent.id}`)
+
+            // save task to database
+            let buf = new flatbuffers.ByteBuffer(data)
+            let msg = Message.getRootAsMessage(buf)
+
+            let message = msg.cmd()
+
+            if (message !== null){
+                db.addTask(message)
+            }
+
             return 200
         }
         catch (err) {

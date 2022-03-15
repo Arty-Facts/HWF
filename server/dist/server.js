@@ -70,6 +70,11 @@ wss.on('connection', (ws, req) => {
     idnum++;
     //socket.remoteAddress gets the connecting client's IP
     console.log(`New client "${ws.name}" connected from ${req.socket.remoteAddress}. Given id ${ws.id} `);
+    // save the new daemon in the database
+    let ip = req.socket.remoteAddress;
+    if (ip !== undefined) {
+        let id = db.addDaemon(ip);
+    }
     // don't send this message right now, 
     // we only want to send Message bin for testing
     // ws.send("You have connected to the server!")
@@ -133,9 +138,16 @@ function sendToAgent(data) {
     if (agent) {
         let named_agent = agent;
         try {
-            //Send data onwards to agent
+            // Send data onwards to agent
             named_agent.send(data);
             console.log(`Data sent to agent ${named_agent.id}`);
+            // save task to database
+            let buf = new flatbuffers.ByteBuffer(data);
+            let msg = message_1.Message.getRootAsMessage(buf);
+            let message = msg.cmd();
+            if (message !== null) {
+                db.addTask(message);
+            }
             return 200;
         }
         catch (err) {
