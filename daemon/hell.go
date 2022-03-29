@@ -16,7 +16,7 @@ import (
 func connect() *websocket.Conn {
 	u := url.URL{
 		Scheme: "ws",
-		Host:   "localhost:3000",
+		Host:   "localhost:9000",
 		Path:   "/",
 	}
 	connection, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
