@@ -11,7 +11,9 @@ import * as fs from "fs"
 import { Message } from "./message"
 import { HelloWorld } from "./schema_generated"
 import * as bodyparser from "body-parser";
+import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
+
 //let bodyparser = express.raw()
 const app = express()
 const server = http.createServer(app)
@@ -20,6 +22,9 @@ const wss:WebSocketServer = new ws.Server({ server:server });
 //const userApp = express()
 const userServer = http.createServer(app)
 const userWss = new ws.Server({server:userServer})
+
+//connect to the database:
+const db = new dbAdapter()
 
 app.use(express.json())
 
@@ -51,7 +56,7 @@ var idnum:number = 1
 //TODO: Specs keys should really only store strings or possibly undefined depending on how empty fields are handled in the future. So string[] should be gotten rid of.
 interface NamedWebSocket extends WebSocket {
     name:string;
-    id:number;
+    id:string;
     specs:{
         "os": string | string[] | undefined, 
         "gpu": string | string[] | undefined, 
@@ -60,17 +65,55 @@ interface NamedWebSocket extends WebSocket {
     };
 
 }
-wss.on('connection', (ws:NamedWebSocket, req:http.IncomingMessage) =>{
+
+class Task {
+    id:string; // <- should we have an id for each task?
+    timestamp:string;
+
+    cmd:string;
+    files:string[];
+
+    // if the task has been assigned:
+    daemon:string;
+    status:string;
+}
+
+class Agent {
+    id:string;
+    ip:string;
+
+    specs:{
+        "os": string | string[] | undefined, 
+        "gpu": string | string[] | undefined, 
+        "cpu": string | string[] | undefined, 
+        "ram": string | string[] | undefined
+    };
+
+    // currently assigned info:
+    task:string;
+    timestamp:string; // when task was assigned
+}
+
+wss.on('connection', async (ws:NamedWebSocket, req:http.IncomingMessage) =>{
    
     //Gives a WebSocket a name and an incrementing id.
     //TODO: Improve ID-system
-    ws.id = idnum
-    ws.name = "testname" + idnum 
-    idnum++
+    //ws.id = idnum
+    //ws.name = "testname" + idnum 
+    //idnum++
     
     //socket.remoteAddress gets the connecting client's IP
     console.log(`New client "${ws.name}" connected from ${req.socket.remoteAddress}. Given id ${ws.id} `)
-    
+
+    // save the new daemon in the database
+    let ip = req.socket.remoteAddress
+    if (ip !== undefined){
+        let id = await db.addDaemon(ip)
+        console.log(`added new daemon with id: "${id}"`)
+        ws.id = id
+        ws.name = "testname (" + id + ")"
+    }
+
     // don't send this message right now, 
     // we only want to send Message bin for testing
     // ws.send("You have connected to the server!")
@@ -106,14 +149,14 @@ userWss.on("connection", (ws, req) => {
         // console.log("typeof: ", typeof message)
         //let reqBodyBytes = new Uint8Array(message as )
 
-        let buf = new flatbuffers.ByteBuffer(message)
-        let msg = Message.getRootAsMessage(buf)
+        //let buf = new flatbuffers.ByteBuffer(message)
+        //let msg = Message.getRootAsMessage(buf)
 
         //let msg = HelloWorld.getRootAsHelloWorld(buf)
 
         /*let msg = HelloWorld.HelloWorld.getRootAsHelloWorld(buf)*/
 
-        let agentId:number = msg.agentId()
+        //let agentId:number = msg.agentId()
 
         /*let agentId:number = 999*/
     
@@ -142,12 +185,13 @@ function getAvailableAgent(){
 }
 
 // Gets the agent with matching ID from wss.client. This is based on the ID given when the agent connected.
-function getAgent(agentId:number){
+function getAgent(agentId:string){
     
     let matchedAgent:WebSocket | undefined = undefined;
 
     wss.clients.forEach(client => {
-        if ((client as NamedWebSocket).OPEN == agentId) {
+        // ((client as NamedWebSocket).OPEN
+        if ((client as NamedWebSocket).id == agentId) {
             matchedAgent = client
             return
         }  
@@ -165,9 +209,20 @@ function sendToAgent(data:Uint8Array) {
         let named_agent = (agent as unknown as NamedWebSocket)
 
         try {
-            //Send data onwards to agent
+            // Send data onwards to agent
             named_agent.send(data)
             console.log(`Data sent to agent ${named_agent.id}`)
+
+            // save task to database
+            let buf = new flatbuffers.ByteBuffer(data)
+            let msg = Message.getRootAsMessage(buf)
+
+            let message = msg.cmd()
+
+            if (message !== null){
+                db.addTask(message)
+            }
+
             return 200
         }
         catch (err) {
@@ -188,7 +243,7 @@ function sendToAgent(data:Uint8Array) {
 
 //TODO: Read agent id from incoming data, then send to agent
 //TODO: This can probably be cleaned up and done with fewer if/else-statements
-function sendToAgentWithId(data:Uint8Array, agentId:number) {
+function sendToAgentWithId(data:Uint8Array, agentId:string) {
 
     //From data, read agent id
     let agent:WebSocket | undefined = getAgent(agentId)
@@ -299,9 +354,10 @@ app.post('/sendToAgent', bodyparser.raw(), (req:Request,res:Response) => {
     
     //Parses the incoming byte-array using the flatbuffers schema for these messages, then reads the agent id the message will be sent onwards to
     let reqBodyBytes = new Uint8Array(req.body)
-    let buf = new flatbuffers.ByteBuffer(reqBodyBytes)
-    let msg = Message.getRootAsMessage(buf)
-    let agentId:number = msg.agentId()
+    
+    //let buf = new flatbuffers.ByteBuffer(reqBodyBytes)
+    //let msg = Message.getRootAsMessage(buf)
+    //let agentId:string|null = msg.agentId()
 
 
     //res.sendStatus(sendToAgent(reqBodyBytes, agentId))
@@ -374,4 +430,6 @@ server.listen(9000, () => {
 /* 
     - The frontend should be able to request its users data from the database
 */
+
+// ===================
 

@@ -100,9 +100,10 @@ func write_message(msg string) []byte {
 
 	builder := flatbuffers.NewBuilder(1024)
 	hello := builder.CreateString(msg)
+	hi := builder.CreateString("")
 
 	message.MessageStart(builder)
-	message.MessageAddAgentId(builder, 1)
+	message.MessageAddAgentId(builder, hi)
 	message.MessageAddCmd(builder, hello)
 	binMsg := message.MessageEnd(builder)
 	builder.Finish(binMsg)

@@ -26,16 +26,12 @@ func (rcv *Message) Table() flatbuffers.Table {
 	return rcv._tab
 }
 
-func (rcv *Message) AgentId() int32 {
+func (rcv *Message) AgentId() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
 	if o != 0 {
-		return rcv._tab.GetInt32(o + rcv._tab.Pos)
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
 	}
-	return 0
-}
-
-func (rcv *Message) MutateAgentId(n int32) bool {
-	return rcv._tab.MutateInt32Slot(4, n)
+	return nil
 }
 
 func (rcv *Message) Cmd() []byte {
@@ -75,8 +71,8 @@ func (rcv *Message) MutateData(j int, n int8) bool {
 func MessageStart(builder *flatbuffers.Builder) {
 	builder.StartObject(3)
 }
-func MessageAddAgentId(builder *flatbuffers.Builder, agentId int32) {
-	builder.PrependInt32Slot(0, agentId, 0)
+func MessageAddAgentId(builder *flatbuffers.Builder, agentId flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(agentId), 0)
 }
 func MessageAddCmd(builder *flatbuffers.Builder, cmd flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(cmd), 0)
