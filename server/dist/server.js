@@ -29,6 +29,7 @@ const url = __importStar(require("url"));
 const flatbuffers = __importStar(require("flatbuffers"));
 const message_1 = require("./message");
 const bodyparser = __importStar(require("body-parser"));
+const cors_1 = __importDefault(require("cors"));
 //let bodyparser = express.raw()
 const app = (0, express_1.default)();
 const server = http.createServer(app);
@@ -38,11 +39,11 @@ const userServer = http.createServer(app);
 const userWss = new ws.Server({ server: userServer });
 app.use(express_1.default.json());
 // TODO: Implement cors? Is it even needed?
-// app.use(cors({
-//     origin:"*",
-//     methods: ["GET", "POST", "PUT", "OPTIONS"],
-//     allowedHeaders: ["Content-Type", "*"]
-// }))
+app.use(cors_1.default({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "*"]
+}));
 //TODO:Look up how to recieve several sockets asynchronously
 // req is a httpincomingmessage -> https://www.w3schools.com/nodejs/obj_http_incomingmessage.asp
 //TODOs & General thoughts: 
@@ -173,6 +174,51 @@ function sendToAgentWithId(data, agentId) {
         return 500;
     }
 }
+
+//Gets the specs for all currently connected clients
+app.get('/specs', (req, res) => {
+    console.log("retrieving agents specs");
+    if (wss.clients.size == 0) {
+        console.log("No agents are connected");
+        return res.sendStatus(404);
+    }
+    let result = [];
+    wss.clients.forEach((client) => {
+        const { id, name, specs } = client;
+        result.push({
+            "id": id,
+            "name": name,
+            "specs": {
+                "os": specs.os,
+                "gpu": specs.gpu,
+                "cpu": specs.cpu,
+                "ram": specs.ram
+            }
+        });
+    });
+    console.log(result);
+    return res.json(result);
+});
+/*
+[
+    {
+        "id": 1,
+        "name": "testname1",
+        "specs": {}
+    },
+    {
+        "id": 2,
+        "name": "testname2",
+        "specs": {
+            "os": "windows10",
+            "gpu": "5700xt",
+            "cpu": "r5_3600",
+            "ram": "16gb"
+        }
+    }
+]
+*/
+
 // ws.send("The server recieved your message")
 //         return res.sendStatus(404)
 //     }
@@ -192,6 +238,7 @@ function sendToAgentWithId(data, agentId) {
 //     })
 //     return res.json(result)   
 // })
+
 //Sends data to the agent with matching ID
 //TODO: Error-handling (no data, invalid ID format/type etc...)
 app.post('/sendToAgent', bodyparser.raw(), (req, res) => {
@@ -228,8 +275,8 @@ app.get('/', (req,res) => res.send("bla"))
 userServer.listen(3001, () => {
     console.log("Userserver listening on port: 3001");
 });
-server.listen(3000, () => {
-    console.log("Listening on port: 3000");
+server.listen(9000, () => {
+    console.log("Listening on port: 9000");
 });
 //TODO:
 //Users send tasks

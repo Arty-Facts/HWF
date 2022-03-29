@@ -1,0 +1,35 @@
+.topbarContainer{
+    height: 12vh;
+    width: 100%;
+    background-color: #004f4e;
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 9000;
+}
+
+.topbarLeft{
+    flex:3;
+}
+
+.topbarCenter{
+    flex:6;
+    text-align: center;
+}
+
+.topbarRight{
+    flex:3;
+}
+
+.siteName{
+    font-size: 6vh;
+    font-weight: bold;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color:antiquewhite;
+
+    font-family: 'Polaris-Book', sans-serif;
+ 
+}

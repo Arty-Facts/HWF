@@ -5,7 +5,7 @@ import { Message } from "./message"
 import * as flatbuffers from "flatbuffers"
 import * as fs from "fs"
 
-const client = new ws('ws://localhost:3000?os=windows10&gpu=5700xt&cpu=r5_3600&ram=16gb')
+const client = new ws('ws://localhost:9000?os=windows10&gpu=5700xt&cpu=r5_3600&ram=16gb')
 
 client.on("open", () => {
     client.send("I'm an agent sending a message")
