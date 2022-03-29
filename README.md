@@ -57,3 +57,10 @@ git checkout <name of the task>
 * Friend cant breaks the code 
 * Friend approves pull request  
 * We celebrate 
+
+
+
+#How to install python requirements
+*Open CLI and cd into our root directory "HWF"
+*Enter the command "source env/bin/activate" in the CLI
+*Enter the command "pip install -r requirements" in the CLI
