@@ -25,7 +25,7 @@
   * Then run `python3 lazystart.py`
   
 
-  
+## Developement info
 ### How we make changes 
 
 * We think
