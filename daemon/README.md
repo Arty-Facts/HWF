@@ -8,7 +8,7 @@
 
   `go run hell.go`
 
-## In case of missing dependencies or erros
+## In case of missing dependencies or errors
 
 * run the following command in the main daemon directory as well as the Message directory
 
