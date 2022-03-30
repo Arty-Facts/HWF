@@ -21,7 +21,7 @@ To run db server with set path use: `mongod --port 27017 --dbpath /data/db`
 ## Verify that db server is running
 `mongo --eval 'db.runCommand({ connectionStatus: 1 })'`
 
-## start, stop, restart and status commnds
+## start, stop, restart and status commands
 
 `sudo systemctl start mongod`
 
@@ -37,3 +37,6 @@ To run db server with set path use: `mongod --port 27017 --dbpath /data/db`
 
 1. Enter mongo shell by typing `mongo` in the terminal
 2. Input `use NAME` where NAME is the name of the database
+3. 'show dbs' will display all the available databases
+4. 'show collections' will display each collection in the current database
+5. 'db.collectionName.find()' displays a collection's content.
