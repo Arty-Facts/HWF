@@ -4,11 +4,11 @@
 
 ### Requirments
 
-  * Mongodb
-  * NodeJs (v14.0 or higher) + npm
-  * GoLang
-  * Python
-  * React
+  * [Mongodb](https://github.com/PappaArty/HWF/blob/main/server/src/db/readme.md)
+  * [NodeJs (v14.0 or higher) + npm] (https://nodejs.org/en/download/package-manager/)
+  * [GoLang](https://go.dev/doc/install)
+  * [Python](https://github.com/PappaArty/HWF/blob/main/python_api/README.md)
+  * [React](https://reactjs.org/docs/create-a-new-react-app.html)
   
 ### Quick install guide
 
