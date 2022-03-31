@@ -8,17 +8,17 @@ test1 = HWF.CreateTask(
                ],
         cmd = [ "curl http://internal.url.get.stuff", # if a list run one at the time
                 "run cmd"
-              ]
+              ],
         timeit = True,
         comment="extre info store in db and web"
     ),
     HWF.Stage(
         name = "run cool stuff",
-        cmd = "run.exe in.raw out.raw > log.txt" # run the command
+        cmd = "run.exe in.raw out.raw > log.txt", # run the command
         timeit = True,
         ram_usage = True,
         comment="extre info store in db and web"
-    )
+    ),
     HWF.Artifacts( # get some files back
         "log.txt",
         "out.raw"
