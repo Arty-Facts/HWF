@@ -129,7 +129,9 @@ func read_message(msg []byte) {
 	}
 
 	// print the contents of cmd
-	fmt.Println(string(test.Cmd()))
+	fmt.Println(string(test.Cmd(0)))
+	fmt.Println(string(test.Cmd(1)))
+	fmt.Println(string(test.Cmd(2)))
 }
 
 func write_message(msg string) []byte {

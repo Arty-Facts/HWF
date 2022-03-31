@@ -2,7 +2,7 @@ namespace Message;
 
 table Message{
     agent_id:string;
-    cmd:string;
+    cmd:[string];
     data:[byte];
 }
 

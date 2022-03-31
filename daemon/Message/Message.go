@@ -34,12 +34,21 @@ func (rcv *Message) AgentId() []byte {
 	return nil
 }
 
-func (rcv *Message) Cmd() []byte {
+func (rcv *Message) Cmd(j int) []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
-		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+		a := rcv._tab.Vector(o)
+		return rcv._tab.ByteVector(a + flatbuffers.UOffsetT(j*4))
 	}
 	return nil
+}
+
+func (rcv *Message) CmdLength() int {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
+	if o != 0 {
+		return rcv._tab.VectorLen(o)
+	}
+	return 0
 }
 
 func (rcv *Message) Data(j int) int8 {
@@ -76,6 +85,9 @@ func MessageAddAgentId(builder *flatbuffers.Builder, agentId flatbuffers.UOffset
 }
 func MessageAddCmd(builder *flatbuffers.Builder, cmd flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(cmd), 0)
+}
+func MessageStartCmdVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
+	return builder.StartVector(4, numElems, 4)
 }
 func MessageAddData(builder *flatbuffers.Builder, data flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(data), 0)
