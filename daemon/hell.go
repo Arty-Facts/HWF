@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/url"
+	"os/exec"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
@@ -61,6 +62,7 @@ func listen(connection *websocket.Conn) {
 }
 
 func main() {
+
 	connection := connect()
 
 	// close connection once we go out of scope
@@ -68,16 +70,50 @@ func main() {
 
 	// wait for requests from server
 	listen(connection)
+
 }
 
 func send_message(connection *websocket.Conn, msg []byte) {
 	connection.WriteMessage(websocket.TextMessage, msg)
 }
 
+func execute_command(command string) []byte {
+	cmd := exec.Command("bash", "-c", command)
+
+	out, err := cmd.Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return out
+
+	//https://zetcode.com/golang/exec-command/
+}
+
 func read_message(msg []byte) {
 
 	test := message.GetRootAsMessage(msg, 0)
 	var arr = make([]byte, test.DataLength())
+
+	// TO-DO: cmd is a string now but will be an array later
+	//cmd := message.Cmd()
+
+	// debug cmd commands:
+	cmd := []string{"ls", "echo lmao"}
+	var results = make([][]byte, len(cmd))
+
+	// execute all commands and save their results
+	for i, s := range cmd {
+		result := execute_command(s)
+		results[i] = result
+	}
+
+	/*
+		// debug: print all results
+		for i, s := range results {
+			fmt.Println(i, s)
+		}
+	*/
 
 	// save all bytes in Data array to arr
 	for i := 0; i < test.DataLength(); i++ {
