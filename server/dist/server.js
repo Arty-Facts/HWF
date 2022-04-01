@@ -158,9 +158,14 @@ function sendToAgent(data) {
             // save task to database
             let buf = new flatbuffers.ByteBuffer(data);
             let msg = message_generated_1.Message.getRootAsMessage(buf);
-            let message = msg.cmd(0);
-            if (message !== null) {
-                db.addTask(message);
+            // get all commands from flatbuffer
+            let commands = [];
+            for (let i = 0; i < msg.cmdLength(); i++) {
+                commands[i] = msg.cmd(i);
+                console.log(`Read cmd: ${msg.cmd(i)}`);
+            }
+            if (commands !== null) {
+                db.addTask(commands);
             }
             return 200;
         }
