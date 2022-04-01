@@ -36,12 +36,12 @@ const ws = __importStar(require("ws"));
 const express_1 = __importDefault(require("express"));
 const url = __importStar(require("url"));
 const flatbuffers = __importStar(require("flatbuffers"));
-const message_1 = require("./message");
+const message_generated_1 = require("./message_generated");
 const bodyparser = __importStar(require("body-parser"));
 const mongo_db_1 = require("./db/mongo_db");
 const cors_1 = __importDefault(require("cors"));
 //let bodyparser = express.raw()
-const app = express_1.default();
+const app = (0, express_1.default)();
 const server = http.createServer(app);
 const wss = new ws.Server({ server: server });
 //const userApp = express()
@@ -51,7 +51,7 @@ const userWss = new ws.Server({ server: userServer });
 const db = new mongo_db_1.dbAdapter();
 app.use(express_1.default.json());
 // TODO: Implement cors? Is it even needed?
-app.use(cors_1.default({
+app.use((0, cors_1.default)({
     origin: "*",
     methods: ["GET", "POST", "PUT", "OPTIONS"],
     allowedHeaders: ["Content-Type", "*"]
@@ -157,8 +157,8 @@ function sendToAgent(data) {
             console.log(`Data sent to agent ${named_agent.id}`);
             // save task to database
             let buf = new flatbuffers.ByteBuffer(data);
-            let msg = message_1.Message.getRootAsMessage(buf);
-            let message = msg.cmd();
+            let msg = message_generated_1.Message.getRootAsMessage(buf);
+            let message = msg.cmd(0);
             if (message !== null) {
                 db.addTask(message);
             }

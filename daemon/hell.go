@@ -77,12 +77,13 @@ func send_message(connection *websocket.Conn, msg []byte) {
 	connection.WriteMessage(websocket.TextMessage, msg)
 }
 
-func execute_command(command string) []byte {
-	cmd := exec.Command("bash", "-c", command)
+func execute_command(command []byte) []byte {
+	cmd := exec.Command("bash", "-c", string(command))
 
 	out, err := cmd.Output()
 	if err != nil {
-		log.Fatal(err)
+		// log.Fatal(err)
+		panic(err)
 	}
 
 	return out
@@ -92,21 +93,17 @@ func execute_command(command string) []byte {
 
 func read_message(msg []byte) {
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
+
 	test := message.GetRootAsMessage(msg, 0)
 	var arr = make([]byte, test.DataLength())
 
 	// TO-DO: cmd is a string now but will be an array later
 	//cmd := message.Cmd()
-
-	// debug cmd commands:
-	cmd := []string{"ls", "echo lmao"}
-	var results = make([][]byte, len(cmd))
-
-	// execute all commands and save their results
-	for i, s := range cmd {
-		result := execute_command(s)
-		results[i] = result
-	}
 
 	/*
 		// debug: print all results
@@ -128,10 +125,32 @@ func read_message(msg []byte) {
 		log.Fatal(err)
 	}
 
+	/*
+		// debug cmd commands:
+		cmd := []string{"ls", "echo lmao"}
+		var results = make([][]byte, len(cmd))
+
+		// execute all commands and save their results
+		for i, s := range cmd {
+			result := execute_command(s)
+			results[i] = result
+		}
+	*/
+
 	// print the contents of cmd
-	fmt.Println(string(test.Cmd(0)))
-	fmt.Println(string(test.Cmd(1)))
-	fmt.Println(string(test.Cmd(2)))
+	fmt.Println("CMD commands:")
+
+	var results = make([][]byte, test.CmdLength())
+	for i := 0; i < test.CmdLength(); i++ {
+		fmt.Println(string(test.Cmd(i)))
+		result := execute_command(test.Cmd(i))
+		results[i] = result
+	}
+
+	// DEBUG: print the results
+	for i, s := range results {
+		fmt.Println(i, s)
+	}
 }
 
 func write_message(msg string) []byte {
@@ -147,6 +166,7 @@ func write_message(msg string) []byte {
 	builder.Finish(binMsg)
 	buf := builder.FinishedBytes()
 	return buf
+
 }
 
 // WIP

@@ -8,7 +8,7 @@ import * as  url from "url"
 import { ParsedUrlQuery } from "querystring";
 import * as flatbuffers from "flatbuffers"
 import * as fs from "fs"
-import { Message } from "./message"
+import { Message } from "./message_generated"
 import { HelloWorld } from "./schema_generated"
 import * as bodyparser from "body-parser";
 import { dbAdapter } from "./db/mongo_db"
@@ -217,7 +217,7 @@ function sendToAgent(data:Uint8Array) {
             let buf = new flatbuffers.ByteBuffer(data)
             let msg = Message.getRootAsMessage(buf)
 
-            let message = msg.cmd()
+            let message = msg.cmd(0)
 
             if (message !== null){
                 db.addTask(message)
