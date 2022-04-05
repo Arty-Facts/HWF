@@ -86,7 +86,22 @@ git checkout <name of the task>
 
 
 
-#How to install python requirements
-*Open CLI and cd into our root directory "HWF"
-*Enter the command "source env/bin/activate" in the CLI
-*Enter the command "pip install -r requirements" in the CLI
+### How to install python requirements
+* Open CLI and cd into our root directory "HWF"
+* Enter the command "source env/bin/activate" in the CLI
+* Enter the command "pip install -r requirements" in the CLI
+
+### How to update schemas
+Schemas to be updated:
+* go (/daemon/Message/) 
+* python (/python_api/)
+* nodejs (/server/src/)
+
+By using:
+* `flatc --go HWFmessage.fbs` in HWF/daemon/
+* `flatc --p message.fbs` in HWF/python_api/
+* `flatc --ts message.fbs` in HWF/server/src
+*  Add this line to the generated flatc file: 
+
+`import * as flatbuffers from 'flatbuffers'`
+

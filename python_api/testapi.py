@@ -2,7 +2,7 @@
 
 from venv import create
 import flatbuffers
-import HWFMessage
+import Message
 import requests
 from websocket import create_connection
 
@@ -13,12 +13,18 @@ headers = {
         "Content-Type": "application/octet-stream",
     }
 
-# Creates a HWFMessage with param info, returns builder output
+# Creates a Message with param info, returns builder output
 def build_binary_message(_agentId, _cmd, _srcFile):
     fbb = flatbuffers.Builder(1024)
 
     # create cmd string
     cmd = fbb.CreateString(_cmd)
+
+    # debug: TEST cmd = {"test1", "test2", "test3"}
+    cmd1 = fbb.CreateString("ls")
+    cmd2 = fbb.CreateString("echo")
+    # debug: creates a text file in the Downloads directory
+    cmd3 = fbb.CreateString("touch ~/Downloads/cat.txt")
 
     # create srcfile byte arr
     with open(_srcFile, "rb") as bin:
@@ -26,15 +32,27 @@ def build_binary_message(_agentId, _cmd, _srcFile):
 
     byteVector = fbb.CreateByteVector(readBytes)
     
+    # create a vector for multiple command line arguments 
+    Message.MessageStartCmdVector(fbb, 3)
+    
+    fbb.PrependUOffsetTRelative(cmd3)
+    fbb.PrependUOffsetTRelative(cmd2)
+    fbb.PrependUOffsetTRelative(cmd1)
+    
+    msges = fbb.EndVector()
 
-    HWFMessage.MessageStart(fbb)
+    Message.MessageStart(fbb)
 
     # agent id is temporary since server doesn't assign tasks yet
-    HWFMessage.MessageAddAgentId(fbb, _agentId)
-    HWFMessage.MessageAddCmd(fbb, cmd)
-    HWFMessage.MessageAddData(fbb, byteVector)
+    Message.MessageAddAgentId(fbb, _agentId)
 
-    readyMsg = HWFMessage.MessageEnd(fbb)
+    # debug: TEST vector cmd
+
+    Message.MessageAddCmd(fbb, msges)
+    Message.MessageAddData(fbb, byteVector)
+
+
+    readyMsg = Message.MessageEnd(fbb)
     fbb.Finish(readyMsg)
     return fbb.Output()
 
@@ -45,10 +63,10 @@ def CreateBinary(destFile):
     fbb = flatbuffers.Builder(1024)
     cmd = fbb.CreateString("find / -name secretpasswordsdontlook.txt")
     
-    HWFMessage.Start(fbb)
-    HWFMessage.AddAgentId(fbb, targetAgentId)
-    HWFMessage.AddCmd(fbb, cmd)
-    readyMsg = HWFMessage.End(fbb)
+    Message.Start(fbb)
+    Message.AddAgentId(fbb, targetAgentId)
+    Message.AddCmd(fbb, cmd)
+    readyMsg = Message.End(fbb)
     fbb.Finish(readyMsg)
     buf = fbb.Output()
 
@@ -65,10 +83,10 @@ def SendBinaryFromSourceFile(srcFile):
 
     byteVector = fbb.CreateByteVector(readBytes)
 
-    HWFMessage.Start(fbb)
-    HWFMessage.AddAgentId(fbb, targetAgentId)
-    HWFMessage.AddData(fbb, byteVector)
-    readyMsg = HWFMessage.End(fbb)
+    Message.Start(fbb)
+    Message.AddAgentId(fbb, targetAgentId)
+    Message.AddData(fbb, byteVector)
+    readyMsg = Message.End(fbb)
 
     fbb.Finish(readyMsg)
     buf = fbb.Output()

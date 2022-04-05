@@ -65,7 +65,7 @@ export class dbAdapter <T extends dbInterface> {
         
     }
 
-    addTask(cmd:string):void {
+    addTask(cmd:string[]):void {
         try {
             this.tasks.insertOne({'cmd': cmd})
             console.log('inserted new task successfully!')

