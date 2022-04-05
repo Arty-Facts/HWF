@@ -23,7 +23,8 @@ def build_binary_message(_agentId, _cmd, _srcFile):
     # debug: TEST cmd = {"test1", "test2", "test3"}
     cmd1 = fbb.CreateString("ls")
     cmd2 = fbb.CreateString("echo")
-    cmd3 = fbb.CreateString("LLL")
+    # debug: creates a text file in the Downloads directory
+    cmd3 = fbb.CreateString("touch ~/Downloads/cat.txt")
 
     # create srcfile byte arr
     with open(_srcFile, "rb") as bin:

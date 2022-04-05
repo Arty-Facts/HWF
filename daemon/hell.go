@@ -93,24 +93,18 @@ func execute_command(command []byte) []byte {
 
 func read_message(msg []byte) {
 
+	// right now execute_command is the only
+	// function that can panic, so we know that's
+	// where the error was caused - change this later
+	// if more panics were added
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
+			fmt.Println("Panic while executing command:", r)
 		}
 	}()
 
 	test := message.GetRootAsMessage(msg, 0)
 	var arr = make([]byte, test.DataLength())
-
-	// TO-DO: cmd is a string now but will be an array later
-	//cmd := message.Cmd()
-
-	/*
-		// debug: print all results
-		for i, s := range results {
-			fmt.Println(i, s)
-		}
-	*/
 
 	// save all bytes in Data array to arr
 	for i := 0; i < test.DataLength(); i++ {
@@ -125,19 +119,7 @@ func read_message(msg []byte) {
 		log.Fatal(err)
 	}
 
-	/*
-		// debug cmd commands:
-		cmd := []string{"ls", "echo lmao"}
-		var results = make([][]byte, len(cmd))
-
-		// execute all commands and save their results
-		for i, s := range cmd {
-			result := execute_command(s)
-			results[i] = result
-		}
-	*/
-
-	// print the contents of cmd
+	// DEBUG: print the contents of cmd
 	fmt.Println("CMD commands:")
 
 	var results = make([][]byte, test.CmdLength())
