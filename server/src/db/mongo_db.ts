@@ -53,6 +53,13 @@ export class dbAdapter <T extends dbInterface> {
                 //this.DeleteTask("622b28ede0fadc37259f536e")
 
                 // this.UpdateTask("622b297f01b58c4489a0d7b5", "test!!!!")
+
+                // DEBUG:try adding, getting tasks...
+                let id = await this.addTask("hello world!")
+                let task = await this.getTask(id)
+
+                console.log('DEBUG::::: task:')
+                console.log(task)
             }
 
         } 
@@ -65,36 +72,24 @@ export class dbAdapter <T extends dbInterface> {
         
     }
 
-    addTask(cmd:string):void {
-        try {
-            this.tasks.insertOne({'cmd': cmd})
-            console.log('inserted new task successfully!')
-        }
-        catch(error) {
-            console.log('error adding task to db!');
-            console.error(error);
-        }
+    async addDaemon(ip:string):Promise<string> {
+        let id:string;
+        let result = await this.daemons.insertOne({'ip': ip})
+
+        return result.insertedId.toString();
     }
 
-    async findTask(id:string) {
+    // to-do: finish this, it's copypaste from gettask atm
+    async getDaemon(id:string) {
         try{
-            
 
-            this.tasks.findOne({_id: new ObjectId(id)}, (err, result) => {
-                console.log(":DDD")
-                console.log(result)
-            })
+            const task = await this.tasks.findOne({_id: new ObjectId(id)})
 
-            // const result = await this.tasks.findOne({_id: id})
+            if (task != null){
+                return task;
+            }
 
-            // if (result)
-            // {
-            //     console.log("found task with message:")
-            //     console.log(result)
-            // }
-            // else {
-            //     console.log("couldn't find anything pepehands")
-            // }
+            return undefined;
         }
         catch(error) {
             console.log('error finding task with id!');
@@ -103,7 +98,41 @@ export class dbAdapter <T extends dbInterface> {
         
     }
 
-    DeleteTask(id:string) {
+    async addTask(cmd:string):Promise<string> {
+        try {
+            let result = await this.tasks.insertOne({'cmd': cmd})
+
+            console.log('inserted new task successfully!')
+            return result.insertedId.toString(); 
+        }
+        catch(error) {
+            console.log('error adding task to db!');
+            console.error(error);
+            return "ERROR";
+        }
+    }
+
+    async getTask(id:string) {
+        try{
+
+            const task = await this.tasks.findOne({_id: new ObjectId(id)})
+
+            if (task != null){
+                return task;
+            }
+
+            return undefined;
+        }
+        catch(error) {
+            console.log('error finding task with id!');
+            console.error(error);
+
+            return undefined;
+        }
+        
+    }
+
+    deleteTask(id:string) {
         try {
 
             this.tasks.deleteOne({_id: new ObjectId(id)})
@@ -125,9 +154,9 @@ export class dbAdapter <T extends dbInterface> {
 
     }
 
-    UpdateTask(id:string, command:string) {
+    updateTask(id:string, cmd:string) {
         try {
-            this.tasks.updateOne({_id: new ObjectId(id)}, {$set: {'cmd': command}})
+            this.tasks.updateOne({_id: new ObjectId(id)}, {$set: {'cmd': cmd}})
             console.log("updated task successfully :)")
         } 
         catch(error:any) {
@@ -135,13 +164,6 @@ export class dbAdapter <T extends dbInterface> {
             console.error(error)
         }
 
-    }
-
-    async addDaemon(ip:string):Promise<string> {
-        let id:string;
-        let result = await this.daemons.insertOne({'ip': ip})
-
-        return result.insertedId.toString();
     }
 
     addResult(daemon:string, status:string, timestamp:string): void {

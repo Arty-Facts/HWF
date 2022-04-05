@@ -41,7 +41,7 @@ const bodyparser = __importStar(require("body-parser"));
 const mongo_db_1 = require("./db/mongo_db");
 const cors_1 = __importDefault(require("cors"));
 //let bodyparser = express.raw()
-const app = express_1.default();
+const app = (0, express_1.default)();
 const server = http.createServer(app);
 const wss = new ws.Server({ server: server });
 //const userApp = express()
@@ -51,7 +51,7 @@ const userWss = new ws.Server({ server: userServer });
 const db = new mongo_db_1.dbAdapter();
 app.use(express_1.default.json());
 // TODO: Implement cors? Is it even needed?
-app.use(cors_1.default({
+app.use((0, cors_1.default)({
     origin: "*",
     methods: ["GET", "POST", "PUT", "OPTIONS"],
     allowedHeaders: ["Content-Type", "*"]

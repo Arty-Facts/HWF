@@ -62,6 +62,11 @@ class dbAdapter {
                     //this.findTask("622b23e7bec9c63a78067581")
                     //this.DeleteTask("622b28ede0fadc37259f536e")
                     // this.UpdateTask("622b297f01b58c4489a0d7b5", "test!!!!")
+                    // DEBUG:try adding, getting tasks...
+                    let id = yield this.addTask("hello world!");
+                    let task = yield this.getTask(id);
+                    console.log('DEBUG::::: task:');
+                    console.log(task);
                 }
             }
             catch (error) {
@@ -73,31 +78,27 @@ class dbAdapter {
         });
     }
     addTask(cmd) {
-        try {
-            this.tasks.insertOne({ 'cmd': cmd });
-            console.log('inserted new task successfully!');
-        }
-        catch (error) {
-            console.log('error adding task to db!');
-            console.error(error);
-        }
-    }
-    findTask(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                this.tasks.findOne({ _id: new mongodb_1.ObjectId(id) }, (err, result) => {
-                    console.log(":DDD");
-                    console.log(result);
-                });
-                // const result = await this.tasks.findOne({_id: id})
-                // if (result)
-                // {
-                //     console.log("found task with message:")
-                //     console.log(result)
-                // }
-                // else {
-                //     console.log("couldn't find anything pepehands")
-                // }
+                let result = yield this.tasks.insertOne({ 'cmd': cmd });
+                console.log('inserted new task successfully!');
+                return result.insertedId.toString();
+            }
+            catch (error) {
+                console.log('error adding task to db!');
+                console.error(error);
+                return "ERROR";
+            }
+        });
+    }
+    getTask(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const task = yield this.tasks.findOne({ _id: new mongodb_1.ObjectId(id) });
+                if (task != null) {
+                    return task;
+                }
+                return undefined;
             }
             catch (error) {
                 console.log('error finding task with id!');
