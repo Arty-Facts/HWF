@@ -1,0 +1,49 @@
+namespace schema;
+ 
+table Message {
+    type:int;
+    task:Task; 
+    get_results:GetResults;
+    get_hardware_pool:GetHardwarePool;
+}
+
+//type 1
+table Task {
+    stages:[Stage]; //Be sure to create a vector that can store several Stages
+    artifacts:[string];
+}
+
+//Should never be sent on its own (always nest in a Task)
+table Stage {
+    name:string;
+    data:[byte];
+    cmd_list:[string];
+    track_time:bool = true;
+    track_ram:bool = false;
+    track_cpu:bool = false;
+    track_gpu:bool = false;
+    comment:string;
+
+}
+
+//type 2
+table GetResults {
+    id_list:[int]; //id data-type TBD
+    
+}
+
+//type 3
+table GetHardwarePool {
+    hardware:[string];
+}
+
+root_type Message;
+
+//Skicka result också
+
+
+//5 - Används denna?
+// table Get {
+//     hardware:[string];
+// }
+

@@ -8,17 +8,17 @@ test1 = HWF.CreateTask(
                ],
         cmd = [ "curl http://internal.url.get.stuff", # if a list run one at the time
                 "run cmd"
-              ],
+              ]
         timeit = True,
         comment="extre info store in db and web"
     ),
     HWF.Stage(
         name = "run cool stuff",
-        cmd = "run.exe in.raw out.raw > log.txt", # run the command
+        cmd = "run.exe in.raw out.raw > log.txt" # run the command
         timeit = True,
         ram_usage = True,
         comment="extre info store in db and web"
-    ),
+    )
     HWF.Artifacts( # get some files back
         "log.txt",
         "out.raw"
@@ -37,7 +37,7 @@ with HWF.Hub(ip_address="xx.xxx.xxx.xx") as hub:
 # disconect from the hub
 
 hub = HWF.hub(ip_address="xx.xxx.xxx.xx") # connect to the hub 
-for result in hub.get_jobs(id_test, wait=True): # get the jobs with strategy first done first served, if wait=True wait for a job to be done, else skip if not done.
+for result in hub.get_results(id_test, wait=True): # get the jobs with strategy first done first served, if wait=True wait for a job to be done, else skip if not done.
     if result.exit_code != 0:
         print(result.stderr)
         continue
