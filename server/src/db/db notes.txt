@@ -1,0 +1,35 @@
+Task:
+
+id: -
+stages:
+[{
+	name: -
+	data: -
+	cmd: []
+	timeit: - (true/false)
+	ram_usage: -
+	comment: -
+
+    # status?: -
+
+}]
+
+artifacts: []
+
+
+> db.tasks.find()
+{ "_id" : ObjectId("6230b33974d1c0cf80fa8aec"), "stages" : [], "artifacts": [] }
+{ "_id" : ObjectId("6230b33974d1c0cf80fa8aec"), "stages" : [
+    {
+        "name": "test",
+        "data": "idk",
+        "cmd": ["echo hello world", "ls", "rm trash.txt"],
+        "timeit": true,
+        "ram_usage": true,
+        "comment": "delete this",
+
+        "status": "done",
+        "time_started": "2024-09-11",
+        "time_ended": "2028-04-25"
+        }
+    ], "artifacts": ["log.txt", "out.png"] }
