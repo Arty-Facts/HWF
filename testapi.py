@@ -2,9 +2,24 @@
 
 from venv import create
 import flatbuffers
-import HWFMessage
-import requests
+#import HWFMessage
+#import requests
 from websocket import create_connection
+
+
+# from ..schema.GetHardwarePool import GetHardwarePool as GetHardwarePool
+# from ..schema.GetJobs import GetJobs as GetJobs
+# from ..schema.Message import Message as GetHardwarePool
+# from ..schema.Task import Task
+# from ..schema.Stage import Stage
+
+
+
+import schema.GetHardwarePool as GetHardwarePool
+import schema.GetJobs as GetJobs
+import schema.Message as Message
+import schema.Task as Task
+import schema.Stage as Stage
 
 binFile = "dataToSend.bin"
 ImgFile = "hellgo.png"
@@ -14,6 +29,61 @@ headers = {
     }
 
 # Creates a HWFMessage with param info, returns builder output
+
+def createBuffer():
+
+    stage_amount = 2
+    cmd_amount = 1
+
+    cmdo = "I'm the first stage"
+    
+    builder = flatbuffers.Builder(1024)
+
+    cmd = builder.CreateString(cmdo)
+    
+    Stage.StartCmdListVector(builder, cmd_amount)
+    builder.PrependUOffsetTRelative(cmd)
+    cmdVector = builder.EndVector()
+    Stage.Start(builder)
+    Stage.AddCmdList(builder, cmdVector)
+    stage = Stage.End(builder)
+
+
+    cmdo = "I'm the second stage"
+
+    cmd = builder.CreateString(cmdo)
+
+    Stage.StartCmdListVector(builder, cmd_amount)
+    builder.PrependUOffsetTRelative(cmd)
+    cmdVector = builder.EndVector()
+    Stage.Start(builder)
+    Stage.AddCmdList(builder, cmdVector)
+    stage2 = Stage.End(builder)
+
+
+   
+    Task.StartStagesVector(builder, stage_amount)
+    builder.PrependUOffsetTRelative(stage2)
+    builder.PrependUOffsetTRelative(stage)
+    stages = builder.EndVector()
+
+    Task.Start(builder)
+    Task.AddStages(builder, stages)
+    task = Task.End(builder)
+
+
+    Message.Start(builder)
+    Message.AddType(builder, 1)
+    Message.AddTask(builder, task)
+    message = Message.End(builder)
+
+    builder.Finish(message)
+    buf = builder.Output()
+
+    ws = create_connection("ws://localhost:3001")
+    ws.send_binary(buf)  
+    return 0
+    
 def build_binary_message(_agentId, _cmd, _srcFile):
     fbb = flatbuffers.Builder(1024)
 
@@ -88,7 +158,8 @@ def SendBinary(srcFile):
 
 def send_request(cmd, filename):
     temp_agent_id = 1
-    buf = build_binary_message(temp_agent_id, cmd, filename)
+    buf = createBuffer()
+    #buf = build_binary_message(temp_agent_id, cmd, filename)
 
     # create bin file from message
     global binFile
@@ -107,4 +178,5 @@ if __name__ == "__main__":
     # what cmd command to run?
 
     # what file to send?
-    send_request("echo hello world", "hellgo.png")
+    createBuffer()
+    #send_request("echo hello world", "hellgo.png")

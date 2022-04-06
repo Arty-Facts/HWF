@@ -210,20 +210,20 @@ function sendToAgent(data:Uint8Array) {
 
         try {
             // send data onwards to agent
-            named_agent.send(data)
+            (named_agent as WebSocket).send(data)
             console.log(`Data sent to agent ${named_agent.id}`)
 
             // save task to database
-            let buf = new flatbuffers.ByteBuffer(data)
-            let msg = Message.getRootAsMessage(buf)
+            // let buf = new flatbuffers.ByteBuffer(data)
+            // let msg = Message.getRootAsMessage(buf)
 
-            // TO-DO: change this back once schema cmd is a list
-            //let message = msg.cmd()
+            // // TO-DO: change this back once schema cmd is a list
+            // //let message = msg.cmd()
 
-            let message = ["echo debug cmd until", "echo schema fixed"]
-            if (message !== null){
-                db.addTask(message)
-            }
+            // let message = ["echo debug cmd until", "echo schema fixed"]
+            // if (message !== null){
+            //     db.addTask(message)
+            // }
 
             return 200
         }

@@ -3,11 +3,9 @@ package main
 import (
 	//"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/url"
 
-	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
 	message "test.com/test"
 )
@@ -77,39 +75,51 @@ func send_message(connection *websocket.Conn, msg []byte) {
 func read_message(msg []byte) {
 
 	test := message.GetRootAsMessage(msg, 0)
-	var arr = make([]byte, test.DataLength())
+	//var arr = make([]byte, test.DataLength())
 
+	msgType := test.Type()
+
+	if msgType == 1 {
+
+		msgTask := test.Task(new(message.Task))
+		msgStage := new(message.Stage)
+		//msgStage :=
+		msgTask.Stages(msgStage, 0)
+		msgCmd := msgStage.CmdList(0)
+		//msgStage.CmdList(new(message.CmdList), 0)
+		fmt.Println(string(msgCmd))
+	}
 	// save all bytes in Data array to arr
-	for i := 0; i < test.DataLength(); i++ {
-		arr[i] = byte(test.Data(i))
-	}
+	// for i := 0; i < test.DataLength(); i++ {
+	// 	arr[i] = byte(test.Data(i))
+	// }
 
-	// save arr to file "hellgo.png"
-	err := ioutil.WriteFile("hellgo.png", arr, 0644)
+	// // save arr to file "hellgo.png"
+	// err := ioutil.WriteFile("hellgo.png", arr, 0644)
 
-	if err != nil {
-		fmt.Println("ERROR WRITING FILE")
-		log.Fatal(err)
-	}
+	// if err != nil {
+	// 	fmt.Println("ERROR WRITING FILE")
+	// 	log.Fatal(err)
+	// }
 
-	// print the contents of cmd
-	fmt.Println(string(test.Cmd()))
+	// // print the contents of cmd
+	// fmt.Println(string(test.Cmd()))
 }
 
-func write_message(msg string) []byte {
+// func write_message(msg string) []byte {
 
-	builder := flatbuffers.NewBuilder(1024)
-	hello := builder.CreateString(msg)
-	hi := builder.CreateString("")
+// 	builder := flatbuffers.NewBuilder(1024)
+// 	hello := builder.CreateString(msg)
+// 	hi := builder.CreateString("")
 
-	message.MessageStart(builder)
-	message.MessageAddAgentId(builder, hi)
-	message.MessageAddCmd(builder, hello)
-	binMsg := message.MessageEnd(builder)
-	builder.Finish(binMsg)
-	buf := builder.FinishedBytes()
-	return buf
-}
+// 	message.MessageStart(builder)
+// 	message.MessageAddAgentId(builder, hi)
+// 	message.MessageAddCmd(builder, hello)
+// 	binMsg := message.MessageEnd(builder)
+// 	builder.Finish(binMsg)
+// 	buf := builder.FinishedBytes()
+// 	return buf
+// }
 
 // WIP
 
