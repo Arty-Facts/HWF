@@ -1,6 +1,6 @@
 from . import HWF
 
-test1 = HWF.CreateTask(
+test1 = HWF.Task(
     HWF.Stage( # a stage has a name that is stored in db and web 
         name = "setup",
         data = [ HWF.data( path="path/to/image.raw", name="in.raw"),

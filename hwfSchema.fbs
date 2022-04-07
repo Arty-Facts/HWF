@@ -28,7 +28,7 @@ table Task {
 
 //type 2
 table GetResults {
-    id_list:[int]; //id data-type TBD
+    id_list:[string];
     
 }
 
