@@ -3,7 +3,7 @@ namespace schema;
 table Message {
     type:int; //Determines which table the following data will be treated as
     task:Task; 
-    get_results:GetResults;
+    get_result:GetResult;
     get_hardware_pool:GetHardwarePool;
 }
 
@@ -27,7 +27,7 @@ table Task {
 }
 
 //type 2
-table GetResults {
+table GetResult {
     id_list:[string];
     
 }

@@ -5,7 +5,7 @@ from websocket import create_connection
 sys.path.append("../../.") #Append project root directory so importing from schema works
 
 import schema.GetHardwarePool as GetHardwarePool
-import schema.GetJobs as GetJobs
+import schema.GetResult as GetResult
 import schema.Message as Message
 import schema.Task as Task
 import schema.Stage as Stage

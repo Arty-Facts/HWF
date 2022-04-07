@@ -43,12 +43,12 @@ class Message(object):
         return None
 
     # Message
-    def GetJobs(self):
+    def GetResult(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             x = self._tab.Indirect(o + self._tab.Pos)
-            from schema.GetJobs import GetJobs
-            obj = GetJobs()
+            from schema.GetResult import GetResult
+            obj = GetResult()
             obj.Init(self._tab.Bytes, x)
             return obj
         return None
@@ -76,10 +76,10 @@ def AddTask(builder, task): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.n
 def MessageAddTask(builder, task):
     """This method is deprecated. Please switch to AddTask."""
     return AddTask(builder, task)
-def AddGetJobs(builder, getJobs): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(getJobs), 0)
-def MessageAddGetJobs(builder, getJobs):
-    """This method is deprecated. Please switch to AddGetJobs."""
-    return AddGetJobs(builder, getJobs)
+def AddGetResult(builder, getResult): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(getResult), 0)
+def MessageAddGetResult(builder, getResult):
+    """This method is deprecated. Please switch to AddGetResult."""
+    return AddGetResult(builder, getResult)
 def AddGetHardwarePool(builder, getHardwarePool): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(getHardwarePool), 0)
 def MessageAddGetHardwarePool(builder, getHardwarePool):
     """This method is deprecated. Please switch to AddGetHardwarePool."""

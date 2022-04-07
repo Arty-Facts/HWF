@@ -37,7 +37,7 @@ with HWF.Hub(ip_address="xx.xxx.xxx.xx") as hub:
 # disconect from the hub
 
 hub = HWF.hub(ip_address="xx.xxx.xxx.xx") # connect to the hub 
-for result in hub.get_results(id_test, wait=True): # get the jobs with strategy first done first served, if wait=True wait for a job to be done, else skip if not done.
+for result in hub.get_result(id_test, wait=True): # get the jobs with strategy first done first served, if wait=True wait for a job to be done, else skip if not done.
     if result.exit_code != 0:
         print(result.stderr)
         continue

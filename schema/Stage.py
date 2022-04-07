@@ -83,7 +83,7 @@ class Stage(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
         if o != 0:
             return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
-        return False
+        return True
 
     # Stage
     def TrackRam(self):
@@ -137,7 +137,7 @@ def StartCmdListVector(builder, numElems): return builder.StartVector(4, numElem
 def StageStartCmdListVector(builder, numElems):
     """This method is deprecated. Please switch to Start."""
     return StartCmdListVector(builder, numElems)
-def AddTrackTime(builder, trackTime): builder.PrependBoolSlot(3, trackTime, 0)
+def AddTrackTime(builder, trackTime): builder.PrependBoolSlot(3, trackTime, 1)
 def StageAddTrackTime(builder, trackTime):
     """This method is deprecated. Please switch to AddTrackTime."""
     return AddTrackTime(builder, trackTime)
