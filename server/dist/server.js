@@ -35,8 +35,6 @@ const http = __importStar(require("http"));
 const ws = __importStar(require("ws"));
 const express_1 = __importDefault(require("express"));
 const url = __importStar(require("url"));
-const flatbuffers = __importStar(require("flatbuffers"));
-const message_1 = require("./message");
 const bodyparser = __importStar(require("body-parser"));
 const mongo_db_1 = require("./db/mongo_db");
 const cors_1 = __importDefault(require("cors"));
@@ -152,16 +150,18 @@ function sendToAgent(data) {
     if (agent) {
         let named_agent = agent;
         try {
-            // Send data onwards to agent
+            // send data onwards to agent
             named_agent.send(data);
             console.log(`Data sent to agent ${named_agent.id}`);
             // save task to database
-            let buf = new flatbuffers.ByteBuffer(data);
-            let msg = message_1.Message.getRootAsMessage(buf);
-            let message = msg.cmd();
-            if (message !== null) {
-                db.addTask(message);
-            }
+            // let buf = new flatbuffers.ByteBuffer(data)
+            // let msg = Message.getRootAsMessage(buf)
+            // // TO-DO: change this back once schema cmd is a list
+            // //let message = msg.cmd()
+            // let message = ["echo debug cmd until", "echo schema fixed"]
+            // if (message !== null){
+            //     db.addTask(message)
+            // }
             return 200;
         }
         catch (err) {

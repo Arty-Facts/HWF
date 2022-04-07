@@ -12,7 +12,7 @@ def main():
     subprocess.run(["gnome-terminal", "-e", "npm start"])
     time.sleep(1)
     os.chdir("../python_api")
-    subprocess.run(["gnome-terminal", "-e", "python3 testapi.py"])
+    subprocess.run(["gnome-terminal", "-e", "python3 testapi2.py"])
 
 if __name__ == "__main__":
     main()

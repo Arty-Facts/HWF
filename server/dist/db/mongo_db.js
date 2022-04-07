@@ -63,10 +63,18 @@ class dbAdapter {
                     //this.DeleteTask("622b28ede0fadc37259f536e")
                     // this.UpdateTask("622b297f01b58c4489a0d7b5", "test!!!!")
                     // DEBUG:try adding, getting tasks...
-                    let id = yield this.addTask("hello world!");
+                    //let id = await this.addTask(["hello world!"])
+                    //let task = await this.getTask(id)
+                    //console.log('DEBUG::::: task:')
+                    //console.log(task)
+                    console.log('DEBUG STAGES:::::::: :D');
+                    let id = yield this.addTask(["hello world!"]);
                     let task = yield this.getTask(id);
-                    console.log('DEBUG::::: task:');
-                    console.log(task);
+                    console.log("task:");
+                    console.log(yield this.getTask(id));
+                    yield this.addStage(id, "testing...", true, ["hello world", "bye"], true, "bla bleh bla");
+                    console.log("updated:");
+                    console.log(yield this.getTask(id));
                 }
             }
             catch (error) {
@@ -77,10 +85,35 @@ class dbAdapter {
             //this.tasks = this.db.collection(process.env.TASKS_NAME)
         });
     }
+    addDaemon(ip) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let id;
+            let result = yield this.daemons.insertOne({ 'ip': ip });
+            return result.insertedId.toString();
+        });
+    }
+    // to-do: finish this, it's copypaste from gettask atm
+    getDaemon(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const agent = yield this.daemons.findOne({ _id: new mongodb_1.ObjectId(id) });
+                if (agent != null) {
+                    return agent;
+                }
+                return undefined;
+            }
+            catch (error) {
+                console.log('error finding agent with id!');
+                console.error(error);
+            }
+        });
+    }
+    //to-do: remove cmd since its now a part of stages instead of tasks
     addTask(cmd) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let result = yield this.tasks.insertOne({ 'cmd': cmd });
+                // to-do: remove cmd from tasks - move to stages
+                let result = yield this.tasks.insertOne({ 'cmd': cmd, 'stages': [], 'artifacts': [] });
                 console.log('inserted new task successfully!');
                 return result.insertedId.toString();
             }
@@ -103,29 +136,33 @@ class dbAdapter {
             catch (error) {
                 console.log('error finding task with id!');
                 console.error(error);
+                return undefined;
             }
         });
     }
-    DeleteTask(id) {
-        try {
-            this.tasks.deleteOne({ _id: new mongodb_1.ObjectId(id) });
-            const result = this.tasks.deleteOne({ _id: id });
-            if (result) {
-                console.log("deleted a task");
-                console.log(result);
+    deleteTask(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                this.tasks.deleteOne({ _id: new mongodb_1.ObjectId(id) });
+                const result = this.tasks.deleteOne({ _id: id });
+                if (result) {
+                    console.log("deleted a task");
+                    console.log(result);
+                }
+                else {
+                    console.log("deleting failed");
+                }
             }
-            else {
-                console.log("deleting failed");
+            catch (error) {
+                console.log('wrong id');
+                console.error(error);
             }
-        }
-        catch (error) {
-            console.log('wrong id');
-            console.error(error);
-        }
+        });
     }
-    UpdateTask(id, command) {
+    //to-do: remove cmd since its now a part of stages instead of tasks
+    updateTask(id, cmd) {
         try {
-            this.tasks.updateOne({ _id: new mongodb_1.ObjectId(id) }, { $set: { 'cmd': command } });
+            this.tasks.updateOne({ _id: new mongodb_1.ObjectId(id) }, { $set: { 'cmd': cmd, 'stages': [], 'artifacts': [] } });
             console.log("updated task successfully :)");
         }
         catch (error) {
@@ -133,11 +170,30 @@ class dbAdapter {
             console.error(error);
         }
     }
-    addDaemon(ip) {
+    getStages(task_id) {
         return __awaiter(this, void 0, void 0, function* () {
-            let id;
-            let result = yield this.daemons.insertOne({ 'ip': ip });
-            return result.insertedId.toString();
+            // let testmap:Record<string, any>[]
+            // testmap = []
+            const task = yield this.tasks.findOne({ _id: new mongodb_1.ObjectId(task_id) });
+            if (task != null) {
+                return task['stages'];
+            }
+            return [];
+        });
+    }
+    addStage(task_id, name, data, cmd, timeit, comment) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const stages = yield this.getStages(task_id);
+                stages.push({ 'name': name, 'data': data, 'cmd': cmd, 'timeit': timeit, 'comment': comment });
+                console.log("tasks stages......:");
+                console.log(stages);
+                yield this.tasks.updateOne({ _id: new mongodb_1.ObjectId(task_id) }, { $set: { 'stages': stages } });
+            }
+            catch (error) {
+                console.log('error adding stage to task');
+                console.error(error);
+            }
         });
     }
     addResult(daemon, status, timestamp) {
