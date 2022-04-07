@@ -1,19 +1,8 @@
-#apiapaidpaisid
-
-from venv import create
 import flatbuffers
-#import HWFMessage
-#import requests
+import sys
 from websocket import create_connection
 
-
-# from ..schema.GetHardwarePool import GetHardwarePool as GetHardwarePool
-# from ..schema.GetJobs import GetJobs as GetJobs
-# from ..schema.Message import Message as GetHardwarePool
-# from ..schema.Task import Task
-# from ..schema.Stage import Stage
-
-
+sys.path.append("../../.") #Append project root directory so importing from schema works
 
 import schema.GetHardwarePool as GetHardwarePool
 import schema.GetJobs as GetJobs
@@ -30,7 +19,7 @@ headers = {
 
 # Creates a HWFMessage with param info, returns builder output
 
-def createBuffer():
+def createAndSendBuffer():
 
     stage_amount = 2
     cmd_amount = 1
@@ -81,32 +70,33 @@ def createBuffer():
     buf = builder.Output()
 
     ws = create_connection("ws://localhost:3001")
-    ws.send_binary(buf)  
+    ws.send_binary(buf)
+
     return 0
     
-def build_binary_message(_agentId, _cmd, _srcFile):
-    fbb = flatbuffers.Builder(1024)
+# def build_binary_message(_agentId, _cmd, _srcFile):
+#     fbb = flatbuffers.Builder(1024)
 
-    # create cmd string
-    cmd = fbb.CreateString(_cmd)
+#     # create cmd string
+#     cmd = fbb.CreateString(_cmd)
 
-    # create srcfile byte arr
-    with open(_srcFile, "rb") as bin:
-        readBytes = bin.read()
+#     # create srcfile byte arr
+#     with open(_srcFile, "rb") as bin:
+#         readBytes = bin.read()
 
-    byteVector = fbb.CreateByteVector(readBytes)
+#     byteVector = fbb.CreateByteVector(readBytes)
     
 
-    HWFMessage.MessageStart(fbb)
+#     HWFMessage.MessageStart(fbb)
 
-    # agent id is temporary since server doesn't assign tasks yet
-    HWFMessage.MessageAddAgentId(fbb, _agentId)
-    HWFMessage.MessageAddCmd(fbb, cmd)
-    HWFMessage.MessageAddData(fbb, byteVector)
+#     # agent id is temporary since server doesn't assign tasks yet
+#     HWFMessage.MessageAddAgentId(fbb, _agentId)
+#     HWFMessage.MessageAddCmd(fbb, cmd)
+#     HWFMessage.MessageAddData(fbb, byteVector)
 
-    readyMsg = HWFMessage.MessageEnd(fbb)
-    fbb.Finish(readyMsg)
-    return fbb.Output()
+#     readyMsg = HWFMessage.MessageEnd(fbb)
+#     fbb.Finish(readyMsg)
+#     return fbb.Output()
 
 """""
 # Creates a bin file containing a target agent id and a string.
@@ -156,21 +146,23 @@ def SendBinary(srcFile):
     ws.send_binary(buf)
 """
 
-def send_request(cmd, filename):
-    temp_agent_id = 1
-    buf = createBuffer()
-    #buf = build_binary_message(temp_agent_id, cmd, filename)
+# def send_request(cmd, filename):
+#     temp_agent_id = 1
+#     buf = createBuffer()
+#     #buf = build_binary_message(temp_agent_id, cmd, filename)
 
-    # create bin file from message
-    global binFile
-    with open(binFile, "wb") as bin:
-        bin.write(buf)
+#     # create bin file from message
+#     global binFile
+#     with open(binFile, "wb") as bin:
+#         bin.write(buf)
 
-    ws = create_connection("ws://localhost:3001")
-    ws.send_binary(buf)  
+#     ws = create_connection("ws://localhost:3001")
+#     ws.send_binary(buf)  
 
 
 if __name__ == "__main__":
+
+    createAndSendBuffer()
     # CreateBinary(binFile)
     # SendBinary(binFile)
     # SendBinaryFromSourceFile(ImgFile)
@@ -178,5 +170,5 @@ if __name__ == "__main__":
     # what cmd command to run?
 
     # what file to send?
-    createBuffer()
+    
     #send_request("echo hello world", "hellgo.png")

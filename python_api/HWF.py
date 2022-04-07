@@ -15,8 +15,8 @@ class Stage:
                  name = None,
                  data = None,
                  cmd = None,
-                 timeit = True,
-                 ram_usage = True,
+                 track_time = True,
+                 track_ram = True,
                  track_cpu = False,
                  track_gpu = False,
 

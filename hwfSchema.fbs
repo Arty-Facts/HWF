@@ -1,16 +1,10 @@
 namespace schema;
  
 table Message {
-    type:int;
+    type:int; //Determines which table the following data will be treated as
     task:Task; 
     get_results:GetResults;
     get_hardware_pool:GetHardwarePool;
-}
-
-//type 1
-table Task {
-    stages:[Stage]; //Be sure to create a vector that can store several Stages
-    artifacts:[string];
 }
 
 //Should never be sent on its own (always nest in a Task)
@@ -26,6 +20,12 @@ table Stage {
 
 }
 
+//type 1
+table Task {
+    stages:[Stage]; //Be sure to create a vector that can store several Stages
+    artifacts:[string];
+}
+
 //type 2
 table GetResults {
     id_list:[int]; //id data-type TBD
@@ -39,10 +39,10 @@ table GetHardwarePool {
 
 root_type Message;
 
-//Skicka result också
+//TODO: Create new table for results, or add result field to other tables?
 
 
-//5 - Används denna?
+//4 - Is this used?
 // table Get {
 //     hardware:[string];
 // }
