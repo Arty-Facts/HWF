@@ -8,7 +8,7 @@ import * as  url from "url"
 import { ParsedUrlQuery } from "querystring";
 import * as flatbuffers from "flatbuffers"
 import * as fs from "fs"
-import { Message } from "./message"
+import { Message } from "./message_generated"
 import { HelloWorld } from "./schema_generated"
 import * as bodyparser from "body-parser";
 import { dbAdapter } from "./db/mongo_db"
@@ -70,7 +70,7 @@ class Task {
     id:string; // <- should we have an id for each task?
     timestamp:string;
 
-    cmd:string;
+    cmd:string[];
     files:string[];
 
     // if the task has been assigned:
@@ -217,13 +217,16 @@ function sendToAgent(data:Uint8Array) {
             // let buf = new flatbuffers.ByteBuffer(data)
             // let msg = Message.getRootAsMessage(buf)
 
-            // // TO-DO: change this back once schema cmd is a list
-            // //let message = msg.cmd()
+            // get all commands from flatbuffer
+            let commands:string[] = [];
+            for (let i = 0; i < msg.cmdLength(); i++){
+                commands[i] = msg.cmd(i)
+                console.log(`Read cmd: ${msg.cmd(i)}`)
+            }
 
-            // let message = ["echo debug cmd until", "echo schema fixed"]
-            // if (message !== null){
-            //     db.addTask(message)
-            // }
+            if (commands !== null){
+                db.addTask(commands)
+            }
 
             return 200
         }
