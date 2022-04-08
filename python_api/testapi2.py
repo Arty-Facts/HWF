@@ -3,7 +3,7 @@ import HWF
 task1 = HWF.Task(
     HWF.Stage(
         name = "Olof",
-        cmd = "ls -la > log.txt", # run the command
+        cmd = ["ls -la > log.txt","echo cat"], # run the command
         comment = "Bananas are an excellent source of potassium."
     ),
     HWF.Artifacts( # get some files back

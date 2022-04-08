@@ -225,13 +225,22 @@ function sendToAgent(data:Uint8Array) {
                 if (fbTask == null){return 1}
                 for (let stage = 0; stage < fbTask.stagesLength(); stage++) {
                     let fbStage = fbTask.stages(stage)
+                    console.log("outer loop....")
+                    console.log(fbTask.stagesLength())
+                    console.log(stage)
 
                     for (let cmd = 0; cmd < fbStage!.cmdListLength(); cmd++) {
-                      stageCommands.push(fbStage!.cmdList(cmd))
-                       
+                        stageCommands.push(fbStage!.cmdList(cmd))
+                      console.log("inner loop....")
+                      console.log(fbStage!.cmdListLength())
+                      console.log(fbStage!.cmdList(cmd))
+                       console.log(cmd)
+                        console.log(cmd < fbStage!.cmdListLength())
                     }
                     
                 }
+                console.log("after loops....")
+
 
                 if (stageCommands !== null){
                     db.addTask(stageCommands)
@@ -385,7 +394,7 @@ app.post('/sendToAgent', bodyparser.raw(), (req:Request,res:Response) => {
 
 
     //res.sendStatus(sendToAgent(reqBodyBytes, agentId))
-    res.sendStatus(sendToAgent(reqBodyBytes))
+    // res.sendStatus(sendToAgent(reqBodyBytes))
     
 })
 

@@ -1,11 +1,7 @@
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -171,10 +167,19 @@ function sendToAgent(data) {
                 }
                 for (let stage = 0; stage < fbTask.stagesLength(); stage++) {
                     let fbStage = fbTask.stages(stage);
+                    console.log("outer loop....");
+                    console.log(fbTask.stagesLength());
+                    console.log(stage);
                     for (let cmd = 0; cmd < fbStage.cmdListLength(); cmd++) {
                         stageCommands.push(fbStage.cmdList(cmd));
+                        console.log("inner loop....");
+                        console.log(fbStage.cmdListLength());
+                        console.log(fbStage.cmdList(cmd));
+                        console.log(cmd);
+                        console.log(cmd < fbStage.cmdListLength());
                     }
                 }
+                console.log("after loops....");
                 if (stageCommands !== null) {
                     db.addTask(stageCommands);
                 }
@@ -300,7 +305,7 @@ app.post('/sendToAgent', bodyparser.raw(), (req, res) => {
     //let msg = Message.getRootAsMessage(buf)
     //let agentId:string|null = msg.agentId()
     //res.sendStatus(sendToAgent(reqBodyBytes, agentId))
-    res.sendStatus(sendToAgent(reqBodyBytes));
+    // res.sendStatus(sendToAgent(reqBodyBytes))
 });
 /*
 // :D

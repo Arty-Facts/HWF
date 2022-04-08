@@ -201,11 +201,12 @@ def fb_build_stage(builder, stage):
         if type(stage.cmd) == list:
             for cmd in stage.cmd:
                 cmd_serialized.append(builder.CreateString(cmd))
-                
+            
+            FbStage.StartCmdListVector(builder, len(stage.cmd))
+
         else:
             cmd_serialized.append(builder.CreateString(stage.cmd))
-
-        FbStage.StartCmdListVector(builder, len(stage.cmd))
+            FbStage.StartCmdListVector(builder,1)
 
         for item in cmd_serialized:
             builder.PrependUOffsetTRelative(item)
