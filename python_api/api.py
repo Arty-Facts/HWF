@@ -1,6 +1,6 @@
 from . import HWF
 
-test1 = HWF.CreateTask(
+test1 = HWF.Task(
     HWF.Stage( # a stage has a name that is stored in db and web 
         name = "setup",
         data = [ HWF.data( path="path/to/image.raw", name="in.raw"),
@@ -9,14 +9,14 @@ test1 = HWF.CreateTask(
         cmd = [ "curl http://internal.url.get.stuff", # if a list run one at the time
                 "run cmd"
               ]
-        timeit = True,
+        track_time = True,
         comment="extre info store in db and web"
     ),
     HWF.Stage(
         name = "run cool stuff",
         cmd = "run.exe in.raw out.raw > log.txt" # run the command
-        timeit = True,
-        ram_usage = True,
+        track_time = True,
+        track_ram = True,
         comment="extre info store in db and web"
     )
     HWF.Artifacts( # get some files back
@@ -37,7 +37,7 @@ with HWF.Hub(ip_address="xx.xxx.xxx.xx") as hub:
 # disconect from the hub
 
 hub = HWF.hub(ip_address="xx.xxx.xxx.xx") # connect to the hub 
-for result in hub.get_jobs(id_test, wait=True): # get the jobs with strategy first done first served, if wait=True wait for a job to be done, else skip if not done.
+for result in hub.get_result(id_test, wait=True): # get the jobs with strategy first done first served, if wait=True wait for a job to be done, else skip if not done.
     if result.exit_code != 0:
         print(result.stderr)
         continue

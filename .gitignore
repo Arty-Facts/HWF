@@ -5,6 +5,7 @@ server/node_modules
 node_modules/
 server/*.*~
 env/
-
+server/**.js
+python_api/__pycache__/
 hwf
 hwf.pub

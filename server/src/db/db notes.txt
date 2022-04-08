@@ -1,0 +1,56 @@
+Task:
+
+id: -
+stages:
+[{
+	name: -
+	data: -
+	cmd: []
+
+    comment: -
+    status: string
+
+	track_time: - (true/false)
+    track_ram:
+    track_cpu:
+    track_gpu:
+
+    time_started: -
+    time_finished: -
+
+	ram_usage: -
+    cpu_usage: -
+    gpu_usage: -
+}]
+
+table Stage {
+    name:string;
+    data:[byte];
+    cmd_list:[string];
+    track_time:bool = true;
+    track_ram:bool = false;
+    track_cpu:bool = false;
+    track_gpu:bool = false;
+    comment:string;
+
+}
+
+artifacts: []
+
+
+> db.tasks.find()
+{ "_id" : ObjectId("6230b33974d1c0cf80fa8aec"), "stages" : [], "artifacts": [] }
+{ "_id" : ObjectId("6230b33974d1c0cf80fa8aec"), "stages" : [
+    {
+        "name": "test",
+        "data": "idk",
+        "cmd": ["echo hello world", "ls", "rm trash.txt"],
+        "timeit": true,
+        "ram_usage": true,
+        "comment": "delete this",
+
+        "status": "done",
+        "time_started": "2024-09-11",
+        "time_ended": "2028-04-25"
+        }
+    ], "artifacts": ["log.txt", "out.png"] }

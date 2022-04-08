@@ -10,4 +10,4 @@ require (
 
 //require github.com/google/flatbuffers v2.0.6+incompatible // indirect
 
-replace test.com/test => ./Message
+replace test.com/test => ./schema

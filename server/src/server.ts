@@ -8,8 +8,8 @@ import * as  url from "url"
 import { ParsedUrlQuery } from "querystring";
 import * as flatbuffers from "flatbuffers"
 import * as fs from "fs"
-import { Message } from "./message_generated"
-import { HelloWorld } from "./schema_generated"
+import { schema } from "./hwfSchema_generated"
+
 import * as bodyparser from "body-parser";
 import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
@@ -27,8 +27,6 @@ const userWss = new ws.Server({server:userServer})
 const db = new dbAdapter()
 
 app.use(express.json())
-
-// TODO: Implement cors? Is it even needed?
 
 app.use(cors({
      origin:"*",
@@ -209,26 +207,56 @@ function sendToAgent(data:Uint8Array) {
         let named_agent = (agent as unknown as NamedWebSocket)
 
         try {
-            // Send data onwards to agent
-            named_agent.send(data)
+            // send data onwards to agent
+            (named_agent as WebSocket).send(data)
             console.log(`Data sent to agent ${named_agent.id}`)
+
+            //Wait for acknowledgement from demon before saving task in db maybe?
 
             // save task to database
             let buf = new flatbuffers.ByteBuffer(data)
-            let msg = Message.getRootAsMessage(buf)
+            let fbMessage = schema.Message.getRootAsMessage(buf)
 
-            // get all commands from flatbuffer
-            let commands:string[] = [];
-            for (let i = 0; i < msg.cmdLength(); i++){
-                commands[i] = msg.cmd(i)
-                console.log(`Read cmd: ${msg.cmd(i)}`)
+            if (fbMessage.type() == 1) {
+                console.log("message type is 1. continuing...")
+                let stageCommands:string[] = []
+                let fbTask = fbMessage.task()
+                
+                if (fbTask == null){return 1}
+                for (let stage = 0; stage < fbTask.stagesLength(); stage++) {
+                    let fbStage = fbTask.stages(stage)
+                    console.log("outer loop....")
+                    console.log(fbTask.stagesLength())
+                    console.log(stage)
+
+                    for (let cmd = 0; cmd < fbStage!.cmdListLength(); cmd++) {
+                        stageCommands.push(fbStage!.cmdList(cmd))
+                      console.log("inner loop....")
+                      console.log(fbStage!.cmdListLength())
+                      console.log(fbStage!.cmdList(cmd))
+                       console.log(cmd)
+                        console.log(cmd < fbStage!.cmdListLength())
+                    }
+                    
+                }
+                console.log("after loops....")
+
+
+                if (stageCommands !== null){
+                    db.addTask(stageCommands)
+                }
+
+                // get all commands from flatbuf/fer
+                // let commands:string[] = [];
+                // for (let i = 0; i < message.Task.stagesLength(); i++){
+                //     commands[i] = message.cmd(i)
+                //     console.log(`Read cmd: ${message.cmd(i)}`)
+                // }
+
+                
+
+                return 200
             }
-
-            if (commands !== null){
-                db.addTask(commands)
-            }
-
-            return 200
         }
         catch (err) {
             console.error("Could not send data to agent")
@@ -366,7 +394,7 @@ app.post('/sendToAgent', bodyparser.raw(), (req:Request,res:Response) => {
 
 
     //res.sendStatus(sendToAgent(reqBodyBytes, agentId))
-    res.sendStatus(sendToAgent(reqBodyBytes))
+    // res.sendStatus(sendToAgent(reqBodyBytes))
     
 })
 
