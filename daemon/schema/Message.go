@@ -17,13 +17,6 @@ func GetRootAsMessage(buf []byte, offset flatbuffers.UOffsetT) *Message {
 	return x
 }
 
-func GetSizePrefixedRootAsMessage(buf []byte, offset flatbuffers.UOffsetT) *Message {
-	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
-	x := &Message{}
-	x.Init(buf, n+offset+flatbuffers.SizeUint32)
-	return x
-}
-
 func (rcv *Message) Init(buf []byte, i flatbuffers.UOffsetT) {
 	rcv._tab.Bytes = buf
 	rcv._tab.Pos = i
@@ -58,12 +51,12 @@ func (rcv *Message) Task(obj *Task) *Task {
 	return nil
 }
 
-func (rcv *Message) GetResults(obj *GetResults) *GetResults {
+func (rcv *Message) GetResult(obj *GetResult) *GetResult {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
 		x := rcv._tab.Indirect(o + rcv._tab.Pos)
 		if obj == nil {
-			obj = new(GetResults)
+			obj = new(GetResult)
 		}
 		obj.Init(rcv._tab.Bytes, x)
 		return obj
@@ -93,8 +86,8 @@ func MessageAddType(builder *flatbuffers.Builder, type_ int32) {
 func MessageAddTask(builder *flatbuffers.Builder, task flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(task), 0)
 }
-func MessageAddGetResults(builder *flatbuffers.Builder, getResults flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(getResults), 0)
+func MessageAddGetResult(builder *flatbuffers.Builder, getResult flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(getResult), 0)
 }
 func MessageAddGetHardwarePool(builder *flatbuffers.Builder, getHardwarePool flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(3, flatbuffers.UOffsetT(getHardwarePool), 0)

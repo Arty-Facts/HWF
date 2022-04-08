@@ -67,7 +67,7 @@ export class dbAdapter <T extends dbInterface> {
                 console.log("task:")
                 console.log(await this.getTask(id))
 
-                await this.addStage(id, "testing...", true, ["hello world", "bye"], true, "bla bleh bla")
+                await this.addStage(id, "testing...", ["hello world", "bye"], "comment",true, true, false,false)
                 console.log("updated:")
                 console.log(await this.getTask(id))
             }
@@ -192,7 +192,7 @@ export class dbAdapter <T extends dbInterface> {
         return []
     }
 
-    async addStage(task_id:string, name:string, data:boolean, cmd:string[], comment:string, 
+    async addStage(task_id:string, name:string, cmd:string[], comment:string, 
         track_time:boolean, track_ram:boolean, track_cpu:boolean, track_gpu:boolean): Promise<void> {
             
         try {
@@ -201,7 +201,7 @@ export class dbAdapter <T extends dbInterface> {
 
             // to-do: get actual time
             let time = '2022/4/20-13:37'
-            stages.push({'name': name, 'data': data, 'cmd': cmd, 'comment': comment, 'status': 'queued', 
+            stages.push({'name': name, 'cmd': cmd, 'comment': comment, 'status': 'queued', 
             'track_time': track_time, 'track_ram': track_ram, 'track_cpu': track_cpu, 'track_gpu': track_gpu, 
             'time_started': time, 'time_finished': 'N/A', 'ram_usage': 'N/A', 'cpu_usage': 'N/A', 'gpu_usage': 'N/A'});
 

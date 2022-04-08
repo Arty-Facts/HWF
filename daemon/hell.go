@@ -112,9 +112,21 @@ func read_message(msg []byte) {
 		msgStage := new(message.Stage)
 		//msgStage :=
 		msgTask.Stages(msgStage, 0)
-		msgCmd := msgStage.CmdList(0)
+
+		var results = make([][]byte, msgStage.CmdListLength())
+		for i := 0; i < msgStage.CmdListLength(); i++ {
+			fmt.Println(string(msgStage.CmdList(i)))
+			result := execute_command(msgStage.CmdList(i))
+			results[i] = result
+		}
+
+		for i, s := range results {
+			fmt.Println(i, s)
+		}
+
+		// msgCmd := msgStage.CmdList(0)
 		//msgStage.CmdList(new(message.CmdList), 0)
-		fmt.Println(string(msgCmd))
+		// fmt.Println(string(msgCmd))
 	}
 	// save all bytes in Data array to arr
 	// for i := 0; i < test.DataLength(); i++ {
@@ -125,19 +137,8 @@ func read_message(msg []byte) {
 	// err := ioutil.WriteFile("hellgo.png", arr, 0644)
 
 	// DEBUG: print the contents of cmd
-	fmt.Println("CMD commands:")
-
-	var results = make([][]byte, test.CmdLength())
-	for i := 0; i < test.CmdLength(); i++ {
-		fmt.Println(string(test.Cmd(i)))
-		result := execute_command(test.Cmd(i))
-		results[i] = result
-	}
-
 	// DEBUG: print the results
-	for i, s := range results {
-		fmt.Println(i, s)
-	}
+
 }
 
 // func write_message(msg string) []byte {

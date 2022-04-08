@@ -1,7 +1,0 @@
-table Message{
-    agent_id:string;
-    cmd:[string];
-    data:[byte];
-}
-
-root_type Message;

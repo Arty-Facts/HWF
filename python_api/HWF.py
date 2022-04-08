@@ -4,6 +4,7 @@ import sys
 import os
 
 sys.path.append(".")
+sys.path.append("../.")
 
 # script_dir = os.path.dirname( __file__ )
 # schema_dir = os.path.join( script_dir, '..', 'schema')

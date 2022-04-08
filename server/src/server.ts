@@ -8,8 +8,8 @@ import * as  url from "url"
 import { ParsedUrlQuery } from "querystring";
 import * as flatbuffers from "flatbuffers"
 import * as fs from "fs"
-import { Message } from "./message_generated"
-import { HelloWorld } from "./schema_generated"
+import { schema } from "./hwfSchema_generated"
+
 import * as bodyparser from "body-parser";
 import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
@@ -214,12 +214,12 @@ function sendToAgent(data:Uint8Array) {
             console.log(`Data sent to agent ${named_agent.id}`)
 
             // save task to database
-            // let buf = new flatbuffers.ByteBuffer(data)
-            // let msg = Message.getRootAsMessage(buf)
+            let buf = new flatbuffers.ByteBuffer(data)
+            let msg = schema.Message.getRootAsMessage(buf)
 
             // get all commands from flatbuffer
             let commands:string[] = [];
-            for (let i = 0; i < msg.cmdLength(); i++){
+            for (let i = 0; i < msg.Task.stagesLength(); i++){
                 commands[i] = msg.cmd(i)
                 console.log(`Read cmd: ${msg.cmd(i)}`)
             }
