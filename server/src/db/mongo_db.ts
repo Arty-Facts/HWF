@@ -196,7 +196,7 @@ export class dbAdapter <T extends dbInterface> {
         track_time:boolean, track_ram:boolean, track_cpu:boolean, track_gpu:boolean): Promise<void> {
             
         try {
-            
+        
             const stages = await this.getStages(task_id);
 
             // to-do: get actual time
