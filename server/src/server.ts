@@ -28,8 +28,6 @@ const db = new dbAdapter()
 
 app.use(express.json())
 
-// TODO: Implement cors? Is it even needed?
-
 app.use(cors({
      origin:"*",
      methods: ["GET", "POST", "PUT", "OPTIONS"],
@@ -213,22 +211,43 @@ function sendToAgent(data:Uint8Array) {
             (named_agent as WebSocket).send(data)
             console.log(`Data sent to agent ${named_agent.id}`)
 
+            //Wait for acknowledgement from demon before saving task in db maybe?
+
             // save task to database
             let buf = new flatbuffers.ByteBuffer(data)
-            let msg = schema.Message.getRootAsMessage(buf)
+            let fbMessage = schema.Message.getRootAsMessage(buf)
 
-            // get all commands from flatbuffer
-            let commands:string[] = [];
-            for (let i = 0; i < msg.Task.stagesLength(); i++){
-                commands[i] = msg.cmd(i)
-                console.log(`Read cmd: ${msg.cmd(i)}`)
+            if (fbMessage.type() == 1) {
+                console.log("message type is 1. continuing...")
+                let stageCommands:string[] = []
+                let fbTask = fbMessage.task()
+                
+                if (fbTask == null){return 1}
+                for (let stage = 0; stage < fbTask.stagesLength(); stage++) {
+                    let fbStage = fbTask.stages(stage)
+
+                    for (let cmd = 0; cmd < fbStage!.cmdListLength(); cmd++) {
+                      stageCommands.push(fbStage!.cmdList(cmd))
+                       
+                    }
+                    
+                }
+
+                if (stageCommands !== null){
+                    db.addTask(stageCommands)
+                }
+
+                // get all commands from flatbuf/fer
+                // let commands:string[] = [];
+                // for (let i = 0; i < message.Task.stagesLength(); i++){
+                //     commands[i] = message.cmd(i)
+                //     console.log(`Read cmd: ${message.cmd(i)}`)
+                // }
+
+                
+
+                return 200
             }
-
-            if (commands !== null){
-                db.addTask(commands)
-            }
-
-            return 200
         }
         catch (err) {
             console.error("Could not send data to agent")
