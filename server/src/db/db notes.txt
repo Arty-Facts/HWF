@@ -6,13 +6,34 @@ stages:
 	name: -
 	data: -
 	cmd: []
-	timeit: - (true/false)
+
+    comment: -
+    status: string
+
+	track_time: - (true/false)
+    track_ram:
+    track_cpu:
+    track_gpu:
+
+    time_started: -
+    time_finished: -
+
 	ram_usage: -
-	comment: -
-
-    # status?: -
-
+    cpu_usage: -
+    gpu_usage: -
 }]
+
+table Stage {
+    name:string;
+    data:[byte];
+    cmd_list:[string];
+    track_time:bool = true;
+    track_ram:bool = false;
+    track_cpu:bool = false;
+    track_gpu:bool = false;
+    comment:string;
+
+}
 
 artifacts: []
 

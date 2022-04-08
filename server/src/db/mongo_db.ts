@@ -194,6 +194,7 @@ export class dbAdapter <T extends dbInterface> {
 
     async addStage(task_id:string, name:string, data:boolean, cmd:string[], comment:string, 
         track_time:boolean, track_ram:boolean, track_cpu:boolean, track_gpu:boolean): Promise<void> {
+            
         try {
             
             const stages = await this.getStages(task_id);
