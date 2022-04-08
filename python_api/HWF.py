@@ -5,15 +5,21 @@ import os
 
 sys.path.append(".")
 
-script_dir = os.path.dirname( __file__ )
-schema_dir = os.path.join( script_dir, '..', 'schema')
-sys.path.append( schema_dir )
+# script_dir = os.path.dirname( __file__ )
+# schema_dir = os.path.join( script_dir, '..', 'schema')
+# sys.path.append( schema_dir )
  
 import schema.GetHardwarePool as FbGetHardwarePool
 import schema.GetResult as FbGetResult
 import schema.Message as FbMessage
 import schema.Task as FbTask
 import schema.Stage as FbStage
+
+TASK = 1
+RESULT = 2
+GET_RESULT = 2
+HARDWARE_POOL = 3
+GET_HARDWARE_POOL = 3
 
 class Task:
     def __init__(self, *actions):
@@ -78,7 +84,9 @@ class Hub:
         pass
     
     def get_result(self, job_ids, wait=True): #outside mvp
-
+        
+        buffer = fb_build_message(RESULT, job_ids) #Not implemented
+        self.socket.send_binary(buffer)
         pass
 
     def get_hardware_pool(self): #outside mvp
@@ -101,7 +109,7 @@ class Hub:
         # global binFile
         # with open(binFile, "wb") as bin:
         #     bin.write(buf)
-        buffer = fb_build_message(1, task)
+        buffer = fb_build_message(TASK, task)
         self.socket.send_binary(buffer)  
 
 
@@ -157,8 +165,9 @@ def fb_build_task(builder, task):
             builder.PrependUOffsetTRelative(stage)
         
         stage_vector = builder.EndVector()
+
+
     if len(task.artifacts) > 0:
-        
         for artifact in task.artifacts:
             for file in artifact.files:
                 serialized_artifacts.append(builder.CreateString(file))
@@ -169,6 +178,7 @@ def fb_build_task(builder, task):
             builder.PrependUOffsetTRelative(artifact)    
         
         artifact_vector = builder.EndVector()
+
 
     FbTask.Start(builder)
     FbTask.AddStages(builder, stage_vector)
@@ -185,9 +195,7 @@ def fb_build_get_hardware_pool(builder, hardware):
 
 def fb_build_stage(builder, stage):
 
-
     if len(stage.cmd) > 0:
-        
         cmd_serialized = []
         if type(stage.cmd) == list:
             for cmd in stage.cmd:
@@ -203,18 +211,19 @@ def fb_build_stage(builder, stage):
 
         cmd_vector = builder.EndVector()
 
-    stage_name = builder.CreateString(stage.name)
-    stage_comment = builder.CreateString(stage.comment)
+
+    fb_stage_name = builder.CreateString(stage.name)
+    fb_stage_comment = builder.CreateString(stage.comment)
     FbStage.Start(builder)
 
-    FbStage.AddName(builder, stage_name)
+    FbStage.AddName(builder, fb_stage_name)
     #TODO: FbStage.AddData(builder, stage.data)
     FbStage.AddCmdList(builder, cmd_vector)
     FbStage.AddTrackTime(builder, stage.track_time)
     FbStage.AddTrackRam(builder, stage.track_ram)
     FbStage.AddTrackCpu(builder, stage.track_cpu)
     FbStage.AddTrackGpu(builder, stage.track_gpu)
-    FbStage.AddComment(builder, stage_comment)
+    FbStage.AddComment(builder, fb_stage_comment)
 
     done_stage = FbStage.End(builder)
 
