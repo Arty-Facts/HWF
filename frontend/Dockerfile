@@ -1,4 +1,4 @@
-FROM alpine3:latest
+FROM alpine:3.14
 
 COPY . ./frontend
 RUN cd /frontend

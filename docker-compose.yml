@@ -1,14 +1,34 @@
-version: "3.8"
+version: "3.7"
 services:
   frontend:
     build: ./frontend
+    environment:
+      DB_URL: "PLACEHOLDER"
+    ports:
+      - 3000:3000
+      - 9000:9000
+
+  server:
+      build: ./server
+      ports:
+        - 3001:3001
+        - 9000:9000
+      environment:
+        DB_URL: "PLACEHOLDER"
+      # volumes:
+      #   - storage:data/db
+
   database:
     build: ./database
     ports:
-      - "3001:3001"
-      - "9000:9000"
+      - 27017:27017
 
   daemon:
     build: ./daemon
-  server:
-    build: ./server
+    ports:
+      - 9000:9000
+    environment:
+      SERVER_URL: "PLACEHOLDER"
+
+# volumes:
+#   storage:

@@ -3,13 +3,16 @@
 #docker build --no-cache -t daemon -f ./docker/daemon.dockerfile ./
 #docker run -it daemon bash
 
-FROM golang:1.17.8alpine3.14
+FROM golang:1.18.0-alpine3.14
 
 #RUN apt-get update; DEBIAN_FRONTEND=noninteractive apt-get install golang-go git -y
 
-COPY . ./daemon
+COPY . /daemon
 WORKDIR /daemon
-RUN  go mod tidy; cd ./Message/; go mod tidy
+RUN go mod tidy
+RUN cd Message/
+RUN go mod tidy
+RUN cd ..
 RUN go build hell.go
 
 CMD ./hell

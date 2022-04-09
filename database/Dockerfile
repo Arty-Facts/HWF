@@ -1,7 +1,5 @@
-FROM alpine3:latest
+FROM mongo:4.0-xenial
 
 COPY . ./database
-
-RUN apt install mongodb -y
 
 CMD mongod
