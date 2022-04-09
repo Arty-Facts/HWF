@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  frontend:
+    build: ./frontend
+  database:
+    build: ./database
+    ports:
+      - "3001:3001"
+      - "9000:9000"
+
+  daemon:
+    build: ./daemon
+  server:
+    build: ./server
