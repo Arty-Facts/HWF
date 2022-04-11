@@ -1,7 +1,9 @@
 daemon/server/package.json
 daemon/server/package-lock.json
 daemon/server/node_modules/
-server/node_modules
+server/node_modules/
+frontend/node_modules/
+database/node_modules
 node_modules/
 server/*.*~
 env/

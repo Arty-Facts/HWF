@@ -24,8 +24,8 @@ services:
 
   daemon:
     build: ./daemon
-    ports:
-      - 9000:9000
+    #ports:
+    #  - 9000:9000
     environment:
       SERVER_URL: "PLACEHOLDER"
 
