@@ -12,10 +12,11 @@ services:
       ports:
         - 3001:3001
         - 9000:9000
+       # - 27071:27071 för db-uppkoppling?
       environment:
         DB_URL: "PLACEHOLDER"
       # volumes:
-      #   - storage:data/db
+      #   - storage:data/db <-- Används för att se till att DB:ns data kan sparas långsiktigt, inte riktigt implementerat än
 
   database:
     build: ./database
@@ -24,8 +25,10 @@ services:
 
   daemon:
     build: ./daemon
-    #ports:
-    #  - 9000:9000
+    #Eftersom att både demonen och servern måste ha tillgång till port 9000 för kommunikation fungerar det inte att starta de båda med den porten bunden
+    #Tillfällig fix är att kommmentera ut en av tilldelningarna
+    ports:
+      - 9000:9000 
     environment:
       SERVER_URL: "PLACEHOLDER"
 
