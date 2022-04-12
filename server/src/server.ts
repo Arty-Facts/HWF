@@ -231,10 +231,10 @@ function sendToAgent(data:Uint8Array) {
 
                     for (let cmd = 0; cmd < fbStage!.cmdListLength(); cmd++) {
                         stageCommands.push(fbStage!.cmdList(cmd))
-                      console.log("inner loop....")
-                      console.log(fbStage!.cmdListLength())
-                      console.log(fbStage!.cmdList(cmd))
-                       console.log(cmd)
+                        console.log("inner loop....")
+                        console.log(fbStage!.cmdListLength())
+                        console.log(fbStage!.cmdList(cmd))
+                        console.log(cmd)
                         console.log(cmd < fbStage!.cmdListLength())
                     }
                     
@@ -243,6 +243,9 @@ function sendToAgent(data:Uint8Array) {
 
 
                 if (stageCommands !== null){
+
+                    // to-do: this needs to add a full task
+                    // with stages and all
                     db.addTask(stageCommands)
                 }
 
