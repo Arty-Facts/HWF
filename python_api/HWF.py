@@ -230,5 +230,3 @@ def fb_build_stage(builder, stage):
     done_stage = FbStage.End(builder)
 
     return builder, done_stage
-
-        

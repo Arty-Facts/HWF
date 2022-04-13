@@ -1,9 +1,9 @@
 namespace schema;
  
 table File {
+    filename:string; 
     packetnumber:int; 
     eof:bool;
-    filename:string; 
     data:[byte];
 }
 
