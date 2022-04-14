@@ -5,14 +5,14 @@ services:
     environment:
       DB_URL: "PLACEHOLDER"
     ports:
-      - 3000:3000
+      - 3000:3000 #borde vara 3001 istället för demon-porten?
 
   server:
       build: ./server
       ports:
         - 3001:3001
         - 9000:9000
-       # - 27071:27071 för db-uppkoppling?
+        - 27071:27071
       environment:
         DB_URL: "PLACEHOLDER"
       # volumes:

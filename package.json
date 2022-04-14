@@ -6,7 +6,8 @@
   "scripts": {
     "test": "",
     "start": "ts-node-dev --respawn src/server.ts",
-    "build": "tsc --esModuleInterop"
+    "build": "tsc --esModuleInterop",
+    "postinstall": "(cd frontend && npm install);(cd server && npm install);(cd database && npm install)"
   },
   "author": "",
   "license": "ISC",
