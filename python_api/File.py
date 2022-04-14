@@ -3,6 +3,8 @@
 # namespace: schema
 
 import flatbuffers
+from flatbuffers.compat import import_numpy
+np = import_numpy()
 
 class File(object):
     __slots__ = ['_tab']
@@ -44,14 +46,14 @@ class File(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
         if o != 0:
             a = self._tab.Vector(o)
-            return self._tab.Get(flatbuffers.number_types.Int8Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1))
+            return self._tab.Get(flatbuffers.number_types.Uint8Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1))
         return 0
 
     # File
     def DataAsNumpy(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
         if o != 0:
-            return self._tab.GetVectorAsNumpy(flatbuffers.number_types.Int8Flags, o)
+            return self._tab.GetVectorAsNumpy(flatbuffers.number_types.Uint8Flags, o)
         return 0
 
     # File
@@ -60,6 +62,11 @@ class File(object):
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
+
+    # File
+    def DataIsNone(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        return o == 0
 
 def FileStart(builder): builder.StartObject(4)
 def FileAddFilename(builder, filename): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(filename), 0)

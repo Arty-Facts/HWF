@@ -4,6 +4,6 @@ table File {
     filename:string; 
     packetnumber:int; 
     eof:bool;
-    data:[byte];
+    data:[ubyte];
 }
 

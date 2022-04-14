@@ -2,14 +2,24 @@ import flatbuffers
 import File
 from  websocket import create_connection
 
+# 1.99 GB
 #BUFFER_SIZE = 1990000000
-BUFFER_SIZE = 19900
+
+# 1.99 MB
+BUFFER_SIZE = 1990000
+
+# TO-DO:
+# filen är seg som satan
+# timea de olika delarna och kolla vad som är långsammast
+# 100% CPU usage just nu
+# kanske håller bytearray på och resizar arrayen hela tiden?
+# kanske är det flatbuffer som är väldigt långsam?
 
 # main function, turn file -> flatbuffers and send them
 def send_fb_file(filename):
 
     file = open(filename, "rb")
-    output_file = open("test.png", "wb")
+    output_file = open("test.zip", "wb")
 
     packet_count = 0
     byte = file.read(BUFFER_SIZE)
@@ -17,7 +27,7 @@ def send_fb_file(filename):
     packet_count += 1
 
     while byte:
-        print("progress: ", packet_count, "/?")
+        #print("progress: ", packet_count, "/?")
         byte = file.read(BUFFER_SIZE)
 
         # skicka flatbuffer med byte i
@@ -42,18 +52,28 @@ def debug_use_flatbuffer(byte, filename, nr, output_file, eof=False):
     output = build_flatbuffer(byte, filename, nr, eof)
 
     # open flatbuffer and write data to file:
-    file = File.File.GetRootAsFile(output, 0)
-    name = file.Filename()
-    file_eof = file.Eof()
+    fb_file = File.File.GetRootAsFile(output, 0)
+    name = fb_file.Filename()
+    file_eof = fb_file.Eof()
 
-    print("writing data to ", name, ", eof: ", file_eof, ", data len: ", file.DataLength(), "...")
+    print("writing data to ", name, ", eof: ", file_eof, ", data len: ", fb_file.DataLength(), "...")
 
-    for i in range(file.DataLength()):
+    #arr = []
+    #arr = bytearray()
+    #for i in range(fb_file.DataLength()):
         #if file.Data(i):
         #print("data=", (file.Data(i)).to_bytes(1, "big", signed=True))
-        output_file.write((file.Data(i)).to_bytes(1, "big", signed=True))
+        
+        #arr.append((fb_file.Data(i)).to_bytes(1, "big", signed=True))
+     #   arr.append(fb_file.Data(i))
+        
+        #print(fb_file.Data(i))
         #else:
         #    print("could not write, data=", (file.Data(i)).to_bytes(1, "big", signed=True))
+
+    arr = [fb_file.Data(i) for i in range(fb_file.DataLength())]
+    output_file.write(bytearray(arr))
+    #output_file.write(arr)
 
     if file_eof:
         output_file.close()
@@ -84,7 +104,7 @@ def build_flatbuffer(byte, filename, nr, eof=False):
     #ws connectio
 
 if __name__ == "__main__":
-    send_fb_file("hellgo.png")
+    send_fb_file("portal2.zip")
     print("done!! enjoy")
 n
 
