@@ -1,15 +1,8 @@
-FROM ubuntu:20.04
+#FROM ubuntu:20.04
+FROM node:alpine
 
-COPY . ./frontend
-RUN apt update
-RUN apt install nodejs -y
-RUN apt install npm -y
-RUN cd /frontend
-
-EXPOSE 3000
+COPY . /
+RUN npm install
 
 CMD ["npm", "start"]
-# FROM node:17
 
-# COPY . ./frontend
-# RUN cd /frontend
