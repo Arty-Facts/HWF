@@ -3,11 +3,10 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 
-	flatbuffers "github.com/google/flatbuffers"
+	flatbuffers "github.com/google/flatbuffers/go"
 
 	schema "test.com/test"
 )
@@ -15,8 +14,15 @@ import (
 func send_fb_file(filename string, output_filename string) {
 	// 20 MB:
 	read_size := 20000000
+	//read_size := 20000
 
 	file, err := os.Open(filename)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	output, err := os.OpenFile(output_filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 	if err != nil {
 		log.Fatal(err)
@@ -38,14 +44,14 @@ func send_fb_file(filename string, output_filename string) {
 		}
 
 		// do something with read bytes:
-		debug_use_flatbuffer(bytes[0:amount_read], filename, output_filename, packet_count)
+		debug_use_flatbuffer(bytes[0:amount_read], filename, output, packet_count)
 
 		packet_count += 1
 	}
 
 }
 
-func debug_use_flatbuffer(bytes []byte, filename string, output_filename string, packet_count int) {
+func debug_use_flatbuffer(bytes []byte, filename string, output_file *os.File, packet_count int) {
 
 	// check (if bytes empty) -> true
 	output := build_flatbuffer(bytes, filename, packet_count, false)
@@ -58,17 +64,23 @@ func debug_use_flatbuffer(bytes []byte, filename string, output_filename string,
 
 	fmt.Println(name, nr, eof)
 
-	arr := make([]byte, fb_file.DataLength())
-	for i := 0; i < fb_file.DataLength(); i++ {
-		arr[i] = byte(fb_file.Data(i))
-	}
+	/*
+		arr := make([]byte, fb_file.DataLength())
+		for i := 0; i < fb_file.DataLength(); i++ {
+			arr[i] = byte(fb_file.Data(i))
+		}*/
+
+	arr := fb_file.DataBytes()
 
 	// save arr to output file
-	err := ioutil.WriteFile(output_filename, arr, 0644)
+	output_file.Write(arr)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	//err := ioutil.WriteFile(output_filename, arr, 0644)
+
+	/*
+		if err != nil {
+			log.Fatal(err)
+		}*/
 }
 
 func build_flatbuffer(bytes []byte, filename string, packet_count int, eof bool) []byte {
@@ -77,10 +89,10 @@ func build_flatbuffer(bytes []byte, filename string, packet_count int, eof bool)
 	arr := builder.CreateByteVector(bytes)
 
 	schema.FileStart(builder)
-	schema.FileAddFilename(fname)
-	schema.FileAddPacketnumber(packet_count)
-	schema.FileAddEof(eof)
-	schema.FileAddData(arr)
+	schema.FileAddFilename(builder, fname)
+	schema.FileAddPacketnumber(builder, int32(packet_count))
+	schema.FileAddEof(builder, eof)
+	schema.FileAddData(builder, arr)
 	binFile := schema.FileEnd(builder)
 
 	builder.Finish(binFile)
@@ -100,4 +112,5 @@ func write_file(arr []byte, filename string) {
 
 func main() {
 	send_fb_file("portal2.zip", "ouputCOOL.zip")
+	//send_fb_file("hellgo.png", "HELLLLLL.png")
 }

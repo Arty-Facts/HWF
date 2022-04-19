@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os/exec"
 
+	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
 	message "test.com/test"
 )
@@ -59,10 +60,12 @@ func listen(connection *websocket.Conn) {
 	}
 }
 
-/*
 func main() {
 
 	connection := connect()
+
+	builder := flatbuffers.NewBuilder(1024)
+	builder.CreateString("hi")
 
 	// close connection once we go out of scope
 	defer connection.Close()
@@ -70,7 +73,7 @@ func main() {
 	// wait for requests from server
 	listen(connection)
 
-}*/
+}
 
 func send_message(connection *websocket.Conn, msg []byte) {
 	connection.WriteMessage(websocket.TextMessage, msg)
