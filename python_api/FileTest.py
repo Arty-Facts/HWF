@@ -1,12 +1,20 @@
 import flatbuffers
 import File
+import numpy
 from  websocket import create_connection
+from time import time
 
 # 1.99 GB
 #BUFFER_SIZE = 1990000000
 
 # 1.99 MB
 BUFFER_SIZE = 1990000
+
+# 50 MB
+#BUFFER_SIZE = 500000000
+
+
+START_TIME = time()
 
 # TO-DO:
 # filen är seg som satan
@@ -34,7 +42,7 @@ def send_fb_file(filename):
         debug_use_flatbuffer(byte, filename, packet_count, output_file)
         packet_count += 1
 
-    debug_use_flatbuffer([], filename, packet_count, output_file, True)
+    debug_use_flatbuffer(bytearray(), filename, packet_count, output_file, True)
         
     file.close()
 
@@ -49,12 +57,17 @@ table File {
 '''
 
 def debug_use_flatbuffer(byte, filename, nr, output_file, eof=False):
+    func_start_time = time()
+
     output = build_flatbuffer(byte, filename, nr, eof)
+    print("build_flatbuffers", time() - func_start_time)
 
     # open flatbuffer and write data to file:
     fb_file = File.File.GetRootAsFile(output, 0)
     name = fb_file.Filename()
     file_eof = fb_file.Eof()
+
+    print("OPEN FLATBUFFERS", time() - func_start_time)
 
     print("writing data to ", name, ", eof: ", file_eof, ", data len: ", fb_file.DataLength(), "...")
 
@@ -71,13 +84,26 @@ def debug_use_flatbuffer(byte, filename, nr, output_file, eof=False):
         #else:
         #    print("could not write, data=", (file.Data(i)).to_bytes(1, "big", signed=True))
 
-    arr = [fb_file.Data(i) for i in range(fb_file.DataLength())]
-    output_file.write(bytearray(arr))
-    #output_file.write(arr)
+    # arr = [fb_file.Data(i) for i in range(fb_file.DataLength())]
 
     if file_eof:
         output_file.close()
         print("closed file.")
+
+    else:
+        arr = fb_file.DataAsNumpy()
+
+        print("MAKE ARR", time() - func_start_time)
+
+        output_file.write(bytearray(arr))
+
+        print("WRITE TO FILE", time() - func_start_time)
+        #output_file.write(arr)
+
+
+    
+
+    print("debug_use_flatbuffers", time() - func_start_time)
 
 
 def build_flatbuffer(byte, filename, nr, eof=False):
@@ -105,8 +131,9 @@ def build_flatbuffer(byte, filename, nr, eof=False):
 
 if __name__ == "__main__":
     send_fb_file("portal2.zip")
+    print("final time", time() - START_TIME)
     print("done!! enjoy")
-n
+
 
 
 

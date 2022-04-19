@@ -59,6 +59,7 @@ func listen(connection *websocket.Conn) {
 	}
 }
 
+/*
 func main() {
 
 	connection := connect()
@@ -69,7 +70,7 @@ func main() {
 	// wait for requests from server
 	listen(connection)
 
-}
+}*/
 
 func send_message(connection *websocket.Conn, msg []byte) {
 	connection.WriteMessage(websocket.TextMessage, msg)
