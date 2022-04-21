@@ -47,6 +47,9 @@ class dbAdapter {
             console.log("env variable is " + process.env.HWF_DB_URL);
             this.SERVER_URL = process.env.HWF_DB_URL;
         } //"mongodb://database:27017/test"
+        else {
+            throw "HWF_DB_URL environment variable can't be read!";
+        }
         this.DB_NAME = "test";
         this.connect();
     }

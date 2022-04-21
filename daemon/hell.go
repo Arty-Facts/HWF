@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"os/exec"
 
 	"github.com/gorilla/websocket"
@@ -15,7 +16,7 @@ import (
 func connect() *websocket.Conn {
 	u := url.URL{
 		Scheme: "ws",
-		Host:   "localhost:9000",
+		Host:   os.Getenv("HWF_SERVER_URL"),
 		Path:   "/",
 	}
 	connection, _, err := websocket.DefaultDialer.Dial(u.String(), nil)

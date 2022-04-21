@@ -4,4 +4,4 @@ FROM mongo:4.0-xenial
 COPY . ./database
 WORKDIR /database
 
-CMD mongod 
+CMD mongod --bind_ip_all
