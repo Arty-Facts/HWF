@@ -101,13 +101,13 @@ wss.on('connection', async (ws:NamedWebSocket, req:http.IncomingMessage) =>{
     //idnum++
     
     //socket.remoteAddress gets the connecting client's IP
-    console.log(`New client "${ws.name}" connected from ${req.socket.remoteAddress}. Given id ${ws.id} `)
+    console.log(`\nNew Daemon [${ws.name}] connected from [${req.socket.remoteAddress}]. Given id [${ws.id}] `)
 
     // save the new daemon in the database
     let ip = req.socket.remoteAddress
     if (ip !== undefined){
         let id = await db.addDaemon(ip)
-        console.log(`added new daemon with id: "${id}"`)
+        console.log(`added new daemon with id: ["${id}"]`)
         ws.id = id
         ws.name = "testname (" + id + ")"
     }
@@ -127,8 +127,8 @@ wss.on('connection', async (ws:NamedWebSocket, req:http.IncomingMessage) =>{
     
     
     ws.on("message", (message) => {
-        console.log("ws.onMessage jhfdgjkhsgfkjsdhgkjhdflkgjhdfkjgh")
-        console.log(`Recieved message from ${ws.name}: "${message}"`)
+        console.log("\nws.onMessage from [Daemon]")
+        console.log(`Recieved message: ["${message}"] from Daemon: [${ws.name}] `)
         
         //ws.send("The server recieved your message")
     })
@@ -141,7 +141,7 @@ wss.on('connection', async (ws:NamedWebSocket, req:http.IncomingMessage) =>{
 })
 
 userWss.on("connection", (ws, req) => {
-
+    console.log(`\nNew Client connected from [${req.socket.remoteAddress}].`)
     ws.on("message", (message:Uint8Array) => {
         // console.log("User message: ", message)
         // console.log("typeof: ", typeof message)
@@ -159,6 +159,8 @@ userWss.on("connection", (ws, req) => {
         /*let agentId:number = 999*/
     
         //sendToAgent((message), agentId)
+        console.log("\nws.onMessage from [Client]")
+        
         sendToAgent(message)
     })
 
@@ -314,7 +316,7 @@ function sendToAgentWithId(data:Uint8Array, agentId:string) {
 app.get('/specs', (req:Request, res:Response) => {
     
     
-    console.log("retrieving agents specs")
+    //console.log("retrieving agents specs")
 
     if (wss.clients.size == 0) {    
         console.log("No agents are connected")
@@ -335,7 +337,7 @@ app.get('/specs', (req:Request, res:Response) => {
             }
         })
     })
-    console.log(result)
+    //console.log(result)
     return res.json(result)   
 
 })
