@@ -43,7 +43,10 @@ exports.collections = {};
 //TASKS_NAME="tasks"
 class dbAdapter {
     constructor() {
-        this.SERVER_URL = "mongodb://database:27017/test";
+        if (process.env.HWF_DB_URL) {
+            console.log("env variable is " + process.env.HWF_DB_URL);
+            this.SERVER_URL = process.env.HWF_DB_URL;
+        } //"mongodb://database:27017/test"
         this.DB_NAME = "test";
         this.connect();
     }

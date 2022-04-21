@@ -1,19 +1,21 @@
 version: "3.7"
 services:
+  #Don't run all containers on the same device, the port bindings will conflict and stop it from launching properly.
   frontend:
     build: ./frontend
     environment:
-      DB_URL: "PLACEHOLDER"
+      HWF_DB_URL: "PLACEHOLDER"
     ports:
       - 3000:3000
+
   server:
       build: ./server
       ports:
         - 3001:3001
         - 9000:9000
-        #- 27071:27071
+        - 27071:27071
       environment:
-        DB_URL: "PLACEHOLDER"
+        HWF_DB_URL: "mongodb://localhost:27017/test"
       # volumes:
       #   - storage:data/db
 
@@ -24,12 +26,10 @@ services:
 
   # daemon:
   #   build: ./daemon
-  #   #Eftersom att både demonen och servern måste ha tillgång till port 9000 för kommunikation fungerar det inte att starta de båda med den porten bunden
-  #   #Tillfällig fix är att kommmentera ut en av tilldelningarna
   #   ports:
   #     - 9000:9000 
   #   environment:
-  #     SERVER_URL: "PLACEHOLDER"
+  #     HWF_SERVER_URL: "PLACEHOLDER"
 
 # volumes:
 #   storage:
