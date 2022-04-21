@@ -26,9 +26,9 @@
   
 ### Docker start guide
 
-  * First open `docker-compose.yml` and edit the ip adresses in the environment variables to the ones you need
-  * Run `docker-compose build --no-cache` in the project's root directory to build all images
-  * Run `docker-compose up [server/database/daemon/frontend]` to start one or more containers (Don't run containers with conflicting port bindings at the same time)
+  * First open `docker-compose.yml` and edit the ip adresses in the environment variables to the ones you need (Get your private ip with `hostname -I` or `ifconfig`).
+  * Run `docker-compose build --no-cache` in the project's root directory to build all images.
+  * Run `docker-compose up [server/database/daemon/frontend]` to start one or more containers (Don't run containers with conflicting port bindings at the same time).
 
 ## Developement info
 ### How we make changes 
