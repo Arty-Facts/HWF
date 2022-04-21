@@ -22,7 +22,7 @@ export class dbAdapter <T extends dbInterface> {
     daemons : mongoDB.Collection
 
     constructor() {
-        this.SERVER_URL = "mongodb://localhost:27017/test"
+        this.SERVER_URL = "mongodb://database:27017/test"
         this.DB_NAME = "test"
 
         this.connect()
