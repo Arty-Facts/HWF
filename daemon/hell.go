@@ -93,6 +93,8 @@ func execute_command(command []byte) []byte {
 
 func read_message(msg []byte) {
 
+	fmt.Println("reading message...")
+
 	// right now execute_command is the only
 	// function that can panic, so we know that's
 	// where the error was caused - change this later
@@ -116,6 +118,8 @@ func read_message(msg []byte) {
 	case 4:
 		read_file(fb_msg)
 	}
+
+	fmt.Println(fb_msg.Type())
 
 	/*
 		// TASK
@@ -171,54 +175,112 @@ func read_message(msg []byte) {
 
 }
 
-// TO-DO: fix this just like read_file
 func read_task(msg *message.Message) {
-	msgTask := msg.Task(new(message.Task))
-	msgStage := new(message.Stage)
 
-	msgTask.Stages(msgStage, 0)
+	fmt.Println("reading task...")
 
-	// TO-DO: Wait before executing the commands!!!!
-	// iterate over cmd and execute all commands
-	var results = make([][]byte, msgStage.CmdListLength())
-	for i := 0; i < msgStage.CmdListLength(); i++ {
-		fmt.Println(string(msgStage.CmdList(i)))
-		result := execute_command(msgStage.CmdList(i))
-		results[i] = result
+	unionTable := new(flatbuffers.Table)
+
+	if msg.Body(unionTable) {
+
+		unionType := msg.BodyType()
+
+		if unionType == message.MessageBodyTask {
+			unionTask := new(message.Task)
+			unionTask.Init(unionTable.Bytes, unionTable.Pos)
+
+			// TO-DO: what are we going to do with the unionTask?
+			// do something here
+		}
 	}
 
-	// print the results from cmd exec
-	for i, s := range results {
-		fmt.Println(i, s)
-	}
+	/*
+		msgTask := msg.Task(new(message.Task))
+		msgStage := new(message.Stage)
+
+		msgTask.Stages(msgStage, 0)
+
+		// TO-DO: Wait before executing the commands!!!!
+		// iterate over cmd and execute all commands
+		var results = make([][]byte, msgStage.CmdListLength())
+		for i := 0; i < msgStage.CmdListLength(); i++ {
+			fmt.Println(string(msgStage.CmdList(i)))
+			result := execute_command(msgStage.CmdList(i))
+			results[i] = result
+		}
+
+		// print the results from cmd exec
+		for i, s := range results {
+			fmt.Println(i, s)
+		}
+	*/
 
 }
 
-// TO-DO: fix this just like read_file
 // this function might be useless, don't think daemon is going to
 // receive a message like this... :(
 func read_hardwarepool(msg *message.Message) {
-	msgHardware := msg.GetHardwarePool(new(message.GetHardwarePool))
 
-	// TO-DO: use hardware info idk XD
-	//fmt.Println(string(msgHardware.Hardware()))
-	// print everyting in the hardware
-	for i := 0; i < msgHardware.HardwareLength(); i++ {
-		fmt.Println(string(msgHardware.Hardware(i)))
+	fmt.Println("reading hardware...")
+
+	unionTable := new(flatbuffers.Table)
+
+	if msg.Body(unionTable) {
+
+		unionType := msg.BodyType()
+
+		if unionType == message.MessageBodyGetHardwarePool {
+			unionHardware := new(message.GetHardwarePool)
+			unionHardware.Init(unionTable.Bytes, unionTable.Pos)
+
+			// TO-DO: what are we going to do with the unionHardware?
+			// do something here
+		}
 	}
+
+	/*
+		msgHardware := msg.GetHardwarePool(new(message.GetHardwarePool))
+
+		// TO-DO: use hardware info idk XD
+		//fmt.Println(string(msgHardware.Hardware()))
+		// print everyting in the hardware
+		for i := 0; i < msgHardware.HardwareLength(); i++ {
+			fmt.Println(string(msgHardware.Hardware(i)))
+		}*/
 }
 
-// TO-DO: fix this just like read_file
 func read_result(msg *message.Message) {
-	msgResult := msg.GetResult(new(message.GetResult))
 
-	// print everyting in the result
-	for i := 0; i < msgResult.IdListLength(); i++ {
-		fmt.Println(string(msgResult.IdList(i)))
+	fmt.Println("reading result...")
+
+	unionTable := new(flatbuffers.Table)
+
+	if msg.Body(unionTable) {
+
+		unionType := msg.BodyType()
+
+		if unionType == message.MessageBodyGetResult {
+			unionResult := new(message.GetResult)
+			unionResult.Init(unionTable.Bytes, unionTable.Pos)
+
+			// TO-DO: what are we going to do with the unionResult?
+			// do something here
+		}
 	}
+
+	/*
+		msgResult := msg.GetResult(new(message.GetResult))
+
+		// print everyting in the result
+		for i := 0; i < msgResult.IdListLength(); i++ {
+			fmt.Println(string(msgResult.IdList(i)))
+		}*/
 }
 
 func read_file(msg *message.Message) {
+
+	fmt.Println("reading file...")
+
 	unionTable := new(flatbuffers.Table)
 
 	if msg.Body(unionTable) {
