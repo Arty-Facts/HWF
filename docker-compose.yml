@@ -4,7 +4,8 @@ services:
   frontend:
     build: ./frontend
     environment:
-      HWF_DB_URL: "PLACEHOLDER"
+      REACT_APP_HWF_DB_URL: "PLACEHOLDER"
+      REACT_APP_HWF_SERVER_URL: "http://localhost:9000"
     ports:
       - 3000:3000 #Default react port
 
@@ -29,7 +30,7 @@ services:
     ports:
       - 9000:9000 
     environment:
-      HWF_SERVER_URL: "http://10.241.33.62:9000"
+      HWF_SERVER_URL: "http://192.169.0.103:9000"
 
 # volumes:
 #   storage:

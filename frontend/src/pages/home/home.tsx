@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 
 export default function Home() {
   
-  if (process.env.HWF_SERVER_URL){
-  var serverUrl:string = process.env.HWF_SERVER_URL;}
+  if (process.env.REACT_APP_HWF_SERVER_URL){
+  var serverUrl:string = process.env.REACT_APP_HWF_SERVER_URL;}
   else {throw "Can't read HWF_SERVER_URL environment variable. Is it empty?"}
   
   const [specs, setSpecs] = useState([]);
