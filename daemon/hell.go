@@ -189,8 +189,32 @@ func read_task(msg *message.Message) {
 			unionTask := new(message.Task)
 			unionTask.Init(unionTable.Bytes, unionTable.Pos)
 
-			// TO-DO: what are we going to do with the unionTask?
-			// do something here
+			// get all stages from the task
+			stages := make([]*message.Stage, unionTask.StagesLength())
+			tempStage := new(message.Stage)
+			
+			for i := 0; i < unionTask.StagesLength(); i++ {
+
+				if unionTask.Stages(tempStage, i) {
+					stages[i] = tempStage
+					var results = make([][]byte, tempStage.CmdListLength())
+					// execute the stage's commands
+					for i := 0; i < tempStage.CmdListLength(); i++ {
+						fmt.Println(string(tempStage.CmdList(i)))
+						result := execute_command(tempStage.CmdList(i))
+						results[i] = result
+					}
+
+					// print the results from cmd exec
+					for i, s := range results {
+						fmt.Println(i, string(s))
+					}
+				}
+			}
+			
+			
+
+
 		}
 	}
 

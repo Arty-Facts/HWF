@@ -88,39 +88,18 @@ class Hub:
         pass
     
     def get_result(self, job_ids, wait=True): #outside mvp
-        
-        buffer = _build_message(RESULT, job_ids) #Not implemented
-        self.socket.send_binary(buffer)
         pass
 
     def get_hardware_pool(self): #outside mvp
-
         pass
 
     def dispatch_async(self, hardware=None, task=None, priority=0): #outside mvp
-        
-
         pass
 
     def dispatch(self, hardware=None, task=None, priority=0):
-        # cmd_to_send = task[0].cmd #later on we will just send the task, for now use the cmd
-        # placeholder_id = 1 #schema will be changed later
-        # placeholder_filename = "hellgo.png" #schema will be changed later
-        # buf = self.__build_binary_message(placeholder_id, cmd_to_send, placeholder_filename)
-
-
-        # # create bin file from message
-        # global binFile
-        # with open(binFile, "wb") as bin:
-        #     bin.write(buf)
         buffer = _build_message(TASK, task)
         self.socket.send_binary(buffer)  
-
-
-
-
-    
-    
+  
 
 def _build_message(msg_type, data):
     
@@ -167,7 +146,7 @@ def _build_task(builder, task):
 
         FbTask.TaskStartStagesVector(builder, len(task.stages))
 
-        for stage in serialized_stages:
+        for stage in reversed(serialized_stages):
             builder.PrependUOffsetTRelative(stage)
         
         stage_vector = builder.EndVector()
@@ -180,7 +159,7 @@ def _build_task(builder, task):
 
         FbTask.TaskStartArtifactsVector(builder, len(serialized_artifacts))    
 
-        for artifact in serialized_artifacts:
+        for artifact in reversed(serialized_artifacts):
             builder.PrependUOffsetTRelative(artifact)    
         
         artifact_vector = builder.EndVector()
@@ -212,8 +191,9 @@ def _build_stage(builder, stage):
             cmd_serialized.append(builder.CreateString(stage.cmd))
             FbStage.StageStartCmdListVector(builder,1)
 
-        for item in cmd_serialized:
+        for item in reversed(cmd_serialized):
             builder.PrependUOffsetTRelative(item)
+            
 
         cmd_vector = builder.EndVector()
 
@@ -223,7 +203,7 @@ def _build_stage(builder, stage):
     FbStage.StageStart(builder)
 
     FbStage.StageAddName(builder, fb_stage_name)
-    #TODO: FbStage.AddData(builder, stage.data)
+    #FbStage.AddData(builder, stage.data)
     FbStage.StageAddCmdList(builder, cmd_vector)
     FbStage.StageAddTrackTime(builder, stage.track_time)
     FbStage.StageAddTrackRam(builder, stage.track_ram)

@@ -1,15 +1,16 @@
-total 152
-drwxrwxr-x  6 sopi sopi   4096 apr  8 14:13 .
-drwxrwxr-x 12 sopi sopi   4096 apr  8 13:34 ..
--rw-rw-r--  1 sopi sopi    254 apr  8 13:34 go.mod
--rw-rw-r--  1 sopi sopi    378 mar 29 11:45 go.sum
--rw-rw-r--  1 sopi sopi   3371 apr  8 13:34 hell.go
--rw-rw-r--  1 sopi sopi 103488 apr  1 08:44 hellgo.png
-drwxrwxr-x  2 sopi sopi   4096 mar 29 11:45 HelloWorld
--rw-rw-r--  1 sopi sopi    113 apr  8 13:34 HWFmessage.fbs
--rw-rw-r--  1 sopi sopi      0 apr  8 14:15 log.txt
-drwxrwxr-x  2 sopi sopi   4096 apr  8 13:34 Message
--rw-rw-r--  1 sopi sopi    325 apr  1 08:19 README.md
-drwxrwxr-x  2 sopi sopi   4096 apr  8 13:34 schema
--rw-rw-r--  1 sopi sopi     82 mar 29 11:45 schema.fbs
-drwxrwxr-x  2 sopi sopi   4096 mar 30 13:37 tests
+total 160
+drwxrwxr-x  7 simah964 simah964   4096 apr 22 11:03 .
+drwxrwxr-x 13 simah964 simah964   4096 apr 22 11:03 ..
+drwxrwxr-x  3 simah964 simah964   4096 apr 22 11:03 filetest
+-rw-rw-r--  1 simah964 simah964    254 apr 13 13:31 go.mod
+-rw-rw-r--  1 simah964 simah964    378 mar 29 09:44 go.sum
+-rw-rw-r--  1 simah964 simah964   7668 apr 22 12:05 hell.go
+-rw-rw-r--  1 simah964 simah964 103488 mar 29 09:44 hellgo.png
+drwxrwxr-x  2 simah964 simah964   4096 mar 29 09:44 HelloWorld
+-rw-rw-r--  1 simah964 simah964    113 apr 13 13:31 HWFmessage.fbs
+-rw-rw-r--  1 simah964 simah964      0 apr 22 12:05 log.txt
+drwxrwxr-x  2 simah964 simah964   4096 apr 22 10:55 Message
+-rw-rw-r--  1 simah964 simah964    325 mar 31 10:10 README.md
+drwxrwxr-x  2 simah964 simah964   4096 apr 22 10:55 schema
+-rw-rw-r--  1 simah964 simah964     82 mar 29 09:44 schema.fbs
+drwxrwxr-x  2 simah964 simah964   4096 mar 30 13:30 tests
