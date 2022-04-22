@@ -3,23 +3,17 @@
 # namespace: schema
 
 import flatbuffers
-from flatbuffers.compat import import_numpy
-np = import_numpy()
 
 class GetResult(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAs(cls, buf, offset=0):
+    def GetRootAsGetResult(cls, buf, offset):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = GetResult()
         x.Init(buf, n + offset)
         return x
 
-    @classmethod
-    def GetRootAsGetResult(cls, buf, offset=0):
-        """This method is deprecated. Please switch to GetRootAs."""
-        return cls.GetRootAs(buf, offset)
     # GetResult
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
@@ -39,24 +33,7 @@ class GetResult(object):
             return self._tab.VectorLen(o)
         return 0
 
-    # GetResult
-    def IdListIsNone(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
-        return o == 0
-
-def Start(builder): builder.StartObject(1)
-def GetResultStart(builder):
-    """This method is deprecated. Please switch to Start."""
-    return Start(builder)
-def AddIdList(builder, idList): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(idList), 0)
-def GetResultAddIdList(builder, idList):
-    """This method is deprecated. Please switch to AddIdList."""
-    return AddIdList(builder, idList)
-def StartIdListVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def GetResultStartIdListVector(builder, numElems):
-    """This method is deprecated. Please switch to Start."""
-    return StartIdListVector(builder, numElems)
-def End(builder): return builder.EndObject()
-def GetResultEnd(builder):
-    """This method is deprecated. Please switch to End."""
-    return End(builder)
+def GetResultStart(builder): builder.StartObject(1)
+def GetResultAddIdList(builder, idList): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(idList), 0)
+def GetResultStartIdListVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def GetResultEnd(builder): return builder.EndObject()

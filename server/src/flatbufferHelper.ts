@@ -1,5 +1,6 @@
 import { schema } from "./testSchema_generated"
 import * as flatbuffers from "flatbuffers"
+import { IntegerType } from "mongodb"
 
 export class FlatbufferHelper 
 {
@@ -18,8 +19,8 @@ export class FlatbufferHelper
 
 class Message
 {
-    type:number
-    task:Task
+    public type:number
+    public task:Task
 
     constructor(buf:flatbuffers.ByteBuffer)
     {
@@ -27,13 +28,15 @@ class Message
         let bla = fbMessage.body(new schema.Task() as flatbuffers.Table)
         let b = bla as schema.Task
         
-        this.type = fbMessage.type()
+        this.type = fbMessage.type() 
         
+        //console.log(b)
         //let fbMessage = schema.Message.getRootAsMessage(buf)   
         //let bla = fbMessage.body(new schema.Task())
         //this.task = new Task(fbMessage.task()!)
 
         this.task = new Task(b)
+        //console.log(this.task)
     }
 }
 
@@ -44,6 +47,7 @@ class Task
 
     constructor(fbTask:schema.Task)
     {
+        this.stages = []
         if (fbTask != null)
         {
             for (let i = 0; i < fbTask.stagesLength(); i++) 
@@ -94,6 +98,7 @@ class Artifact
     
     constructor(fbTask:schema.Task)
     {
+        this.files = [];
         for (let i = 0; i < fbTask!.artifactsLength(); i++) 
         {
             this.files.push(fbTask!.artifacts(i))

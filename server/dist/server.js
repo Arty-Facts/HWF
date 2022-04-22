@@ -44,6 +44,8 @@ const hwfSchema_generated_1 = require("./hwfSchema_generated");
 const bodyparser = __importStar(require("body-parser"));
 const mongo_db_1 = require("./db/mongo_db");
 const cors_1 = __importDefault(require("cors"));
+const flatbufferHelper_1 = require("./flatbufferHelper");
+const fHelper = new flatbufferHelper_1.FlatbufferHelper();
 //let bodyparser = express.raw()
 const app = (0, express_1.default)();
 const server = http.createServer(app);
@@ -123,6 +125,12 @@ userWss.on("connection", (ws, req) => {
         /*let agentId:number = 999*/
         //sendToAgent((message), agentId)
         console.log("\nws.onMessage from [Client]");
+        let testmessage = fHelper.readFlatbufferBinary(message);
+        console.log(testmessage);
+        console.log(testmessage.type);
+        console.log(testmessage.task.stages[0]);
+        console.log(testmessage.task.artifacts.files[0]);
+        console.log("=============================\n");
         sendToAgent(message);
     });
 });
@@ -159,13 +167,13 @@ function sendToAgent(data) {
         try {
             // send data onwards to agent
             named_agent.send(data);
-            console.log(`Data sent to agent ${named_agent.id}`);
+            //console.log(`Data sent to agent ${named_agent.id}`)
             //Wait for acknowledgement from demon before saving task in db maybe?
             // save task to database
             let buf = new flatbuffers.ByteBuffer(data);
             let fbMessage = hwfSchema_generated_1.schema.Message.getRootAsMessage(buf);
             if (fbMessage.type() == 1) {
-                console.log("message type is 1. continuing...");
+                //console.log("message type is 1. continuing...")
                 let stageCommands = [];
                 let fbTask = fbMessage.task();
                 if (fbTask == null) {
@@ -173,19 +181,19 @@ function sendToAgent(data) {
                 }
                 for (let stage = 0; stage < fbTask.stagesLength(); stage++) {
                     let fbStage = fbTask.stages(stage);
-                    console.log("outer loop....");
-                    console.log(fbTask.stagesLength());
-                    console.log(stage);
+                    //console.log("outer loop....")
+                    //console.log(fbTask.stagesLength())
+                    //console.log(stage)
                     for (let cmd = 0; cmd < fbStage.cmdListLength(); cmd++) {
                         stageCommands.push(fbStage.cmdList(cmd));
-                        console.log("inner loop....");
-                        console.log(fbStage.cmdListLength());
-                        console.log(fbStage.cmdList(cmd));
-                        console.log(cmd);
-                        console.log(cmd < fbStage.cmdListLength());
+                        //console.log("inner loop....")
+                        //console.log(fbStage!.cmdListLength())
+                        //console.log(fbStage!.cmdList(cmd))
+                        //console.log(cmd)
+                        //console.log(cmd < fbStage!.cmdListLength())
                     }
                 }
-                console.log("after loops....");
+                //console.log("after loops....")
                 if (stageCommands !== null) {
                     // to-do: this needs to add a full task
                     // with stages and all

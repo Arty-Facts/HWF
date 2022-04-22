@@ -53,13 +53,13 @@ class dbAdapter {
     }
     connect() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log('connecting to database...');
+            //console.log('connecting to database...');
             try {
                 if (!this.client) {
                     this.client = new mongoDB.MongoClient(this.SERVER_URL);
                     yield this.client.connect();
                     this.db = this.client.db(this.DB_NAME);
-                    console.log('db client created successfully');
+                    //console.log('db client created successfully');
                     this.tasks = this.db.collection("tasks");
                     this.daemons = this.db.collection("daemons");
                     // debug: now try finding the newly added task
@@ -71,11 +71,11 @@ class dbAdapter {
                     //let task = await this.getTask(id)
                     //console.log('DEBUG::::: task:')
                     //console.log(task)
-                    console.log('DEBUG STAGES:::::::: :D');
+                    //console.log('DEBUG STAGES:::::::: :D')
                     let id = yield this.addTask(["hello world!"]);
                     let task = yield this.getTask(id);
-                    console.log("task:");
-                    console.log(yield this.getTask(id));
+                    //console.log("task:")
+                    //console.log(await this.getTask(id))
                     /*
                 await this.addStage(id, "testing...", ["hello world", "bye"], "comment",true, true, false,false)
                 await this.addStage(id, "testing2...", ["hello world", "bye"], "comment",true, true, false,false)
@@ -90,8 +90,8 @@ class dbAdapter {
                     //await this.updateStage("625533e6244171f5f8cc504a", "testing4...", "very GOOD", undefined, undefined, "WAHAHAHAH")
                     yield this.addStage(id, "yay", ["hello world", "bye"], "comment", true, true, false, false);
                     yield this.addStage(id, "weeo", ["hello world", "bye"], "comment", true, true, false, false);
-                    console.log("updated:");
-                    console.log(yield this.getTask(id));
+                    //console.log("updated:")
+                    //console.log(await this.getTask(id))
                     //console.log("updated:")
                     //console.log(await this.getTask(id))
                 }

@@ -3,23 +3,17 @@
 # namespace: schema
 
 import flatbuffers
-from flatbuffers.compat import import_numpy
-np = import_numpy()
 
 class Message(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAs(cls, buf, offset=0):
+    def GetRootAsMessage(cls, buf, offset):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = Message()
         x.Init(buf, n + offset)
         return x
 
-    @classmethod
-    def GetRootAsMessage(cls, buf, offset=0):
-        """This method is deprecated. Please switch to GetRootAs."""
-        return cls.GetRootAs(buf, offset)
     # Message
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
@@ -32,59 +26,24 @@ class Message(object):
         return 0
 
     # Message
-    def Task(self):
+    def BodyType(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
-            x = self._tab.Indirect(o + self._tab.Pos)
-            from schema.Task import Task
-            obj = Task()
-            obj.Init(self._tab.Bytes, x)
-            return obj
-        return None
+            return self._tab.Get(flatbuffers.number_types.Uint8Flags, o + self._tab.Pos)
+        return 0
 
     # Message
-    def GetResult(self):
+    def Body(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
-            x = self._tab.Indirect(o + self._tab.Pos)
-            from schema.GetResult import GetResult
-            obj = GetResult()
-            obj.Init(self._tab.Bytes, x)
+            from flatbuffers.table import Table
+            obj = Table(bytearray(), 0)
+            self._tab.Union(obj, o)
             return obj
         return None
 
-    # Message
-    def GetHardwarePool(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
-        if o != 0:
-            x = self._tab.Indirect(o + self._tab.Pos)
-            from schema.GetHardwarePool import GetHardwarePool
-            obj = GetHardwarePool()
-            obj.Init(self._tab.Bytes, x)
-            return obj
-        return None
-
-def Start(builder): builder.StartObject(4)
-def MessageStart(builder):
-    """This method is deprecated. Please switch to Start."""
-    return Start(builder)
-def AddType(builder, type): builder.PrependInt32Slot(0, type, 0)
-def MessageAddType(builder, type):
-    """This method is deprecated. Please switch to AddType."""
-    return AddType(builder, type)
-def AddTask(builder, task): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(task), 0)
-def MessageAddTask(builder, task):
-    """This method is deprecated. Please switch to AddTask."""
-    return AddTask(builder, task)
-def AddGetResult(builder, getResult): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(getResult), 0)
-def MessageAddGetResult(builder, getResult):
-    """This method is deprecated. Please switch to AddGetResult."""
-    return AddGetResult(builder, getResult)
-def AddGetHardwarePool(builder, getHardwarePool): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(getHardwarePool), 0)
-def MessageAddGetHardwarePool(builder, getHardwarePool):
-    """This method is deprecated. Please switch to AddGetHardwarePool."""
-    return AddGetHardwarePool(builder, getHardwarePool)
-def End(builder): return builder.EndObject()
-def MessageEnd(builder):
-    """This method is deprecated. Please switch to End."""
-    return End(builder)
+def MessageStart(builder): builder.StartObject(3)
+def MessageAddType(builder, type): builder.PrependInt32Slot(0, type, 0)
+def MessageAddBodyType(builder, bodyType): builder.PrependUint8Slot(1, bodyType, 0)
+def MessageAddBody(builder, body): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(body), 0)
+def MessageEnd(builder): return builder.EndObject()

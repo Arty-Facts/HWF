@@ -14,6 +14,11 @@ import * as bodyparser from "body-parser";
 import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
 
+
+import { FlatbufferHelper } from "./flatbufferHelper"
+const fHelper = new FlatbufferHelper()
+
+
 //let bodyparser = express.raw()
 const app = express()
 const server = http.createServer(app)
@@ -25,6 +30,7 @@ const userWss = new ws.Server({server:userServer})
 
 //connect to the database:
 const db = new dbAdapter()
+
 
 app.use(express.json())
 
@@ -160,7 +166,12 @@ userWss.on("connection", (ws, req) => {
     
         //sendToAgent((message), agentId)
         console.log("\nws.onMessage from [Client]")
-        
+        let testmessage = fHelper.readFlatbufferBinary(message)
+        console.log(testmessage)
+        console.log(testmessage.type)
+        console.log(testmessage.task.stages[0])
+        console.log(testmessage.task.artifacts.files[0])
+        console.log("=============================\n")
         sendToAgent(message)
     })
 
@@ -211,7 +222,7 @@ function sendToAgent(data:Uint8Array) {
         try {
             // send data onwards to agent
             (named_agent as WebSocket).send(data)
-            console.log(`Data sent to agent ${named_agent.id}`)
+            //console.log(`Data sent to agent ${named_agent.id}`)
 
             //Wait for acknowledgement from demon before saving task in db maybe?
 
@@ -220,28 +231,28 @@ function sendToAgent(data:Uint8Array) {
             let fbMessage = schema.Message.getRootAsMessage(buf)
 
             if (fbMessage.type() == 1) {
-                console.log("message type is 1. continuing...")
+                //console.log("message type is 1. continuing...")
                 let stageCommands:string[] = []
                 let fbTask = fbMessage.task()
                 
                 if (fbTask == null){return 1}
                 for (let stage = 0; stage < fbTask.stagesLength(); stage++) {
                     let fbStage = fbTask.stages(stage)
-                    console.log("outer loop....")
-                    console.log(fbTask.stagesLength())
-                    console.log(stage)
+                    //console.log("outer loop....")
+                    //console.log(fbTask.stagesLength())
+                    //console.log(stage)
 
                     for (let cmd = 0; cmd < fbStage!.cmdListLength(); cmd++) {
                         stageCommands.push(fbStage!.cmdList(cmd))
-                        console.log("inner loop....")
-                        console.log(fbStage!.cmdListLength())
-                        console.log(fbStage!.cmdList(cmd))
-                        console.log(cmd)
-                        console.log(cmd < fbStage!.cmdListLength())
+                        //console.log("inner loop....")
+                        //console.log(fbStage!.cmdListLength())
+                        //console.log(fbStage!.cmdList(cmd))
+                        //console.log(cmd)
+                        //console.log(cmd < fbStage!.cmdListLength())
                     }
                     
                 }
-                console.log("after loops....")
+                //console.log("after loops....")
 
 
                 if (stageCommands !== null){

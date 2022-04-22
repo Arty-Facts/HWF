@@ -122,43 +122,34 @@ class Hub:
     
     
 
-def _build_message(type, data):
+def _build_message(msg_type, data):
     
     builder = flatbuffers.Builder(0)
+    if msg_type == TASK:
+        builder, done_body = _build_task(builder, data)
+        body_type = FbMessageBody.MessageBody.Task
 
-    if type == TASK:
-        builder, done_task = _build_task(builder, data)
-        FbMessage.MessageStart(builder)
-        FbMessage.MessageAddBodyType(builder, FbMessageBody.MessageBody.Task)
-        FbMessage.MessageAddBody(builder, done_task)
-        #FbMessage.AddTask(builder, done_task)
-
-    elif type == GET_RESULT:
-        builder, done_result = _build_get_result(builder, data)
-        FbMessage.MessageStart(builder)
-        #FbMessage.AddGetResult(builder, done_result)
-        FbMessage.MessageAddBodyType(builder, FbMessageBody.MessageBody.GetResult)
-        FbMessage.MessageAddBody(builder, done_result)
+    elif msg_type == GET_RESULT:
+        builder, done_body = _build_get_result(builder, data)
+        body_type =FbMessageBody.MessageBody.GetResult
     
-    elif type == GET_HARDWARE_POOL:
-        builder, done_hardware_pool = _build_get_hardware_pool(builder, data)
-        FbMessage.MessageStart(builder)
-        #FbMessage.AddGetHardwarePool(builder, done_hardware_pool)
-        FbMessage.MessageAddBodyType(builder, FbMessageBody.MessageBody.GetHardwarePool)
-        FbMessage.MessageAddBody(builder, done_hardware_pool)
+    elif msg_type == GET_HARDWARE_POOL:
+        builder, done_body = _build_get_hardware_pool(builder, data)
+        body_type =FbMessageBody.MessageBody.GetHardwarePool
 
-    elif type == FILE:
-        builder, done_file = _build_file(builder, data)
-        FbMessage.MessageStart(builder)
-        #FbMessage.AddGetHardwarePool(builder, done_hardware_pool)
-        FbMessage.MessageAddBodyType(builder, FbMessageBody.MessageBody.File)
-        FbMessage.MessageAddBody(builder, done_file)
+    elif msg_type == FILE:
+        builder, done_body = _build_file(builder, data)
+        body_type =FbMessageBody.MessageBody.File
     else:
         print("Unknown message type number. Aborting...")
         return
     
+    FbMessage.MessageStart(builder)
+    FbMessage.MessageAddType(builder, msg_type)
+    FbMessage.MessageAddBodyType(builder, body_type)
+    FbMessage.MessageAddBody(builder, done_body)
 
-    
+
     message = FbMessage.MessageEnd(builder)
     builder.Finish(message)
     buffer = builder.Output()

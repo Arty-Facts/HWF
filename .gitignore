@@ -9,3 +9,4 @@ server/**.js
 python_api/__pycache__/
 hwf
 hwf.pub
+schema/__pycache__/*
