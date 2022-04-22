@@ -16,7 +16,7 @@ services:
         - 9000:9000 #Daemon websockets
         - 27017:27017 #Default mongoDB port
       environment:
-        HWF_DB_URL: "mongodb://10.241.33.62:27017/test"
+        HWF_DB_URL: "mongodb://10.241.33.62:27017/test" #mongodb://x.x.x.x/test
       # volumes:
       #   - storage:data/db
 
@@ -30,7 +30,7 @@ services:
     ports:
       - 9000:9000 
     environment:
-      HWF_SERVER_URL: "http://192.169.0.103:9000"
+      HWF_SERVER_URL: "ws://192.168.0.103:9000" #ws://x.x.x.x:9000s
 
 # volumes:
 #   storage:

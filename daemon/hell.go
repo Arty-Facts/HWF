@@ -4,7 +4,6 @@ import (
 	//"context"
 	"fmt"
 	"log"
-	"net/url"
 	"os"
 	"os/exec"
 
@@ -14,12 +13,14 @@ import (
 
 //connect to the server via websockets
 func connect() *websocket.Conn {
-	u := url.URL{
-		Scheme: "ws",
-		Host:   os.Getenv("HWF_SERVER_URL"),
-		Path:   "/",
-	}
-	connection, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	// u := url.URL{
+	// 	Scheme: "ws",
+	// 	Host:   os.Getenv("HWF_SERVER_URL"),
+	// 	Path:   "/",
+	// }
+
+	server_url := os.Getenv("HWF_SERVER_URL")
+	connection, _, err := websocket.DefaultDialer.Dial(server_url, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
