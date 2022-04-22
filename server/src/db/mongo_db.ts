@@ -34,7 +34,7 @@ export class dbAdapter <T extends dbInterface> {
     }
     
     async connect() {
-        console.log('connecting to database...');
+        //console.log('connecting to database...');
 
         try {
             if (!this.client) {
@@ -42,7 +42,7 @@ export class dbAdapter <T extends dbInterface> {
                 await this.client.connect();
                 this.db = this.client.db(this.DB_NAME);
 
-                console.log('db client created successfully');
+                //console.log('db client created successfully');
                 this.tasks = this.db.collection("tasks")
                 this.daemons = this.db.collection("daemons")
 
@@ -61,11 +61,11 @@ export class dbAdapter <T extends dbInterface> {
                 //console.log('DEBUG::::: task:')
                 //console.log(task)
 
-                console.log('DEBUG STAGES:::::::: :D')
+                //console.log('DEBUG STAGES:::::::: :D')
                 let id = await this.addTask(["hello world!"])
                 let task = await this.getTask(id)
-                console.log("task:")
-                console.log(await this.getTask(id))
+                //console.log("task:")
+                //console.log(await this.getTask(id))
                     /*
                 await this.addStage(id, "testing...", ["hello world", "bye"], "comment",true, true, false,false)
                 await this.addStage(id, "testing2...", ["hello world", "bye"], "comment",true, true, false,false)
@@ -83,8 +83,8 @@ export class dbAdapter <T extends dbInterface> {
                 await this.addStage(id, "yay", ["hello world", "bye"], "comment",true, true, false,false)
                 await this.addStage(id, "weeo", ["hello world", "bye"], "comment",true, true, false,false)
 
-                console.log("updated:")
-                console.log(await this.getTask(id))
+                //console.log("updated:")
+                //console.log(await this.getTask(id))
 
                 //console.log("updated:")
                 //console.log(await this.getTask(id))

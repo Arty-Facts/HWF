@@ -11,3 +11,4 @@ hwf
 hwf.pub
 portal2.zip
 test.zip
+schema/__pycache__/*

@@ -24,23 +24,35 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FlatbufferHelper = void 0;
-const hwfSchema_generated_1 = require("./hwfSchema_generated");
+const testSchema_generated_1 = require("./testSchema_generated");
 const flatbuffers = __importStar(require("flatbuffers"));
 class FlatbufferHelper {
     readFlatbufferBinary(data) {
         return new Message(new flatbuffers.ByteBuffer(data));
     }
+    getFlatbufferType(data) {
+        let buffer = new flatbuffers.ByteBuffer(data);
+        return testSchema_generated_1.schema.Message.getRootAsMessage(buffer).bodyType();
+    }
 }
 exports.FlatbufferHelper = FlatbufferHelper;
 class Message {
     constructor(buf) {
-        let fbMessage = hwfSchema_generated_1.schema.Message.getRootAsMessage(buf);
+        let fbMessage = testSchema_generated_1.schema.Message.getRootAsMessage(buf);
+        let bla = fbMessage.body(new testSchema_generated_1.schema.Task());
+        let b = bla;
         this.type = fbMessage.type();
-        this.task = new Task(fbMessage.task());
+        //console.log(b)
+        //let fbMessage = schema.Message.getRootAsMessage(buf)   
+        //let bla = fbMessage.body(new schema.Task())
+        //this.task = new Task(fbMessage.task()!)
+        this.task = new Task(b);
+        //console.log(this.task)
     }
 }
 class Task {
     constructor(fbTask) {
+        this.stages = [];
         if (fbTask != null) {
             for (let i = 0; i < fbTask.stagesLength(); i++) {
                 this.stages.push(new Stage(fbTask.stages(i)));
@@ -67,6 +79,7 @@ class Stage {
 }
 class Artifact {
     constructor(fbTask) {
+        this.files = [];
         for (let i = 0; i < fbTask.artifactsLength(); i++) {
             this.files.push(fbTask.artifacts(i));
         }

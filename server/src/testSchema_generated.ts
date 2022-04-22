@@ -61,7 +61,7 @@ bodyType():schema.MessageBody {
  * @param flatbuffers.Table obj
  * @returns ?flatbuffers.Table
  */
-body<T extends flatbuffers.Table>(obj:T):T|null {
+body(obj:flatbuffers.Table):flatbuffers.Table|null {
   var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.__union(obj, this.bb_pos + offset) : null;
 };
