@@ -16,21 +16,23 @@ func send_fb_file(filename string, output_filename string) {
 	read_size := 20000000
 	//read_size := 20000
 
+	// open the input file
 	file, err := os.Open(filename)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// open the output file
 	output, err := os.OpenFile(output_filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// what does check do idk
-	//check(err)
-
+	// read the input file in chunks
+	// putting each in flatbuffer and then unpacking
+	// before reading the next chunk
 	packet_count := 0
 	bytes := make([]byte, read_size)
 	for {
@@ -38,6 +40,11 @@ func send_fb_file(filename string, output_filename string) {
 
 		if err != nil {
 			if err == io.EOF {
+				fmt.Println("- end of file reached! -")
+
+				// send empty packet at the end with EOF = true
+				empty := make([]byte, 0)
+				debug_use_flatbuffer(empty, filename, output, packet_count)
 				break
 			}
 			log.Fatal(err)
@@ -53,34 +60,26 @@ func send_fb_file(filename string, output_filename string) {
 
 func debug_use_flatbuffer(bytes []byte, filename string, output_file *os.File, packet_count int) {
 
-	// check (if bytes empty) -> true
-	output := build_flatbuffer(bytes, filename, packet_count, false)
+	// check (if bytes empty) -> set eof to true
+	end := false
+	if len(bytes) == 0 {
+		end = true
+	}
+
+	// build flatbuffer using read bytes
+	output := build_flatbuffer(bytes, filename, packet_count, end)
 
 	// get contents from flatbuffer
 	fb_file := schema.GetRootAsFile(output, 0)
 	name := fb_file.Filename()
 	nr := fb_file.Packetnumber()
 	eof := fb_file.Eof()
-
-	fmt.Println(name, nr, eof)
-
-	/*
-		arr := make([]byte, fb_file.DataLength())
-		for i := 0; i < fb_file.DataLength(); i++ {
-			arr[i] = byte(fb_file.Data(i))
-		}*/
-
 	arr := fb_file.DataBytes()
 
 	// save arr to output file
 	output_file.Write(arr)
 
-	//err := ioutil.WriteFile(output_filename, arr, 0644)
-
-	/*
-		if err != nil {
-			log.Fatal(err)
-		}*/
+	fmt.Println(string(name), "|", nr, "/398", eof)
 }
 
 func build_flatbuffer(bytes []byte, filename string, packet_count int, eof bool) []byte {
@@ -100,17 +99,10 @@ func build_flatbuffer(bytes []byte, filename string, packet_count int, eof bool)
 	return builder.FinishedBytes()
 }
 
-func write_file(arr []byte, filename string) {
-	// save all bytes in Data array to arr
-	// for i := 0; i < test.DataLength(); i++ {
-	// 	arr[i] = byte(test.Data(i))
-	// }
-
-	// // save arr to file "hellgo.png"
-	// err := ioutil.WriteFile("hellgo.png", arr, 0644)
-}
-
 func main() {
+	// 8 gb file:
 	send_fb_file("portal2.zip", "ouputCOOL.zip")
+
+	// 103 kb file:
 	//send_fb_file("hellgo.png", "HELLLLLL.png")
 }
