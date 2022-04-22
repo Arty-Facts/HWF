@@ -28,7 +28,7 @@
 
   * Install `docker` and `docker-compose`
 
-  * First open `docker-compose.yml` and edit the ip adresses in the environment variables to the ones you need (Get your private ip with `hostname -I` or `ifconfig`).
+  * First open `docker-compose.yml` and edit the ip adresses in the environment variables to the ones you need (Get your private ip with `hostname -I` or `ifconfig` on Linux/Mac, or `ipconfig` on Windows).
   * Run `docker-compose build --no-cache` in the project's root directory to build all images.
   * Run `docker-compose up [server/database/daemon/frontend]` to start one or more containers (Don't run containers with conflicting port bindings on the same device).
 
