@@ -1,7 +1,11 @@
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -41,7 +45,7 @@ const bodyparser = __importStar(require("body-parser"));
 const mongo_db_1 = require("./db/mongo_db");
 const cors_1 = __importDefault(require("cors"));
 //let bodyparser = express.raw()
-const app = express_1.default();
+const app = (0, express_1.default)();
 const server = http.createServer(app);
 const wss = new ws.Server({ server: server });
 //const userApp = express()
@@ -50,7 +54,7 @@ const userWss = new ws.Server({ server: userServer });
 //connect to the database:
 const db = new mongo_db_1.dbAdapter();
 app.use(express_1.default.json());
-app.use(cors_1.default({
+app.use((0, cors_1.default)({
     origin: "*",
     methods: ["GET", "POST", "PUT", "OPTIONS"],
     allowedHeaders: ["Content-Type", "*"]
@@ -78,12 +82,12 @@ wss.on('connection', (ws, req) => __awaiter(void 0, void 0, void 0, function* ()
     //ws.name = "testname" + idnum 
     //idnum++
     //socket.remoteAddress gets the connecting client's IP
-    console.log(`New client "${ws.name}" connected from ${req.socket.remoteAddress}. Given id ${ws.id} `);
+    console.log(`\nNew Daemon [${ws.name}] connected from [${req.socket.remoteAddress}]. Given id [${ws.id}] `);
     // save the new daemon in the database
     let ip = req.socket.remoteAddress;
     if (ip !== undefined) {
         let id = yield db.addDaemon(ip);
-        console.log(`added new daemon with id: "${id}"`);
+        console.log(`added new daemon with id: ["${id}"]`);
         ws.id = id;
         ws.name = "testname (" + id + ")";
     }
@@ -97,8 +101,8 @@ wss.on('connection', (ws, req) => __awaiter(void 0, void 0, void 0, function* ()
     console.log(ws.specs);
     wss.clients.forEach((client) => { console.log(client.id); });
     ws.on("message", (message) => {
-        console.log("ws.onMessage jhfdgjkhsgfkjsdhgkjhdflkgjhdfkjgh");
-        console.log(`Recieved message from ${ws.name}: "${message}"`);
+        console.log("\nws.onMessage from [Daemon]");
+        console.log(`Recieved message: ["${message}"] from Daemon: [${ws.name}] `);
         //ws.send("The server recieved your message")
     });
     ws.on('close', () => {
@@ -106,6 +110,7 @@ wss.on('connection', (ws, req) => __awaiter(void 0, void 0, void 0, function* ()
     });
 }));
 userWss.on("connection", (ws, req) => {
+    console.log(`\nNew Client connected from [${req.socket.remoteAddress}].`);
     ws.on("message", (message) => {
         // console.log("User message: ", message)
         // console.log("typeof: ", typeof message)
@@ -117,6 +122,7 @@ userWss.on("connection", (ws, req) => {
         //let agentId:number = msg.agentId()
         /*let agentId:number = 999*/
         //sendToAgent((message), agentId)
+        console.log("\nws.onMessage from [Client]");
         sendToAgent(message);
     });
 });
@@ -181,6 +187,8 @@ function sendToAgent(data) {
                 }
                 console.log("after loops....");
                 if (stageCommands !== null) {
+                    // to-do: this needs to add a full task
+                    // with stages and all
                     db.addTask(stageCommands);
                 }
                 // get all commands from flatbuf/fer
@@ -236,7 +244,7 @@ function sendToAgentWithId(data, agentId) {
 }
 //Gets the specs for all currently connected clients
 app.get('/specs', (req, res) => {
-    console.log("retrieving agents specs");
+    //console.log("retrieving agents specs")
     if (wss.clients.size == 0) {
         console.log("No agents are connected");
         return res.sendStatus(404);
@@ -255,7 +263,7 @@ app.get('/specs', (req, res) => {
             }
         });
     });
-    console.log(result);
+    //console.log(result)
     return res.json(result);
 });
 /*

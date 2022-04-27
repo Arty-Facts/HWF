@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"os/exec"
 
 	flatbuffers "github.com/google/flatbuffers/go"
@@ -105,33 +106,61 @@ func read_message(msg []byte) {
 		}
 	}()
 
-	test := message.GetRootAsMessage(msg, 0)
+	fb_msg := message.GetRootAsMessage(msg, 0)
 	//var arr = make([]byte, test.DataLength())
 
-	msgType := test.Type()
-
-	if msgType == 1 {
-
-		msgTask := test.Task(new(message.Task))
-		msgStage := new(message.Stage)
-		//msgStage :=
-		msgTask.Stages(msgStage, 0)
-
-		var results = make([][]byte, msgStage.CmdListLength())
-		for i := 0; i < msgStage.CmdListLength(); i++ {
-			fmt.Println(string(msgStage.CmdList(i)))
-			result := execute_command(msgStage.CmdList(i))
-			results[i] = result
-		}
-
-		for i, s := range results {
-			fmt.Println(i, s)
-		}
-
-		// msgCmd := msgStage.CmdList(0)
-		//msgStage.CmdList(new(message.CmdList), 0)
-		// fmt.Println(string(msgCmd))
+	switch msgType := fb_msg.Type(); msgType {
+	case 1:
+		read_task(fb_msg)
+	case 2:
+		read_result(fb_msg)
+	case 3:
+		read_hardwarepool(fb_msg)
+	case 4:
+		read_file(fb_msg)
 	}
+
+	/*
+		// TASK
+		if msgType == 1 {
+
+			msgTask := test.Task(new(message.Task))
+			msgStage := new(message.Stage)
+			//msgStage :=
+			msgTask.Stages(msgStage, 0)
+
+			var results = make([][]byte, msgStage.CmdListLength())
+			for i := 0; i < msgStage.CmdListLength(); i++ {
+				fmt.Println(string(msgStage.CmdList(i)))
+				result := execute_command(msgStage.CmdList(i))
+				results[i] = result
+			}
+
+			for i, s := range results {
+				fmt.Println(i, s)
+			}
+
+			// msgCmd := msgStage.CmdList(0)
+			//msgStage.CmdList(new(message.CmdList), 0)
+			// fmt.Println(string(msgCmd))
+		}
+
+		// GET_RESULT
+		if msgType == 2 {
+
+		}
+
+		// GET_HARDWAREPOOL
+		if msgType == 3 {
+
+		}
+
+		//FILE
+		if msgType == 4 {
+
+		}
+	*/
+
 	// save all bytes in Data array to arr
 	// for i := 0; i < test.DataLength(); i++ {
 	// 	arr[i] = byte(test.Data(i))
@@ -143,6 +172,95 @@ func read_message(msg []byte) {
 	// DEBUG: print the contents of cmd
 	// DEBUG: print the results
 
+}
+
+// TO-DO: fix this just like read_file
+func read_task(msg *message.Message) {
+	msgTask := msg.Task(new(message.Task))
+	msgStage := new(message.Stage)
+
+	msgTask.Stages(msgStage, 0)
+
+	// TO-DO: Wait before executing the commands!!!!
+	// iterate over cmd and execute all commands
+	var results = make([][]byte, msgStage.CmdListLength())
+	for i := 0; i < msgStage.CmdListLength(); i++ {
+		fmt.Println(string(msgStage.CmdList(i)))
+		result := execute_command(msgStage.CmdList(i))
+		results[i] = result
+	}
+
+	// print the results from cmd exec
+	for i, s := range results {
+		fmt.Println(i, s)
+	}
+
+}
+
+// TO-DO: fix this just like read_file
+// this function might be useless, don't think daemon is going to
+// receive a message like this... :(
+func read_hardwarepool(msg *message.Message) {
+	msgHardware := msg.GetHardwarePool(new(message.GetHardwarePool))
+
+	// TO-DO: use hardware info idk XD
+	//fmt.Println(string(msgHardware.Hardware()))
+	// print everyting in the hardware
+	for i := 0; i < msgHardware.HardwareLength(); i++ {
+		fmt.Println(string(msgHardware.Hardware(i)))
+	}
+}
+
+// TO-DO: fix this just like read_file
+func read_result(msg *message.Message) {
+	msgResult := msg.GetResult(new(message.GetResult))
+
+	// print everyting in the result
+	for i := 0; i < msgResult.IdListLength(); i++ {
+		fmt.Println(string(msgResult.IdList(i)))
+	}
+}
+
+func read_file(msg *message.Message) {
+	unionTable := new(flatbuffers.Table)
+
+	if msg.Body(unionTable) {
+
+		unionType := msg.BodyType()
+
+		if unionType == message.MessageBodyFile {
+			unionFile := new(message.File)
+			unionFile.Init(unionTable.Bytes, unionTable.Pos)
+
+			saveFile(unionFile)
+		}
+	}
+
+	//msgFile := msg.Body(new(message.File))
+	//msgFile := msg.File(new(message.File))
+
+}
+
+func saveFile(msgFile *message.File) {
+	filename := msgFile.Filename()
+	packetnr := msgFile.Packetnumber()
+	eof := msgFile.Eof()
+
+	fmt.Println(string(filename), packetnr, eof)
+
+	// save file to disk
+	arr := msgFile.DataBytes()
+
+	// save arr to output file
+	output_file, err := os.OpenFile(string(filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	output_file.Write(arr)
+
+	output_file.Close()
 }
 
 // func write_message(msg string) []byte {
