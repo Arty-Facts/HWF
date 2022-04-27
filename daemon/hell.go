@@ -200,15 +200,17 @@ func read_task(msg *message.Message) {
 					var results = make([][]byte, tempStage.CmdListLength())
 					// execute the stage's commands
 					for i := 0; i < tempStage.CmdListLength(); i++ {
-						fmt.Println(string(tempStage.CmdList(i)))
+						//fmt.Println(string(tempStage.CmdList(i)))
 						result := execute_command(tempStage.CmdList(i))
 						results[i] = result
 					}
 
 					// print the results from cmd exec
+					
 					for i, s := range results {
 						fmt.Println(i, string(s))
 					}
+					
 				}
 			}
 			

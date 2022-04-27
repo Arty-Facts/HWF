@@ -168,10 +168,9 @@ userWss.on("connection", (ws, req) => {
         console.log("\nws.onMessage from [Client]")
         let testmessage = fHelper.readFlatbufferBinary(message)
         console.log(testmessage)
-        console.log(testmessage.type)
         console.log(testmessage.task.stages[0])
-        console.log(testmessage.task.artifacts.files[0])
-        console.log("=============================\n")
+        console.log(`Artifact 0: [${testmessage.task.artifacts.files[0]}]`)
+
         sendToAgent(message)
     })
 

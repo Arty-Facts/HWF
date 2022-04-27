@@ -4,7 +4,7 @@ import HWFtest as HWF #För att testa nya schemat
 task1 = HWF.Task(
     HWF.Stage(
         name = "Bob",
-        cmd = ["ls -la > log.txt","echo banana"], # run the command
+        cmd = ["ls -la > log.txt","echo banana", "cat log.txt"], # run the command
         comment = "Grapefruits are an excellent source of potassium."
     ),
     HWF.Artifacts( # get some files back
