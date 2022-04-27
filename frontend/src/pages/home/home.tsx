@@ -6,13 +6,17 @@ import { useEffect, useState } from "react";
 
 export default function Home() {
   
+  if (process.env.REACT_APP_HWF_SERVER_URL){
+  var serverUrl:string = process.env.REACT_APP_HWF_SERVER_URL;}
+  else {throw "Can't read HWF_SERVER_URL environment variable. Is it empty?"}
+  
   const [specs, setSpecs] = useState([]);
   /* uses setInterval/clearInterval to poll the database for updates about the currently connected daemons */
   useEffect(()=>{
     const timer = setInterval(async ()=>{
       try {
         if(specs !== null){
-            const specList = await axios.get(`http://localhost:9000/specs`); 
+            const specList = await axios.get(serverUrl + `/specs`); 
             console.log(specList.data);
             setSpecs(specList.data); //axios automatically parses json data so we don't have to handle it manually
         } else {

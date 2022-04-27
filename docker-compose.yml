@@ -1,0 +1,36 @@
+version: "3.7"
+services:
+  #Don't run all containers on the same device, the port bindings will conflict and stop it from launching properly.
+  frontend:
+    build: ./frontend
+    environment:
+      REACT_APP_HWF_DB_URL: "PLACEHOLDER"
+      REACT_APP_HWF_SERVER_URL: "http://localhost:9000"
+    ports:
+      - 3000:3000 #Default react port
+
+  server:
+      build: ./server
+      ports:
+        - 3001:3001 #User websockets
+        - 9000:9000 #Daemon websockets
+        - 27017:27017 #Default mongoDB port
+      environment:
+        HWF_DB_URL: "mongodb://10.241.33.62:27017/test" #mongodb://x.x.x.x/test
+      # volumes:
+      #   - storage:data/db
+
+  database:
+    build: ./database
+    ports:
+      - 27017:27017 #Default mongoDB port
+
+  daemon:
+    build: ./daemon
+    ports:
+      - 9000:9000 
+    environment:
+      HWF_SERVER_URL: "ws://192.168.0.103:9000" #ws://x.x.x.x:9000s
+
+# volumes:
+#   storage:
