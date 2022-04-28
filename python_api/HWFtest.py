@@ -25,6 +25,15 @@ HARDWARE_POOL = 3
 GET_HARDWARE_POOL = 3
 FILE = 4
 
+# 1.99 GB
+#BUFFER_SIZE = 1990000000
+
+# 1.99 MB
+BUFFER_SIZE = 1990000
+
+# 50 MB
+#BUFFER_SIZE = 500000000
+
 class Task:
     def __init__(self, *actions):
         self.stages = []
@@ -38,14 +47,22 @@ class Task:
                 raise RuntimeError(f"{type(action)} is not supported!")
 
 class Stage:
-    def __init__(self, name = None, data = None, cmd = None, track_time = True, track_ram = False, track_cpu = False, track_gpu = False, comment="" ):
+    def __init__(self, name = None, data = None, cmd = None, files = None, track_time = True, track_ram = False, track_cpu = False, track_gpu = False, comment="" ):
         self.name = name
         self.data = data
         self.cmd = cmd #Will be string or array of strings
+
+        # file information
+        self.files = files
+        self.packet_nr = 0
+        self.transmitted_files = []
+
+        # tracking information
         self.track_time = track_time
         self.track_ram = track_ram
         self.track_cpu = track_cpu
         self.track_gpu = track_gpu
+
         self.comment = comment
 
 class Artifacts:
@@ -116,6 +133,36 @@ class Hub:
         buffer = _build_message(TASK, task)
         self.socket.send_binary(buffer)  
 
+    def send_files(self):
+
+        for current_file in self.files:
+            process_file(current_file)
+
+    def process_file(self, filename):
+        file = open(filename, "rb")
+
+        self.packet_nr = 0
+
+        byte = file.read(BUFFER_SIZE)
+        dispatch_file(byte, filename)
+        packet_count += 1
+
+        while byte:
+            #print("progress: ", packet_count, "/?")
+            byte = file.read(BUFFER_SIZE)
+
+            # skicka flatbuffer med byte i
+            dispatch_file(byte, filename)
+            packet_count += 1
+
+        dispatch_file(bytearray(), filename, True)
+            
+        file.close()
+
+    def dispatch_file(self, byte, filename, eof=False):
+        buffer = _build_message(FILE, byte)
+        self.socket.send_binary(buffer)  
+
 
 
 
@@ -153,6 +200,7 @@ def _build_message(type, data):
         #FbMessage.AddGetHardwarePool(builder, done_hardware_pool)
         FbMessage.MessageAddBodyType(builder, FbMessageBody.MessageBody.File)
         FbMessage.MessageAddBody(builder, done_file)
+        
     else:
         print("Unknown message type number. Aborting...")
         return

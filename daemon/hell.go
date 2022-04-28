@@ -277,11 +277,6 @@ func saveFile(msgFile *message.File) {
 
 	// save arr to output file
 	output_file := getOutputFile(string(filename))
-	/*output_file, err := os.OpenFile(string(filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
-	if err != nil {
-		log.Fatal(err)
-	}*/
 
 	output_file.Write(arr)
 

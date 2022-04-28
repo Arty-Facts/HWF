@@ -9,7 +9,7 @@ table Message {
 
 table Stage {
     name:string;
-    data:[byte];
+    data:[Data];
     cmd_list:[string];
     track_time:bool = true;
     track_ram:bool = false;
@@ -18,7 +18,13 @@ table Stage {
     comment:string;
 }
 
+table Data {
+    path:string;
+    filename:string;
+}
+
 table Task {
+    hardware:Hardware;
     stages:[Stage]; //Be sure to create a vector that can store several Stages
     artifacts:[string];
 }
@@ -38,6 +44,10 @@ table File {
     data:[ubyte];
 }
 
+table Hardware {
+    cpu:string;
+    gpu:string;
+    os:string;
+}
+
 root_type Message;
-
-
