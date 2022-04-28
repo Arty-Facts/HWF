@@ -24,7 +24,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FlatbufferHelper = void 0;
-const testSchema_generated_1 = require("./testSchema_generated");
+const hwfSchema_generated_1 = require("./hwfSchema_generated");
 const flatbuffers = __importStar(require("flatbuffers"));
 class FlatbufferHelper {
     readFlatbufferBinary(data) {
@@ -32,14 +32,15 @@ class FlatbufferHelper {
     }
     getFlatbufferType(data) {
         let buffer = new flatbuffers.ByteBuffer(data);
-        return testSchema_generated_1.schema.Message.getRootAsMessage(buffer).bodyType();
+        return hwfSchema_generated_1.schema.Message.getRootAsMessage(buffer).type();
+        //return schema.Message.getRootAsMessage(buffer).bodyType()
     }
 }
 exports.FlatbufferHelper = FlatbufferHelper;
 class Message {
     constructor(buf) {
-        let fbMessage = testSchema_generated_1.schema.Message.getRootAsMessage(buf);
-        let bla = fbMessage.body(new testSchema_generated_1.schema.Task());
+        let fbMessage = hwfSchema_generated_1.schema.Message.getRootAsMessage(buf);
+        let bla = fbMessage.body(new hwfSchema_generated_1.schema.Task());
         let b = bla;
         this.type = fbMessage.type();
         //console.log(b)
@@ -59,6 +60,7 @@ class Task {
             }
             this.artifacts = new Artifact(fbTask);
         }
+        this.hardware = new Hardware(fbTask.hardware());
     }
 }
 class Stage {
@@ -83,5 +85,12 @@ class Artifact {
         for (let i = 0; i < fbTask.artifactsLength(); i++) {
             this.files.push(fbTask.artifacts(i));
         }
+    }
+}
+class Hardware {
+    constructor(fbTask) {
+        this.cpu = fbTask.cpu();
+        this.gpu = fbTask.gpu();
+        this.os = fbTask.os();
     }
 }

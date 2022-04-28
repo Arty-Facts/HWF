@@ -47,10 +47,6 @@ class dbAdapter {
         this.DB_NAME = "test";
         this.connect();
     }
-    connectToDatabase() {
-        //:D
-        this.connect();
-    }
     connect() {
         return __awaiter(this, void 0, void 0, function* () {
             //console.log('connecting to database...');
@@ -62,6 +58,7 @@ class dbAdapter {
                     //console.log('db client created successfully');
                     this.tasks = this.db.collection("tasks");
                     this.daemons = this.db.collection("daemons");
+                    console.log(`Connected to Database at: ${this.SERVER_URL}`);
                     // debug: now try finding the newly added task
                     //this.findTask("622b23e7bec9c63a78067581")
                     //this.DeleteTask("622b28ede0fadc37259f536e")
@@ -72,8 +69,8 @@ class dbAdapter {
                     //console.log('DEBUG::::: task:')
                     //console.log(task)
                     //console.log('DEBUG STAGES:::::::: :D')
-                    let id = yield this.addTask(["hello world!"]);
-                    let task = yield this.getTask(id);
+                    //let id = await this.addTask(["hello world!"])
+                    //let task = await this.getTask(id)
                     //console.log("task:")
                     //console.log(await this.getTask(id))
                     /*
@@ -88,8 +85,8 @@ class dbAdapter {
                 await this.updateStage(id, "testing4...", "very GOOD", "peep", undefined, "bloop")
                 */
                     //await this.updateStage("625533e6244171f5f8cc504a", "testing4...", "very GOOD", undefined, undefined, "WAHAHAHAH")
-                    yield this.addStage(id, "yay", ["hello world", "bye"], "comment", true, true, false, false);
-                    yield this.addStage(id, "weeo", ["hello world", "bye"], "comment", true, true, false, false);
+                    //await this.addStage(id, "yay", ["hello world", "bye"], "comment",true, true, false,false)
+                    //await this.addStage(id, "weeo", ["hello world", "bye"], "comment",true, true, false,false)
                     //console.log("updated:")
                     //console.log(await this.getTask(id))
                     //console.log("updated:")
@@ -105,14 +102,14 @@ class dbAdapter {
         });
     }
     //to-do: add specs + other fields?
-    addDaemon(ip) {
+    addDaemon(agent) {
         return __awaiter(this, void 0, void 0, function* () {
-            let id;
-            let result = yield this.daemons.insertOne({ 'ip': ip });
+            let result = yield this.daemons.insertOne(JSON.parse(agent));
+            console.log(`Inserted new Daemon successfully with ID[${result.insertedId.toString()}]`);
+            console.log(yield this.getTask(result.insertedId.toString()));
             return result.insertedId.toString();
         });
     }
-    // to-do: finish this, it's copypaste from gettask atm
     getDaemon(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -128,13 +125,12 @@ class dbAdapter {
             }
         });
     }
-    //to-do: remove cmd since its now a part of stages instead of tasks
-    addTask(cmd) {
+    addTask(task) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                // to-do: remove cmd from tasks - move to stages
-                let result = yield this.tasks.insertOne({ 'cmd': cmd, 'stages': [], 'artifacts': [] });
-                console.log('inserted new task successfully!');
+                let result = yield this.tasks.insertOne(JSON.parse(task));
+                console.log(`Inserted new Task successfully with ID[${result.insertedId.toString()}]`);
+                console.log(yield this.getTask(result.insertedId.toString()));
                 return result.insertedId.toString();
             }
             catch (error) {
@@ -176,73 +172,6 @@ class dbAdapter {
                 console.log('wrong id');
                 console.error(error);
             }
-        });
-    }
-    /*
-    //to-do: remove cmd since its now a part of stages instead of tasks
-    updateTask(id:string, cmd:string[]) {
-        try {
-            this.tasks.updateOne({_id: new ObjectId(id)}, {$set: {'cmd': cmd, 'stages': [], 'artifacts': []}})
-            console.log("updated task successfully :)")
-        }
-        catch(error:any) {
-            console.log('error updating task')
-            console.error(error)
-        }
-
-    }
-    */
-    updateStage(task_id, stage_name, stage_status, ram, cpu, gpu) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                /*
-                status: string
-                ram_usage: -
-                cpu_usage: -
-                gpu_usage
-                */
-                var set_dict = {};
-                if (typeof stage_status !== 'undefined') {
-                    set_dict['stages.$.status'] = stage_status;
-                }
-                if (typeof ram !== 'undefined') {
-                    set_dict['stages.$.ram_usage'] = ram;
-                }
-                if (typeof cpu !== 'undefined') {
-                    set_dict['stages.$.cpu_usage'] = cpu;
-                }
-                if (typeof gpu !== 'undefined') {
-                    set_dict['stages.$.gpu_usage'] = gpu;
-                }
-                //this.tasks.updateOne({_id: new ObjectId(task_id), 'stages.name': stage_name}, {$set: {'stages.$.status': stage_status}})
-                this.tasks.updateOne({ _id: new mongodb_1.ObjectId(task_id), 'stages.name': stage_name }, { $set: set_dict });
-                console.log("updated task successfully :)");
-            }
-            catch (error) {
-                console.log('error updating task');
-                console.error(error);
-            }
-        });
-    }
-    addStage(task_id, name, cmd, comment, track_time, track_ram, track_cpu, track_gpu) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                // to-do: get actual time
-                let time = '2022/4/20-13:37';
-                let stage = { 'name': name, 'cmd': cmd, 'comment': comment, 'status': 'queued',
-                    'track_time': track_time, 'track_ram': track_ram, 'track_cpu': track_cpu, 'track_gpu': track_gpu,
-                    'time_started': time, 'time_finished': 'N/A', 'ram_usage': 'N/A', 'cpu_usage': 'N/A', 'gpu_usage': 'N/A' };
-                yield this.tasks.updateOne({ _id: new mongodb_1.ObjectId(task_id) }, { $push: { 'stages': stage } });
-            }
-            catch (error) {
-                console.log('error adding stage to task');
-                console.error(error);
-            }
-        });
-    }
-    deleteStage(task_id, stage_name) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.tasks.updateOne({ _id: new mongodb_1.ObjectId(task_id), 'stages.name': stage_name }, { $pull: { 'stages': { 'name': stage_name } } });
         });
     }
     addResult(daemon, status, timestamp) {

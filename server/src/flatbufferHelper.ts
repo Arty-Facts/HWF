@@ -1,4 +1,4 @@
-import { schema } from "./testSchema_generated"
+import { schema } from "./hwfSchema_generated"
 import * as flatbuffers from "flatbuffers"
 import { IntegerType } from "mongodb"
 
