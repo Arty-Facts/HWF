@@ -1,11 +1,7 @@
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -30,23 +26,37 @@ class FlatbufferHelper {
     readFlatbufferBinary(data) {
         return new Message(new flatbuffers.ByteBuffer(data));
     }
+    getFlatbufferType(data) {
+        let buffer = new flatbuffers.ByteBuffer(data);
+        return hwfSchema_generated_1.schema.Message.getRootAsMessage(buffer).type();
+        //return schema.Message.getRootAsMessage(buffer).bodyType()
+    }
 }
 exports.FlatbufferHelper = FlatbufferHelper;
 class Message {
     constructor(buf) {
         let fbMessage = hwfSchema_generated_1.schema.Message.getRootAsMessage(buf);
+        let bla = fbMessage.body(new hwfSchema_generated_1.schema.Task());
+        let b = bla;
         this.type = fbMessage.type();
-        this.task = new Task(fbMessage.task());
+        //console.log(b)
+        //let fbMessage = schema.Message.getRootAsMessage(buf)   
+        //let bla = fbMessage.body(new schema.Task())
+        //this.task = new Task(fbMessage.task()!)
+        this.task = new Task(b);
+        //console.log(this.task)
     }
 }
 class Task {
     constructor(fbTask) {
+        this.stages = [];
         if (fbTask != null) {
             for (let i = 0; i < fbTask.stagesLength(); i++) {
                 this.stages.push(new Stage(fbTask.stages(i)));
             }
             this.artifacts = new Artifact(fbTask);
         }
+        this.hardware = new Hardware(fbTask.hardware());
     }
 }
 class Stage {
@@ -67,8 +77,16 @@ class Stage {
 }
 class Artifact {
     constructor(fbTask) {
+        this.files = [];
         for (let i = 0; i < fbTask.artifactsLength(); i++) {
             this.files.push(fbTask.artifacts(i));
         }
+    }
+}
+class Hardware {
+    constructor(fbTask) {
+        this.cpu = fbTask.cpu();
+        this.gpu = fbTask.gpu();
+        this.os = fbTask.os();
     }
 }

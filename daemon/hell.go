@@ -168,6 +168,27 @@ func read_task(msg *message.Message) {
 		}
 	}
 
+	/*
+		msgTask := msg.Task(new(message.Task))
+		msgStage := new(message.Stage)
+
+		msgTask.Stages(msgStage, 0)
+
+		// TO-DO: Wait before executing the commands!!!!
+		// iterate over cmd and execute all commands
+		var results = make([][]byte, msgStage.CmdListLength())
+		for i := 0; i < msgStage.CmdListLength(); i++ {
+			fmt.Println(string(msgStage.CmdList(i)))
+			result := execute_command(msgStage.CmdList(i))
+			results[i] = result
+		}
+
+		// print the results from cmd exec
+		for i, s := range results {
+			fmt.Println(i, s)
+		}
+	*/
+
 }
 
 // this function might be useless, don't think daemon is going to
@@ -190,6 +211,16 @@ func read_hardwarepool(msg *message.Message) {
 			// do something here
 		}
 	}
+
+	/*
+		msgHardware := msg.GetHardwarePool(new(message.GetHardwarePool))
+
+		// TO-DO: use hardware info idk XD
+		//fmt.Println(string(msgHardware.Hardware()))
+		// print everyting in the hardware
+		for i := 0; i < msgHardware.HardwareLength(); i++ {
+			fmt.Println(string(msgHardware.Hardware(i)))
+		}*/
 }
 
 func read_result(msg *message.Message) {

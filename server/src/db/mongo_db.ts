@@ -3,6 +3,7 @@ import { dbInterface } from './db_interface'
 import * as mongoDB from "mongodb"
 import { ObjectId } from "mongodb"
 
+
 //https://www.mongodb.com/compatibility/using-typescript-with-mongodb-tutorial
 
 export const collections: {tasks?: mongoDB.Collection} = {}
@@ -28,13 +29,8 @@ export class dbAdapter <T extends dbInterface> {
         this.connect()
     }
     
-    connectToDatabase():void {
-        //:D
-        this.connect()
-    }
-    
     async connect() {
-        console.log('connecting to database...');
+        //console.log('connecting to database...');
 
         try {
             if (!this.client) {
@@ -42,10 +38,11 @@ export class dbAdapter <T extends dbInterface> {
                 await this.client.connect();
                 this.db = this.client.db(this.DB_NAME);
 
-                console.log('db client created successfully');
+                //console.log('db client created successfully');
                 this.tasks = this.db.collection("tasks")
                 this.daemons = this.db.collection("daemons")
 
+                console.log(`Connected to Database at: ${this.SERVER_URL}`)
                 // debug: now try finding the newly added task
                 //this.findTask("622b23e7bec9c63a78067581")
 
@@ -61,11 +58,11 @@ export class dbAdapter <T extends dbInterface> {
                 //console.log('DEBUG::::: task:')
                 //console.log(task)
 
-                console.log('DEBUG STAGES:::::::: :D')
-                let id = await this.addTask(["hello world!"])
-                let task = await this.getTask(id)
-                console.log("task:")
-                console.log(await this.getTask(id))
+                //console.log('DEBUG STAGES:::::::: :D')
+                //let id = await this.addTask(["hello world!"])
+                //let task = await this.getTask(id)
+                //console.log("task:")
+                //console.log(await this.getTask(id))
                     /*
                 await this.addStage(id, "testing...", ["hello world", "bye"], "comment",true, true, false,false)
                 await this.addStage(id, "testing2...", ["hello world", "bye"], "comment",true, true, false,false)
@@ -80,11 +77,11 @@ export class dbAdapter <T extends dbInterface> {
 
                 //await this.updateStage("625533e6244171f5f8cc504a", "testing4...", "very GOOD", undefined, undefined, "WAHAHAHAH")
                 
-                await this.addStage(id, "yay", ["hello world", "bye"], "comment",true, true, false,false)
-                await this.addStage(id, "weeo", ["hello world", "bye"], "comment",true, true, false,false)
+                //await this.addStage(id, "yay", ["hello world", "bye"], "comment",true, true, false,false)
+                //await this.addStage(id, "weeo", ["hello world", "bye"], "comment",true, true, false,false)
 
-                console.log("updated:")
-                console.log(await this.getTask(id))
+                //console.log("updated:")
+                //console.log(await this.getTask(id))
 
                 //console.log("updated:")
                 //console.log(await this.getTask(id))
@@ -105,14 +102,13 @@ export class dbAdapter <T extends dbInterface> {
     }
 
     //to-do: add specs + other fields?
-    async addDaemon(ip:string):Promise<string> {
-        let id:string;
-        let result = await this.daemons.insertOne({'ip': ip})
-
+    async addDaemon(agent:string):Promise<string> {
+        let result = await this.daemons.insertOne(JSON.parse(agent))
+        console.log(`Inserted new Daemon successfully with ID[${result.insertedId.toString()}]`)
+        console.log(await this.getTask(result.insertedId.toString()))
         return result.insertedId.toString();
     }
 
-    // to-do: finish this, it's copypaste from gettask atm
     async getDaemon(id:string) {
         try{
 
@@ -131,13 +127,13 @@ export class dbAdapter <T extends dbInterface> {
         
     }
 
-    //to-do: remove cmd since its now a part of stages instead of tasks
-    async addTask(cmd:string[]):Promise<string> {
+    async addTask(task:string):Promise<string> {
         try {
-            // to-do: remove cmd from tasks - move to stages
-            let result = await this.tasks.insertOne({'cmd': cmd, 'stages': [], 'artifacts': []})
-
-            console.log('inserted new task successfully!')
+            let result = await this.tasks.insertOne(JSON.parse(task))
+            
+            console.log(`Inserted new Task successfully with ID[${result.insertedId.toString()}]`)
+            console.log(await this.getTask(result.insertedId.toString()))
+            
             return result.insertedId.toString(); 
         }
         catch(error) {
@@ -187,87 +183,6 @@ export class dbAdapter <T extends dbInterface> {
         }
 
     }
-
-    /* 
-    //to-do: remove cmd since its now a part of stages instead of tasks
-    updateTask(id:string, cmd:string[]) {
-        try {
-            this.tasks.updateOne({_id: new ObjectId(id)}, {$set: {'cmd': cmd, 'stages': [], 'artifacts': []}})
-            console.log("updated task successfully :)")
-        } 
-        catch(error:any) {
-            console.log('error updating task')
-            console.error(error)
-        }
-
-    }
-    */
-
-    async updateStage(task_id:string, stage_name:string, stage_status?:string, ram?:string, cpu?:string, gpu?:string) {
-        try {
-
-            /*
-            status: string
-            ram_usage: -
-            cpu_usage: -
-            gpu_usage
-            */
-
-            var set_dict: any = {}
-
-            if (typeof stage_status !== 'undefined') {
-                set_dict['stages.$.status'] = stage_status
-            }
-
-            if (typeof ram !== 'undefined') { 
-                set_dict['stages.$.ram_usage'] = ram
-            }
-
-            if (typeof cpu !== 'undefined') { 
-                set_dict['stages.$.cpu_usage'] = cpu
-            }
-
-            if (typeof gpu !== 'undefined') { 
-                set_dict['stages.$.gpu_usage'] = gpu
-            }
-
-
-
-            //this.tasks.updateOne({_id: new ObjectId(task_id), 'stages.name': stage_name}, {$set: {'stages.$.status': stage_status}})
-            this.tasks.updateOne({_id: new ObjectId(task_id), 'stages.name': stage_name}, {$set: set_dict})
-            console.log("updated task successfully :)")
-        } 
-        catch(error:any) {
-            console.log('error updating task')
-            console.error(error)
-        }
-
-    }
-
-    async addStage(task_id:string, name:string, cmd:string[], comment:string, 
-        track_time:boolean, track_ram:boolean, track_cpu:boolean, track_gpu:boolean): Promise<void> {
-            
-        try {
-
-            // to-do: get actual time
-            let time = '2022/4/20-13:37'
-
-            let stage = {'name': name, 'cmd': cmd, 'comment': comment, 'status': 'queued', 
-            'track_time': track_time, 'track_ram': track_ram, 'track_cpu': track_cpu, 'track_gpu': track_gpu, 
-            'time_started': time, 'time_finished': 'N/A', 'ram_usage': 'N/A', 'cpu_usage': 'N/A', 'gpu_usage': 'N/A'}
-
-            await this.tasks.updateOne({_id: new ObjectId(task_id)}, {$push: {'stages': stage}});
-        }
-        catch(error:any){
-            console.log('error adding stage to task')
-            console.error(error)
-        }
-    } 
-
-    async deleteStage(task_id:string, stage_name:string) {
-        this.tasks.updateOne({_id: new ObjectId(task_id), 'stages.name': stage_name}, {$pull: {'stages': {'name': stage_name}}})
-    }
-
 
     addResult(daemon:string, status:string, timestamp:string): void {
         

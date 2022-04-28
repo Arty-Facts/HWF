@@ -3,9 +3,23 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.schema = void 0;
 /**
- * @constructor
+ * @enum {number}
  */
 var schema;
+(function (schema) {
+    let MessageBody;
+    (function (MessageBody) {
+        MessageBody[MessageBody["NONE"] = 0] = "NONE";
+        MessageBody[MessageBody["Task"] = 1] = "Task";
+        MessageBody[MessageBody["GetResult"] = 2] = "GetResult";
+        MessageBody[MessageBody["GetHardwarePool"] = 3] = "GetHardwarePool";
+        MessageBody[MessageBody["File"] = 4] = "File";
+    })(MessageBody = schema.MessageBody || (schema.MessageBody = {}));
+})(schema = exports.schema || (exports.schema = {}));
+;
+/**
+ * @constructor
+ */
 (function (schema) {
     class Message {
         constructor() {
@@ -41,37 +55,27 @@ var schema;
         }
         ;
         /**
-         * @param schema.Task= obj
-         * @returns schema.Task|null
+         * @returns schema.MessageBody
          */
-        task(obj) {
+        bodyType() {
             var offset = this.bb.__offset(this.bb_pos, 6);
-            return offset ? (obj || new schema.Task).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
+            return offset ? /**  */ (this.bb.readUint8(this.bb_pos + offset)) : schema.MessageBody.NONE;
         }
         ;
         /**
-         * @param schema.GetResult= obj
-         * @returns schema.GetResult|null
+         * @param flatbuffers.Table obj
+         * @returns ?flatbuffers.Table
          */
-        getResult(obj) {
+        body(obj) {
             var offset = this.bb.__offset(this.bb_pos, 8);
-            return offset ? (obj || new schema.GetResult).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
-        }
-        ;
-        /**
-         * @param schema.GetHardwarePool= obj
-         * @returns schema.GetHardwarePool|null
-         */
-        getHardwarePool(obj) {
-            var offset = this.bb.__offset(this.bb_pos, 10);
-            return offset ? (obj || new schema.GetHardwarePool).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
+            return offset ? this.bb.__union(obj, this.bb_pos + offset) : null;
         }
         ;
         /**
          * @param flatbuffers.Builder builder
          */
         static startMessage(builder) {
-            builder.startObject(4);
+            builder.startObject(3);
         }
         ;
         /**
@@ -84,26 +88,18 @@ var schema;
         ;
         /**
          * @param flatbuffers.Builder builder
-         * @param flatbuffers.Offset taskOffset
+         * @param schema.MessageBody bodyType
          */
-        static addTask(builder, taskOffset) {
-            builder.addFieldOffset(1, taskOffset, 0);
+        static addBodyType(builder, bodyType) {
+            builder.addFieldInt8(1, bodyType, schema.MessageBody.NONE);
         }
         ;
         /**
          * @param flatbuffers.Builder builder
-         * @param flatbuffers.Offset getResultOffset
+         * @param flatbuffers.Offset bodyOffset
          */
-        static addGetResult(builder, getResultOffset) {
-            builder.addFieldOffset(2, getResultOffset, 0);
-        }
-        ;
-        /**
-         * @param flatbuffers.Builder builder
-         * @param flatbuffers.Offset getHardwarePoolOffset
-         */
-        static addGetHardwarePool(builder, getHardwarePoolOffset) {
-            builder.addFieldOffset(3, getHardwarePoolOffset, 0);
+        static addBody(builder, bodyOffset) {
+            builder.addFieldOffset(2, bodyOffset, 0);
         }
         ;
         /**
@@ -123,12 +119,11 @@ var schema;
             builder.finish(offset);
         }
         ;
-        static createMessage(builder, type, taskOffset, getResultOffset, getHardwarePoolOffset) {
+        static createMessage(builder, type, bodyType, bodyOffset) {
             Message.startMessage(builder);
             Message.addType(builder, type);
-            Message.addTask(builder, taskOffset);
-            Message.addGetResult(builder, getResultOffset);
-            Message.addGetHardwarePool(builder, getHardwarePoolOffset);
+            Message.addBodyType(builder, bodyType);
+            Message.addBody(builder, bodyOffset);
             return Message.endMessage(builder);
         }
     }
@@ -410,12 +405,21 @@ var schema;
         }
         ;
         /**
+         * @param schema.Hardware= obj
+         * @returns schema.Hardware|null
+         */
+        hardware(obj) {
+            var offset = this.bb.__offset(this.bb_pos, 4);
+            return offset ? (obj || new schema.Hardware).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
+        }
+        ;
+        /**
          * @param number index
          * @param schema.Stage= obj
          * @returns schema.Stage
          */
         stages(index, obj) {
-            var offset = this.bb.__offset(this.bb_pos, 4);
+            var offset = this.bb.__offset(this.bb_pos, 6);
             return offset ? (obj || new schema.Stage).__init(this.bb.__indirect(this.bb.__vector(this.bb_pos + offset) + index * 4), this.bb) : null;
         }
         ;
@@ -423,12 +427,12 @@ var schema;
          * @returns number
          */
         stagesLength() {
-            var offset = this.bb.__offset(this.bb_pos, 4);
+            var offset = this.bb.__offset(this.bb_pos, 6);
             return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
         }
         ;
         artifacts(index, optionalEncoding) {
-            var offset = this.bb.__offset(this.bb_pos, 6);
+            var offset = this.bb.__offset(this.bb_pos, 8);
             return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
         }
         ;
@@ -436,7 +440,7 @@ var schema;
          * @returns number
          */
         artifactsLength() {
-            var offset = this.bb.__offset(this.bb_pos, 6);
+            var offset = this.bb.__offset(this.bb_pos, 8);
             return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
         }
         ;
@@ -444,7 +448,15 @@ var schema;
          * @param flatbuffers.Builder builder
          */
         static startTask(builder) {
-            builder.startObject(2);
+            builder.startObject(3);
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @param flatbuffers.Offset hardwareOffset
+         */
+        static addHardware(builder, hardwareOffset) {
+            builder.addFieldOffset(0, hardwareOffset, 0);
         }
         ;
         /**
@@ -452,7 +464,7 @@ var schema;
          * @param flatbuffers.Offset stagesOffset
          */
         static addStages(builder, stagesOffset) {
-            builder.addFieldOffset(0, stagesOffset, 0);
+            builder.addFieldOffset(1, stagesOffset, 0);
         }
         ;
         /**
@@ -481,7 +493,7 @@ var schema;
          * @param flatbuffers.Offset artifactsOffset
          */
         static addArtifacts(builder, artifactsOffset) {
-            builder.addFieldOffset(1, artifactsOffset, 0);
+            builder.addFieldOffset(2, artifactsOffset, 0);
         }
         ;
         /**
@@ -514,8 +526,9 @@ var schema;
             return offset;
         }
         ;
-        static createTask(builder, stagesOffset, artifactsOffset) {
+        static createTask(builder, hardwareOffset, stagesOffset, artifactsOffset) {
             Task.startTask(builder);
+            Task.addHardware(builder, hardwareOffset);
             Task.addStages(builder, stagesOffset);
             Task.addArtifacts(builder, artifactsOffset);
             return Task.endTask(builder);
@@ -712,4 +725,253 @@ var schema;
         }
     }
     schema.GetHardwarePool = GetHardwarePool;
+})(schema = exports.schema || (exports.schema = {}));
+/**
+ * @constructor
+ */
+(function (schema) {
+    class File {
+        constructor() {
+            this.bb = null;
+            this.bb_pos = 0;
+        }
+        /**
+         * @param number i
+         * @param flatbuffers.ByteBuffer bb
+         * @returns File
+         */
+        __init(i, bb) {
+            this.bb_pos = i;
+            this.bb = bb;
+            return this;
+        }
+        ;
+        /**
+         * @param flatbuffers.ByteBuffer bb
+         * @param File= obj
+         * @returns File
+         */
+        static getRootAsFile(bb, obj) {
+            return (obj || new File).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+        }
+        ;
+        filename(optionalEncoding) {
+            var offset = this.bb.__offset(this.bb_pos, 4);
+            return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+        }
+        ;
+        /**
+         * @returns number
+         */
+        packetnumber() {
+            var offset = this.bb.__offset(this.bb_pos, 6);
+            return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
+        }
+        ;
+        /**
+         * @returns boolean
+         */
+        eof() {
+            var offset = this.bb.__offset(this.bb_pos, 8);
+            return offset ? !!this.bb.readInt8(this.bb_pos + offset) : false;
+        }
+        ;
+        /**
+         * @param number index
+         * @returns number
+         */
+        data(index) {
+            var offset = this.bb.__offset(this.bb_pos, 10);
+            return offset ? this.bb.readUint8(this.bb.__vector(this.bb_pos + offset) + index) : 0;
+        }
+        ;
+        /**
+         * @returns number
+         */
+        dataLength() {
+            var offset = this.bb.__offset(this.bb_pos, 10);
+            return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+        }
+        ;
+        /**
+         * @returns Uint8Array
+         */
+        dataArray() {
+            var offset = this.bb.__offset(this.bb_pos, 10);
+            return offset ? new Uint8Array(this.bb.bytes().buffer, this.bb.bytes().byteOffset + this.bb.__vector(this.bb_pos + offset), this.bb.__vector_len(this.bb_pos + offset)) : null;
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         */
+        static startFile(builder) {
+            builder.startObject(4);
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @param flatbuffers.Offset filenameOffset
+         */
+        static addFilename(builder, filenameOffset) {
+            builder.addFieldOffset(0, filenameOffset, 0);
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @param number packetnumber
+         */
+        static addPacketnumber(builder, packetnumber) {
+            builder.addFieldInt32(1, packetnumber, 0);
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @param boolean eof
+         */
+        static addEof(builder, eof) {
+            builder.addFieldInt8(2, +eof, +false);
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @param flatbuffers.Offset dataOffset
+         */
+        static addData(builder, dataOffset) {
+            builder.addFieldOffset(3, dataOffset, 0);
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @param Array.<number> data
+         * @returns flatbuffers.Offset
+         */
+        static createDataVector(builder, data) {
+            builder.startVector(1, data.length, 1);
+            for (var i = data.length - 1; i >= 0; i--) {
+                builder.addInt8(data[i]);
+            }
+            return builder.endVector();
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @param number numElems
+         */
+        static startDataVector(builder, numElems) {
+            builder.startVector(1, numElems, 1);
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @returns flatbuffers.Offset
+         */
+        static endFile(builder) {
+            var offset = builder.endObject();
+            return offset;
+        }
+        ;
+        static createFile(builder, filenameOffset, packetnumber, eof, dataOffset) {
+            File.startFile(builder);
+            File.addFilename(builder, filenameOffset);
+            File.addPacketnumber(builder, packetnumber);
+            File.addEof(builder, eof);
+            File.addData(builder, dataOffset);
+            return File.endFile(builder);
+        }
+    }
+    schema.File = File;
+})(schema = exports.schema || (exports.schema = {}));
+/**
+ * @constructor
+ */
+(function (schema) {
+    class Hardware {
+        constructor() {
+            this.bb = null;
+            this.bb_pos = 0;
+        }
+        /**
+         * @param number i
+         * @param flatbuffers.ByteBuffer bb
+         * @returns Hardware
+         */
+        __init(i, bb) {
+            this.bb_pos = i;
+            this.bb = bb;
+            return this;
+        }
+        ;
+        /**
+         * @param flatbuffers.ByteBuffer bb
+         * @param Hardware= obj
+         * @returns Hardware
+         */
+        static getRootAsHardware(bb, obj) {
+            return (obj || new Hardware).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+        }
+        ;
+        cpu(optionalEncoding) {
+            var offset = this.bb.__offset(this.bb_pos, 4);
+            return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+        }
+        ;
+        gpu(optionalEncoding) {
+            var offset = this.bb.__offset(this.bb_pos, 6);
+            return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+        }
+        ;
+        os(optionalEncoding) {
+            var offset = this.bb.__offset(this.bb_pos, 8);
+            return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         */
+        static startHardware(builder) {
+            builder.startObject(3);
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @param flatbuffers.Offset cpuOffset
+         */
+        static addCpu(builder, cpuOffset) {
+            builder.addFieldOffset(0, cpuOffset, 0);
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @param flatbuffers.Offset gpuOffset
+         */
+        static addGpu(builder, gpuOffset) {
+            builder.addFieldOffset(1, gpuOffset, 0);
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @param flatbuffers.Offset osOffset
+         */
+        static addOs(builder, osOffset) {
+            builder.addFieldOffset(2, osOffset, 0);
+        }
+        ;
+        /**
+         * @param flatbuffers.Builder builder
+         * @returns flatbuffers.Offset
+         */
+        static endHardware(builder) {
+            var offset = builder.endObject();
+            return offset;
+        }
+        ;
+        static createHardware(builder, cpuOffset, gpuOffset, osOffset) {
+            Hardware.startHardware(builder);
+            Hardware.addCpu(builder, cpuOffset);
+            Hardware.addGpu(builder, gpuOffset);
+            Hardware.addOs(builder, osOffset);
+            return Hardware.endHardware(builder);
+        }
+    }
+    schema.Hardware = Hardware;
 })(schema = exports.schema || (exports.schema = {}));

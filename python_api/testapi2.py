@@ -1,11 +1,11 @@
 #import HWF
-import HWFtest as HWF #För att testa nya schemat
+import HWF as HWF #För att testa nya schemat
 
 task1 = HWF.Task(
     HWF.Stage(
         name = "Bob",
         cmd = ["ls -la > log.txt","echo banana"], # run the command
-        files = ["portal2.zip"],
+        data = [HWF.Data("files/portal2.zip", "portal2.zip")],
         comment = "Grapefruits are an excellent source of potassium."
     ),
     HWF.Artifacts( # get some files back
