@@ -41,17 +41,16 @@ app.use(cors({
     //Maybe add timestamps to log messages? ("[2022-03-13, 16:33:24] Error: bla bla bla")
 
 var agents:Agent[] = []
-//TODO: Fix specs typing (get rid of string[] type)
 
 class Agent {
     socket:WebSocket
     ip:string;
     name:string;
     specs:{
-        "os": string | string[] | undefined, 
-        "gpu": string | string[] | undefined, 
-        "cpu": string | string[] | undefined, 
-        "ram": string | string[] | undefined
+        "os": string | undefined, 
+        "gpu": string | undefined, 
+        "cpu": string | undefined, 
+        "ram": string | undefined
     };
 
     // currently assigned info:
