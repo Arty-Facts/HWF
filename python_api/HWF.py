@@ -127,16 +127,16 @@ class Hub:
 
     def send_files(self):
 
-        for current_file in self.files:
+        for current_file in self.data:
             self.process_file(current_file)
 
-    def process_file(self, filename):
-        file = open(filename, "rb")
+    def process_file(self, data):
+        file = open(data.path, "rb")
 
         self.packet_nr = 0
 
         byte = file.read(BUFFER_SIZE)
-        self.dispatch_file(byte, filename)
+        self.dispatch_file(byte, data.filename)
         packet_count += 1
 
         while byte:
@@ -144,10 +144,10 @@ class Hub:
             byte = file.read(BUFFER_SIZE)
 
             # skicka flatbuffer med byte i
-            self.dispatch_file(byte, filename)
+            self.dispatch_file(byte, data.filename)
             packet_count += 1
 
-        self.dispatch_file(bytearray(), filename, True)
+        self.dispatch_file(bytearray(), data.filename, True)
             
         file.close()
 
