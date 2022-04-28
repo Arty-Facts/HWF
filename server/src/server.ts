@@ -46,6 +46,7 @@ var agents:Agent[] = []
 class Agent {
     socket:WebSocket
     ip:string;
+    id:string
     name:string;
     specs:{
         "os": string | string[] | undefined, 
@@ -69,14 +70,13 @@ wss.on('connection', async (ws:WebSocket, req:http.IncomingMessage) =>{
 
     let agent = addAgent(ws)
     console.log(`\nNew Daemon connected from [${req.socket.remoteAddress}].`)
-
     // save the new daemon in the 
     let temp:number = 1
     let ip = req.socket.remoteAddress
 
     if (ip !== undefined){
-        let id = await db.addDaemon(ip)
-        console.log(`added new daemon with id: ["${id}"]`)
+        //let id = await db.addDaemon(ip)
+        //console.log(`added new daemon with id: ["${id}"]`)
         agent.name = "testname (" + temp + ")"
         temp++
     }
@@ -106,17 +106,43 @@ wss.on('connection', async (ws:WebSocket, req:http.IncomingMessage) =>{
 
 userWss.on("connection", (ws, req) => {
     console.log(`\nNew User-client connected from [${req.socket.remoteAddress}].`)
-    ws.on("message", (message:Uint8Array) => {
+    ws.on("message", (binaryMessage:Uint8Array) => {
+        /*
+            TASK = 1
+            RESULT = 2
+            GET_RESULT = 2
+            HARDWARE_POOL = 3
+            GET_HARDWARE_POOL = 3
+            FILE = 4
+        */
         
-        console.log("\nws.onMessage from [Client]")
-        let testmessage = fHelper.readFlatbufferBinary(message)
-        console.log(testmessage)
-        console.log(testmessage.task.stages[0])
-        console.log(`Artifact 0: [${testmessage.task.artifacts.files[0]}]`)
-  
-
-        let agent = agents[0]
-        sendToAgent(message, agent)
+        switch (fHelper.getFlatbufferType(binaryMessage)){
+            case 1: {
+                console.log("\nws.onMessage from [Client]")
+                let message = fHelper.readFlatbufferBinary(binaryMessage)
+                //console.log(JSON.stringify(message))
+                //console.log(message.task.hardware)
+                //console.log(message.task.stages[0])
+                //console.log(`Artifact 0: [${message.task.artifacts.files[0]}]`)
+        
+                console.log(JSON.stringify(message.task))
+                db.addTask(JSON.stringify(message.task))
+                let agent = agents[0]
+                sendToAgent(binaryMessage, agent)
+            }
+            case 2: {
+                
+            }
+            case 3: {
+                
+            }
+            case 4: {
+                
+            }
+        }
+        
+        
+        
     })
 
 })
@@ -124,6 +150,10 @@ userWss.on("connection", (ws, req) => {
 function addAgent(socket:WebSocket){
     let agent = new Agent(socket)
     agents.push(agent)
+    db.addDaemon(JSON.stringify({'ip':agent.ip, 'specs':agent.specs})).then(result => {
+        agent.id = result
+    })
+    //console.log(agent)
     return agent
 }
 //TODO: implement this properly
@@ -131,19 +161,22 @@ function sendToUser(data:any, user:WebSocket){
     user.send(data)
 }
 
-function sendToAgent(data:Uint8Array, agent:Agent) {
+
+
+function sendToAgent(message:Uint8Array, agent:Agent) {
 
     if (agent) {
 
         try {
-            agent.socket.send(data)
+            agent.socket.send(message)
 
             // save task to database
-            let buf = new flatbuffers.ByteBuffer(data)
+            let buf = new flatbuffers.ByteBuffer(message)
             let fbMessage = schema.Message.getRootAsMessage(buf)
 
             if (fbMessage.type() == 1) {
                 //console.log("message type is 1. continuing...")
+                /*
                 let stageCommands:string[] = []
                 let fbTask = fbMessage.task()
                 
@@ -162,7 +195,7 @@ function sendToAgent(data:Uint8Array, agent:Agent) {
                     // with stages and all
                     db.addTask(stageCommands)
                 }
-
+                */
                 return 200
             }
         }

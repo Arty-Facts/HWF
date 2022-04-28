@@ -17,6 +17,7 @@ import schema.MessageBody as FbMessageBody
 import schema.Task as FbTask
 import schema.Stage as FbStage
 import schema.File as FbFile
+import schema.Hardware as FbHardware
 
 TASK = 1
 RESULT = 2
@@ -96,16 +97,16 @@ class Hub:
     def dispatch_async(self, hardware=None, task=None, priority=0): #outside mvp
         pass
 
-    def dispatch(self, hardware=None, task=None, priority=0):
+    def dispatch(self, hardware=None, task=None, priority=0, cpu=None, gpu=None, os=None):
         buffer = _build_message(TASK, task)
         self.socket.send_binary(buffer)  
   
 
-def _build_message(msg_type, data):
+def _build_message(msg_type, data, cpu="any", gpu="any", os="any"):
     
     builder = flatbuffers.Builder(0)
     if msg_type == TASK:
-        builder, done_body = _build_task(builder, data)
+        builder, done_body = _build_task(builder, data, cpu, gpu, os)
         body_type = FbMessageBody.MessageBody.Task
 
     elif msg_type == GET_RESULT:
@@ -135,10 +136,10 @@ def _build_message(msg_type, data):
 
     return buffer
 
-def _build_task(builder, task):
+def _build_task(builder, task, cpu, gpu, os):
     serialized_stages = []
     serialized_artifacts = []
-
+    builder, done_hardware = _build_hardware(builder, cpu, gpu, os)
     if len(task.stages) > 0:    
         for stage in task.stages:
             builder, done_stage = _build_stage(builder, stage)
@@ -166,17 +167,23 @@ def _build_task(builder, task):
 
 
     FbTask.TaskStart(builder)
+    FbTask.TaskAddHardware(builder, done_hardware)
     FbTask.TaskAddStages(builder, stage_vector)
     FbTask.TaskAddArtifacts(builder, artifact_vector)
     done_task = FbTask.TaskEnd(builder)
 
     return builder, done_task
 
-def _build_get_result(builder, jobs):
-    pass
-
-def _build_get_hardware_pool(builder, hardware):
-    pass
+def _build_hardware(builder, cpu=None, gpu=None, os=None):
+    fb_hardware_cpu = builder.CreateString(cpu)
+    fb_hardware_gpu = builder.CreateString(gpu)
+    fb_hardware_os = builder.CreateString(os) 
+    FbHardware.HardwareStart(builder)
+    FbHardware.HardwareAddCpu(builder, fb_hardware_cpu)
+    FbHardware.HardwareAddGpu(builder,fb_hardware_gpu)
+    FbHardware.HardwareAddOs(builder,fb_hardware_os)
+    done_hardware = FbHardware.HardwareEnd(builder)
+    return builder, done_hardware   
 
 def _build_stage(builder, stage):
 
@@ -217,3 +224,9 @@ def _build_stage(builder, stage):
 
 def _build_file(builder, file):
     return
+
+def _build_get_result(builder, jobs):
+    pass
+
+def _build_get_hardware_pool(builder, hardware):
+    pass

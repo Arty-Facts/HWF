@@ -61,7 +61,7 @@ bodyType():schema.MessageBody {
  * @param flatbuffers.Table obj
  * @returns ?flatbuffers.Table
  */
-body(obj:flatbuffers.Table):flatbuffers.Table|null {
+body<T extends flatbuffers.Table>(obj:T|flatbuffers.Table):T|null|flatbuffers.Table {
   var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.__union(obj, this.bb_pos + offset) : null;
 };
@@ -415,12 +415,21 @@ static getRootAsTask(bb:flatbuffers.ByteBuffer, obj?:Task):Task {
 };
 
 /**
+ * @param schema.Hardware= obj
+ * @returns schema.Hardware|null
+ */
+hardware(obj?:schema.Hardware):schema.Hardware|null {
+  var offset = this.bb!.__offset(this.bb_pos, 4);
+  return offset ? (obj || new schema.Hardware).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
+};
+
+/**
  * @param number index
  * @param schema.Stage= obj
  * @returns schema.Stage
  */
 stages(index: number, obj?:schema.Stage):schema.Stage|null {
-  var offset = this.bb!.__offset(this.bb_pos, 4);
+  var offset = this.bb!.__offset(this.bb_pos, 6);
   return offset ? (obj || new schema.Stage).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
 };
 
@@ -428,7 +437,7 @@ stages(index: number, obj?:schema.Stage):schema.Stage|null {
  * @returns number
  */
 stagesLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 4);
+  var offset = this.bb!.__offset(this.bb_pos, 6);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -440,7 +449,7 @@ stagesLength():number {
 artifacts(index: number):string
 artifacts(index: number,optionalEncoding:flatbuffers.Encoding):string|Uint8Array
 artifacts(index: number,optionalEncoding?:any):string|Uint8Array|null {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.__string(this.bb!.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
 };
 
@@ -448,7 +457,7 @@ artifacts(index: number,optionalEncoding?:any):string|Uint8Array|null {
  * @returns number
  */
 artifactsLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 6);
+  var offset = this.bb!.__offset(this.bb_pos, 8);
   return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
 };
 
@@ -456,7 +465,15 @@ artifactsLength():number {
  * @param flatbuffers.Builder builder
  */
 static startTask(builder:flatbuffers.Builder) {
-  builder.startObject(2);
+  builder.startObject(3);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset hardwareOffset
+ */
+static addHardware(builder:flatbuffers.Builder, hardwareOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(0, hardwareOffset, 0);
 };
 
 /**
@@ -464,7 +481,7 @@ static startTask(builder:flatbuffers.Builder) {
  * @param flatbuffers.Offset stagesOffset
  */
 static addStages(builder:flatbuffers.Builder, stagesOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(0, stagesOffset, 0);
+  builder.addFieldOffset(1, stagesOffset, 0);
 };
 
 /**
@@ -493,7 +510,7 @@ static startStagesVector(builder:flatbuffers.Builder, numElems:number) {
  * @param flatbuffers.Offset artifactsOffset
  */
 static addArtifacts(builder:flatbuffers.Builder, artifactsOffset:flatbuffers.Offset) {
-  builder.addFieldOffset(1, artifactsOffset, 0);
+  builder.addFieldOffset(2, artifactsOffset, 0);
 };
 
 /**
@@ -526,8 +543,9 @@ static endTask(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static createTask(builder:flatbuffers.Builder, stagesOffset:flatbuffers.Offset, artifactsOffset:flatbuffers.Offset):flatbuffers.Offset {
+static createTask(builder:flatbuffers.Builder, hardwareOffset:flatbuffers.Offset, stagesOffset:flatbuffers.Offset, artifactsOffset:flatbuffers.Offset):flatbuffers.Offset {
   Task.startTask(builder);
+  Task.addHardware(builder, hardwareOffset);
   Task.addStages(builder, stagesOffset);
   Task.addArtifacts(builder, artifactsOffset);
   return Task.endTask(builder);
@@ -890,6 +908,116 @@ static createFile(builder:flatbuffers.Builder, filenameOffset:flatbuffers.Offset
   File.addEof(builder, eof);
   File.addData(builder, dataOffset);
   return File.endFile(builder);
+}
+}
+}
+/**
+ * @constructor
+ */
+export namespace schema{
+export class Hardware {
+  bb: flatbuffers.ByteBuffer|null = null;
+
+  bb_pos:number = 0;
+/**
+ * @param number i
+ * @param flatbuffers.ByteBuffer bb
+ * @returns Hardware
+ */
+__init(i:number, bb:flatbuffers.ByteBuffer):Hardware {
+  this.bb_pos = i;
+  this.bb = bb;
+  return this;
+};
+
+/**
+ * @param flatbuffers.ByteBuffer bb
+ * @param Hardware= obj
+ * @returns Hardware
+ */
+static getRootAsHardware(bb:flatbuffers.ByteBuffer, obj?:Hardware):Hardware {
+  return (obj || new Hardware).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+};
+
+/**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+cpu():string|null
+cpu(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+cpu(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 4);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+gpu():string|null
+gpu(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+gpu(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 6);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+os():string|null
+os(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+os(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 8);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ */
+static startHardware(builder:flatbuffers.Builder) {
+  builder.startObject(3);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset cpuOffset
+ */
+static addCpu(builder:flatbuffers.Builder, cpuOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(0, cpuOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset gpuOffset
+ */
+static addGpu(builder:flatbuffers.Builder, gpuOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(1, gpuOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset osOffset
+ */
+static addOs(builder:flatbuffers.Builder, osOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(2, osOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @returns flatbuffers.Offset
+ */
+static endHardware(builder:flatbuffers.Builder):flatbuffers.Offset {
+  var offset = builder.endObject();
+  return offset;
+};
+
+static createHardware(builder:flatbuffers.Builder, cpuOffset:flatbuffers.Offset, gpuOffset:flatbuffers.Offset, osOffset:flatbuffers.Offset):flatbuffers.Offset {
+  Hardware.startHardware(builder);
+  Hardware.addCpu(builder, cpuOffset);
+  Hardware.addGpu(builder, gpuOffset);
+  Hardware.addOs(builder, osOffset);
+  return Hardware.endHardware(builder);
 }
 }
 }

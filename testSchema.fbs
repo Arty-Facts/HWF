@@ -19,6 +19,7 @@ table Stage {
 }
 
 table Task {
+    hardware:Hardware;
     stages:[Stage]; //Be sure to create a vector that can store several Stages
     artifacts:[string];
 }
@@ -36,6 +37,12 @@ table File {
     packetnumber:int; 
     eof:bool;
     data:[ubyte];
+}
+
+table Hardware {
+    cpu:string;
+    gpu:string;
+    os:string;
 }
 
 root_type Message;

@@ -2,37 +2,20 @@
 
 package schema
 
-import "strconv"
-
-type MessageBody byte
-
+type MessageBody = byte
 const (
-	MessageBodyNONE            MessageBody = 0
-	MessageBodyTask            MessageBody = 1
-	MessageBodyGetResult       MessageBody = 2
+	MessageBodyNONE MessageBody = 0
+	MessageBodyTask MessageBody = 1
+	MessageBodyGetResult MessageBody = 2
 	MessageBodyGetHardwarePool MessageBody = 3
-	MessageBodyFile            MessageBody = 4
+	MessageBodyFile MessageBody = 4
 )
 
 var EnumNamesMessageBody = map[MessageBody]string{
-	MessageBodyNONE:            "NONE",
-	MessageBodyTask:            "Task",
-	MessageBodyGetResult:       "GetResult",
-	MessageBodyGetHardwarePool: "GetHardwarePool",
-	MessageBodyFile:            "File",
+	MessageBodyNONE:"NONE",
+	MessageBodyTask:"Task",
+	MessageBodyGetResult:"GetResult",
+	MessageBodyGetHardwarePool:"GetHardwarePool",
+	MessageBodyFile:"File",
 }
 
-var EnumValuesMessageBody = map[string]MessageBody{
-	"NONE":            MessageBodyNONE,
-	"Task":            MessageBodyTask,
-	"GetResult":       MessageBodyGetResult,
-	"GetHardwarePool": MessageBodyGetHardwarePool,
-	"File":            MessageBodyFile,
-}
-
-func (v MessageBody) String() string {
-	if s, ok := EnumNamesMessageBody[v]; ok {
-		return s
-	}
-	return "MessageBody(" + strconv.FormatInt(int64(v), 10) + ")"
-}
