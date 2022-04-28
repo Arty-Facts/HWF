@@ -41,6 +41,7 @@ app.use(cors({
     //Maybe add timestamps to log messages? ("[2022-03-13, 16:33:24] Error: bla bla bla")
 
 var agents:Agent[] = []
+//TODO: Fix specs typing (get rid of string[] type)
 
 class Agent {
     socket:WebSocket
@@ -61,6 +62,36 @@ class Agent {
 
     constructor(ws:WebSocket){
         this.socket = ws
+    }
+}
+
+class Queue {
+
+    contents:[Uint8Array]
+
+    enqueue(data: Uint8Array){
+        this.contents.push(data)
+    }
+
+    dequeue(data: Uint8Array){
+        this.contents.splice(data)
+    }
+    size(){
+
+    }
+}
+
+class LoadBalancer {
+
+    queue:Queue
+    priorityType: string //fifo, lifo, random, more?
+
+    queueTask(){
+
+    }
+
+    findBestAgent(){
+
     }
 }
 
@@ -206,7 +237,6 @@ app.get('/specs', (req:Request, res:Response) => {
 
 })
 
-
 /*
 //TODO: implement this
 app.post('/createNewJob', (req, res) => {
@@ -236,4 +266,3 @@ server.listen(9000, () => {
 
     console.log("Listening on port: 9000") 
 })
-
