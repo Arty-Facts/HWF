@@ -1,19 +1,17 @@
 import * as  http from "http"
 import * as  ws from 'ws'
-import {Data, WebSocket, WebSocketServer} from 'ws'
+import {WebSocket, WebSocketServer} from 'ws'
 import {Request, Response,} from 'express'
 import express from 'express'
 import * as  url from "url"
 import { ParsedUrlQuery } from "querystring";
 import * as flatbuffers from "flatbuffers"
-import * as fs from "fs"
 import { schema } from "./hwfSchema_generated"
-import * as bodyparser from "body-parser";
 import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
 
 import { FlatbufferHelper } from "./flatbufferHelper"
-const fHelper = new FlatbufferHelper()
+const fbHelper = new FlatbufferHelper()
 
 const app = express()
 
@@ -41,27 +39,46 @@ app.use(cors({
     //Maybe add timestamps to log messages? ("[2022-03-13, 16:33:24] Error: bla bla bla")
 
 var agents:Agent[] = []
-//TODO: Fix specs typing (get rid of string[] type)
+
+function main(){
+    var loadBalancer = new LoadBalancer("fifo")
+    loadBalancer.queue = new Queue()
+
+    userServer.listen(3001, () => {
+        console.log("Userserver listening on port: 3001")
+    })
+    
+    server.listen(9000, () => {
+    
+    
+        console.log("Listening on port: 9000") 
+    })
+}
 
 class Agent {
     socket:WebSocket
     ip:string;
-    name:string;
+    name:string; //Should this be used?
+    id:string | Promise<string>; //TODO: fix so that this does not have to accept a promise type
     specs:{
-        "os": string | undefined, 
-        "gpu": string | undefined, 
-        "cpu": string | undefined, 
-        "ram": string | undefined
+        "os": string | undefined | null, 
+        "gpu": string | undefined | null, 
+        "cpu": string | undefined | null, 
+        "ram": string | undefined | null
     };
+    isIdle:boolean;
 
-    // currently assigned info:
-    task:string;
-    timestamp:string; // when task was assigned
-    isIdle:boolean = true;
+    //used when agent is performing a task
+    currentTask:string | null;
+    taskStartTime:string | null;
 
-
-    constructor(ws:WebSocket){
+    constructor(ws:WebSocket) {
         this.socket = ws
+        this.isIdle = true
+    }
+
+    send(data:Uint8Array) {
+        this.socket.send(data)
     }
 }
 
@@ -69,15 +86,29 @@ class Queue {
 
     contents:[Uint8Array]
 
-    enqueue(data: Uint8Array){
+    enqueue(data: Uint8Array, index?: number): void {
+        if (index) {
+            this.contents.splice(index, 0, data)
+        }
+
+        else {
         this.contents.push(data)
+        }
     }
 
-    dequeue(data: Uint8Array){
-        this.contents.splice(data)
-    }
-    size(){
+    dequeue(target: Uint8Array | number): void {
+    
+        if (typeof target == "number") {
+            this.contents.splice(target, 0)
+        }
 
+        else {
+            this.contents.splice(this.contents.indexOf(target), 0) 
+        }
+    }
+
+    size(): number {
+        return this.contents.length
     }
 }
 
@@ -86,131 +117,128 @@ class LoadBalancer {
     queue:Queue
     priorityType: string //fifo, lifo, random, more?
 
-    queueTask(){
-
+    queueTask(task:Uint8Array): void {
+        this.queue.enqueue(task)
     }
 
-    findBestAgent(){
+    retryQueuedTasks(){
+        if (this.priorityType == "fifo") {
+            this.queue.contents.reverse().forEach(task => {
+                let agent = findAgentForTask(task)
+                if (agent != null && agent.isIdle ) {
+                    agent.send(task)
+                    this.queue.dequeue(task)
+                }
+            });
+        }
 
+        else if (this.priorityType == "lifo") {
+            this.queue.contents.forEach(task => {
+                let agent = findAgentForTask(task)
+                if (agent != null && agent.isIdle ) {
+                    agent.send(task)
+                    this.queue.dequeue(task)
+                }
+            });
+        }
+    }
+    
+    constructor(priority?: "fifo" | "lifo" | "random" ) { //TODO: implement proper support for all priority types
+        if (priority){
+            this.priorityType = priority
+        }
+        else {
+            priority = "fifo"
+        }
     }
 }
 
-wss.on('connection', async (ws:WebSocket, req:http.IncomingMessage) =>{
+wss.on('connection', async (ws:WebSocket, req:http.IncomingMessage) => {
 
-    let agent = addAgent(ws)
-    console.log(`\nNew Daemon connected from [${req.socket.remoteAddress}].`)
-
-    // save the new daemon in the 
-    let temp:number = 1
     let ip = req.socket.remoteAddress
+    let url = req.url
+    console.log(`\nNew Daemon connected from [${ip}].`)
 
-    if (ip !== undefined){
-        let id = await db.addDaemon(ip)
-        console.log(`added new daemon with id: ["${id}"]`)
-        agent.name = "testname (" + temp + ")"
-        temp++
+    if (ip == undefined) {
+
+        throw "Could not read ip of connecting agent, was undefined"
     }
+    let agent = createAgent(ws, ip)
 
-    // don't send this message right now, 
-    // we only want to send Message bin for testing
-    // ws.send("You have connected to the server!")
-    
-    //Saves the specs that were sent in the URL. TODO: Proper handling of empty or missing fields
-    let queries:ParsedUrlQuery = url.parse(req.url!, true).query
-    agent.specs = {"os": queries["os"], "gpu": queries["gpu"], "cpu": queries["cpu"], "ram": queries["ram"],}
+    // let queries:ParsedUrlQuery = url.parse(req.url!, true).query
+    //agent.specs = {"os": queries["os"], "gpu": queries["gpu"], "cpu": queries["cpu"], "ram": queries["ram"],}
+    if (url != null) {
+        agent.specs = {
+            "os": url.match(/os=(\S+?)&/)![0], 
+            "gpu": url.match(/gpu=(\S+?)&/)![0], 
+            "cpu": url.match(/cpu=(\S+?)&/)![0], 
+            "ram": url.match(/ram=(\S+?)$/)![0]}
+    }
     console.log("Agent specs:")
     console.log(agent.specs)
     
-    ws.on("message", (message) => {
+    ws.on("message", (message:Uint8Array | string) => {
         console.log("\nws.onMessage from [Daemon]")
         console.log(`Recieved message: ["${message}"] from Daemon: [${agent.name}] `)
-        
-        //ws.send("The server recieved your message")
     })
     
     ws.on('close', () => {
         console.log(`Client "${agent.name}" disconnected`)
-        
     })
 })
 
-userWss.on("connection", (ws, req) => {
+
+userWss.on("connection", (ws:WebSocket, req:http.IncomingMessage) => {
+
     console.log(`\nNew User-client connected from [${req.socket.remoteAddress}].`)
-    ws.on("message", (message:Uint8Array) => {
-        
-        console.log("\nws.onMessage from [Client]")
-        let testmessage = fHelper.readFlatbufferBinary(message)
-        console.log(testmessage)
-        console.log(testmessage.task.stages[0])
-        console.log(`Artifact 0: [${testmessage.task.artifacts.files[0]}]`)
-  
 
-        let agent = agents[0]
-        sendToAgent(message, agent)
+    ws.on("message", (message:Uint8Array) => {
+
+        let readableMessage = fbHelper.readFlatbufferBinary(message)
+
+        let agent = findAgentForTask(readableMessage)
+        if (agent == null){
+            sendToUser(ws, "No fitting agent could be found for this task") //TODO: add way to force queuing of task even if no matching agent is connected?
+        }
+        else if (agent.isIdle)
+        {
+        agent.send(message)
+        }
+        else {
+            
+        }
     })
 
 })
 
-function addAgent(socket:WebSocket){
+//TODO: expand this to include all agent fields, not just the ip
+function saveAgentInDb(agent:Agent): string | Promise<string> {
+    let id = db.addDaemon(agent.ip)
+    console.log(`added new agent with id: ["${id}"]`)
+
+    return id
+}
+function createAgent(socket:WebSocket, ip:string): Agent {
     let agent = new Agent(socket)
     agents.push(agent)
+    agent.ip = ip
+    agent.id = db.addDaemon(agent.ip)
     return agent
 }
 //TODO: implement this properly
-function sendToUser(data:any, user:WebSocket){
+function sendToUser(user:WebSocket, data:any): void {
     user.send(data)
 }
-
-function sendToAgent(data:Uint8Array, agent:Agent) {
-
-    if (agent) {
-
-        try {
-            agent.socket.send(data)
-
-            // save task to database
-            let buf = new flatbuffers.ByteBuffer(data)
-            let fbMessage = schema.Message.getRootAsMessage(buf)
-
-            if (fbMessage.type() == 1) {
-                //console.log("message type is 1. continuing...")
-                let stageCommands:string[] = []
-                let fbTask = fbMessage.task()
-                
-                if (fbTask == null){return 1}
-                for (let stage = 0; stage < fbTask.stagesLength(); stage++) {
-                    let fbStage = fbTask.stages(stage)
-
-                    for (let cmd = 0; cmd < fbStage!.cmdListLength(); cmd++) {
-                        stageCommands.push(fbStage!.cmdList(cmd))
-                    }              
-                }
-
-                if (stageCommands !== null){
-
-                    // to-do: this needs to add a full task
-                    // with stages and all
-                    db.addTask(stageCommands)
-                }
-
-                return 200
-            }
+//TODO: fix message type
+function findAgentForTask(message:any): Agent | null {
+    let task = message.task
+    agents.forEach(agent => {
+        if (agent.specs.os, agent.specs.cpu, agent.specs.gpu, agent.specs.ram == task.specs.os, task.specs.cpu, task.specs.gpu, task.specs.ram) {
+            return agent
         }
+    });
+    return null
 
-        catch (err) {
-            console.error("Could not send data to agent")
-            console.error(err)
-            return 500
-        }
-    }
-    else if (!agent){
-        console.error("Agent with given id could not be found")
-        return 404
-    }
-    else {
-        console.error("You should not be here")
-        return 500
-    }
 }
 
 //Gets the specs for all currently connected clients
@@ -237,32 +265,4 @@ app.get('/specs', (req:Request, res:Response) => {
 
 })
 
-/*
-//TODO: implement this
-app.post('/createNewJob', (req, res) => {
-    let newMessage = req.body.message //string
-    let newHardwareParameters = req.body.hardwareParameters //array
-    
-    //call function to find appropriate client -> return correct websocket
-    //ws.send send message to client
-    //wait for response
-    //save data in database
-    //res.status(200).json({status: true, time: number })
-})*/
-
-/*
-//TODO: implement this
-app.get('/abortTask'), (req:Request, res:Response) => {
-    //Get ID, send "cancelling message" to agent, wait for confirmation from agent.
-    return;
-}*/
-
-userServer.listen(3001, () => {
-    console.log("Userserver listening on port: 3001")
-})
-
-server.listen(9000, () => {
-
-
-    console.log("Listening on port: 9000") 
-})
+main()

@@ -18,6 +18,7 @@ func connect() *websocket.Conn {
 	u := url.URL{
 		Scheme: "ws",
 		Host:   "localhost:9000",
+		RawQuery: "os=windows11&gpu=rtx4090&cpu=r9_9050x&ram=400",
 		Path:   "/",
 	}
 	connection, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
