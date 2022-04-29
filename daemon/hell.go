@@ -15,12 +15,14 @@ import (
 
 //connect to the server via websockets
 func connect() *websocket.Conn {
-	u := url.URL{
-		Scheme: "ws",
-		Host:   "localhost:9000",
-		Path:   "/",
-	}
-	connection, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	// u := url.URL{
+	// 	Scheme: "ws",
+	// 	Host:   os.Getenv("HWF_SERVER_URL"),
+	// 	Path:   "/",
+	// }
+
+	server_url := os.Getenv("HWF_SERVER_URL")
+	connection, _, err := websocket.DefaultDialer.Dial(server_url, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
