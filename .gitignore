@@ -6,9 +6,11 @@ node_modules/
 server/*.*~
 env/
 server/**.js
+server/dist/
 python_api/__pycache__/
 hwf
 hwf.pub
 portal2.zip
 test.zip
 schema/__pycache__/*
+daemon/log.txt
