@@ -208,7 +208,6 @@ function createAgent(socket:WebSocket, ip:string): Agent {
     agents.push(agent)
     agent.ip = ip
     agent.id = db.addDaemon(agent.ip)
-    //agent.id = await db.addDaemon(agent.ip)
     return agent
 }
 
@@ -219,9 +218,10 @@ function sendToUser(user:WebSocket, data:any): void {
 //TODO: fix message type
 function findAgentForTask(message:any): Agent | null {
     let task = message.task
+    console.log(task)
     agents.forEach(agent => {
         if (agent.specs.os, agent.specs.cpu, agent.specs.gpu, agent.specs.ram 
-            == task.specs.os, task.specs.cpu, task.specs.gpu, task.specs.ram) {
+            == task.specs["os"], task.specs["cpu"], task.specs["gpu"], task.specs["ram"]) {
             return agent
         }
     });
