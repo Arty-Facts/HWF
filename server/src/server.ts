@@ -261,7 +261,7 @@ function findAgentForTask(message:any): Agent | null {
     console.log(task)
     agents.forEach(agent => {
         if (agent.specs.os, agent.specs.cpu, agent.specs.gpu, agent.specs.ram 
-            == task.specs["os"], task.specs["cpu"], task.specs["gpu"], task.specs["ram"]) {
+            == task.hardware["os"], task.hardware["cpu"], task.hardware["gpu"], task.hardware["ram"]) {
             return agent
         }
     });

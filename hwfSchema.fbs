@@ -43,6 +43,7 @@ table Hardware {
     cpu:string;
     gpu:string;
     os:string;
+    ram:string;
 }
 
 root_type Message;
