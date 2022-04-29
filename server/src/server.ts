@@ -1,24 +1,21 @@
-import * as  http from "http"
+import { createServer, IncomingMessage } from "http"
 import * as  ws from 'ws'
-import {WebSocket, WebSocketServer} from 'ws'
+import {WebSocket} from 'ws'
 import {Request, Response,} from 'express'
 import express from 'express'
-import * as  url from "url"
-import { ParsedUrlQuery } from "querystring";
-import * as flatbuffers from "flatbuffers"
-import { schema } from "./hwfSchema_generated"
 import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
 
 import { FlatbufferHelper } from "./flatbufferHelper"
+import { randomInt } from "crypto"
 const fbHelper = new FlatbufferHelper()
 
 const app = express()
 
-const server = http.createServer(app)
-const wss:WebSocketServer = new ws.Server({ server:server });
+const server = createServer(app)
+const wss:ws.WebSocketServer = new ws.Server({ server:server });
 
-const userServer = http.createServer(app)
+const userServer = createServer(app)
 const userWss = new ws.Server({server:userServer})
 
 //connect to the database:
@@ -37,23 +34,6 @@ app.use(cors({
     //According to what i've read ws doesn't propely close a socket if it's disconnected improperly (such as a network cable getting unplugged). We should test this (and solve it if necessary)
     //Should something be logged to a file? That being things that aren't saved in the DB, such as connects/disconnects.
     //Maybe add timestamps to log messages? ("[2022-03-13, 16:33:24] Error: bla bla bla")
-
-var agents:Agent[] = []
-
-function main(){
-    var loadBalancer = new LoadBalancer("fifo")
-    loadBalancer.queue = new Queue()
-
-    userServer.listen(3001, () => {
-        console.log("Userserver listening on port: 3001")
-    })
-    
-    server.listen(9000, () => {
-    
-    
-        console.log("Listening on port: 9000") 
-    })
-}
 
 class Agent {
     socket:WebSocket
@@ -141,9 +121,18 @@ class LoadBalancer {
                 }
             });
         }
+
+        else if (this.priorityType == "random"){
+            let task = this.queue.contents[randomInt(0, this.queue.contents.length)]
+            let agent = findAgentForTask(task)
+            if (agent != null && agent.isIdle ) {
+                agent.send(task)
+                this.queue.dequeue(task)
+            }
+        }
     }
     
-    constructor(priority?: "fifo" | "lifo" | "random" ) { //TODO: implement proper support for all priority types
+    constructor(priority?: "fifo" | "lifo" | "random" ) {
         if (priority){
             this.priorityType = priority
         }
@@ -153,27 +142,27 @@ class LoadBalancer {
     }
 }
 
-wss.on('connection', async (ws:WebSocket, req:http.IncomingMessage) => {
 
+var agents:Agent[] = []
+var balancer = new LoadBalancer("fifo")
+balancer.queue = new Queue()
+
+
+wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
+    
     let ip = req.socket.remoteAddress
-    let url = req.url
     console.log(`\nNew Daemon connected from [${ip}].`)
 
     if (ip == undefined) {
-
         throw "Could not read ip of connecting agent, was undefined"
     }
+    
     let agent = createAgent(ws, ip)
 
-    // let queries:ParsedUrlQuery = url.parse(req.url!, true).query
-    //agent.specs = {"os": queries["os"], "gpu": queries["gpu"], "cpu": queries["cpu"], "ram": queries["ram"],}
-    if (url != null) {
-        agent.specs = {
-            "os": url.match(/os=(\S+?)&/)![0], 
-            "gpu": url.match(/gpu=(\S+?)&/)![0], 
-            "cpu": url.match(/cpu=(\S+?)&/)![0], 
-            "ram": url.match(/ram=(\S+?)$/)![0]}
-    }
+    let agentUrl = new URL(req.url as string, `http://${req.headers.host}`)
+    let params = new URLSearchParams(agentUrl.search)
+    agent.specs = {"os": params.get("os"), "gpu": params.get("gpu"), "cpu": params.get("cpu"), "ram": params.get("ram"),}
+    
     console.log("Agent specs:")
     console.log(agent.specs)
     
@@ -188,7 +177,7 @@ wss.on('connection', async (ws:WebSocket, req:http.IncomingMessage) => {
 })
 
 
-userWss.on("connection", (ws:WebSocket, req:http.IncomingMessage) => {
+userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
     console.log(`\nNew User-client connected from [${req.socket.remoteAddress}].`)
 
@@ -198,33 +187,31 @@ userWss.on("connection", (ws:WebSocket, req:http.IncomingMessage) => {
 
         let agent = findAgentForTask(readableMessage)
         if (agent == null){
+            console.log("no fitting agent could be found for this task")
             sendToUser(ws, "No fitting agent could be found for this task") //TODO: add way to force queuing of task even if no matching agent is connected?
         }
         else if (agent.isIdle)
         {
-        agent.send(message)
+            console.log("agent for task found, sending data")
+            agent.send(message)
         }
         else {
-            
+            console.log("adding task to queue")
+            balancer.queue.enqueue(message) 
         }
     })
 
 })
 
-//TODO: expand this to include all agent fields, not just the ip
-function saveAgentInDb(agent:Agent): string | Promise<string> {
-    let id = db.addDaemon(agent.ip)
-    console.log(`added new agent with id: ["${id}"]`)
-
-    return id
-}
 function createAgent(socket:WebSocket, ip:string): Agent {
     let agent = new Agent(socket)
     agents.push(agent)
     agent.ip = ip
     agent.id = db.addDaemon(agent.ip)
+    //agent.id = await db.addDaemon(agent.ip)
     return agent
 }
+
 //TODO: implement this properly
 function sendToUser(user:WebSocket, data:any): void {
     user.send(data)
@@ -233,7 +220,8 @@ function sendToUser(user:WebSocket, data:any): void {
 function findAgentForTask(message:any): Agent | null {
     let task = message.task
     agents.forEach(agent => {
-        if (agent.specs.os, agent.specs.cpu, agent.specs.gpu, agent.specs.ram == task.specs.os, task.specs.cpu, task.specs.gpu, task.specs.ram) {
+        if (agent.specs.os, agent.specs.cpu, agent.specs.gpu, agent.specs.ram 
+            == task.specs.os, task.specs.cpu, task.specs.gpu, task.specs.ram) {
             return agent
         }
     });
@@ -265,4 +253,12 @@ app.get('/specs', (req:Request, res:Response) => {
 
 })
 
-main()
+userServer.listen(3001, () => {
+    console.log("Userserver listening on port: 3001")
+})
+
+server.listen(9000, () => {
+
+
+    console.log("Listening on port: 9000") 
+})

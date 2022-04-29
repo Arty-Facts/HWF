@@ -4,6 +4,7 @@ daemon/server/node_modules/
 server/node_modules
 node_modules/
 server/*.*~
+server/dist/*.js
 env/
 server/**.js
 python_api/__pycache__/

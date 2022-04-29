@@ -4,7 +4,7 @@ import (
 	//"context"
 	"fmt"
 	"log"
-	"net/url"
+	//"net/url"
 	"os"
 	"os/exec"
 
@@ -15,13 +15,14 @@ import (
 
 //connect to the server via websockets
 func connect() *websocket.Conn {
-	u := url.URL{
-		Scheme: "ws",
-		Host:   "localhost:9000",
-		RawQuery: "os=windows11&gpu=rtx4090&cpu=r9_9050x&ram=400",
-		Path:   "/",
-	}
-	connection, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	// u := url.URL{
+	// 	Scheme: "ws",
+	// 	Host:   "localhost:9000",
+	// 	RawQuery: "os=windows11&gpu=rtx4090&cpu=r9_9050x&ram=400",
+	// 	Path:   "/",
+	// }
+	socketUrl := "ws://localhost:9000?os=windows11&gpu=rtx4090&cpu=r9_9050x&ram=400"
+	connection, _, err := websocket.DefaultDialer.Dial(socketUrl, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
