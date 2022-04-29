@@ -38,6 +38,9 @@ type stage struct {
 var current_artifacts []string
 var current_stage stage
 
+var tasks []stage
+currentstage = 0
+
 //connect to the server via websockets
 func connect() *websocket.Conn {
 	u := url.URL{
@@ -171,8 +174,9 @@ func read_task(msg *message.Message) {
 
 				if unionTask.Stages(tempStage, i) {
 					stages[i] = tempStage
+
+					// execute the stage's commands=========
 					var results = make([][]byte, tempStage.CmdListLength())
-					// execute the stage's commands
 					for i := 0; i < tempStage.CmdListLength(); i++ {
 						//fmt.Println(string(tempStage.CmdList(i)))
 						result := execute_command(tempStage.CmdList(i))
@@ -184,6 +188,7 @@ func read_task(msg *message.Message) {
 					for i, s := range results {
 						fmt.Println(i, string(s))
 					}
+					//======================================
 
 				}
 			}

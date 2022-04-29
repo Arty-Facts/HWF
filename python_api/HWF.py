@@ -2,6 +2,7 @@ import flatbuffers
 import websocket as ws
 import sys
 import os
+import threading
 
 sys.path.append(".")
 sys.path.append("../.")
@@ -35,6 +36,17 @@ BUFFER_SIZE = 1990000
 
 # 50 MB
 #BUFFER_SIZE = 500000000
+
+
+# NOTE TO FUTUTE SELF:
+# vi bytte ut websocket mot websocketapp för att vi
+# ville ha on_message för att det lät najs
+# MEN det går inte så bra för att den är helt annorlunda
+# och just nu så är den disconnected direkt efter connection
+# pepehands
+
+# om det inte går att använda websocketapp så borde
+# vi ändra tillbaka till websocket istället :-(
 
 class Task:
     def __init__(self, *actions):
@@ -81,9 +93,10 @@ class Hub:
     def __init__(self, ip_address=None):
         self.ip_address = ip_address
         self.conected = False
-        self.socket = ws.WebSocket()
-        
-        self.connect()
+        self.socket = ws.WebSocketApp(ip_address, on_error=self.on_error)
+
+        threading.Thread(target=self.connect).start()
+        #self.connect()
 
     def __enter__(self):
         #self.connect()
@@ -95,11 +108,19 @@ class Hub:
 
     def __del__(self):
         self.disconnect()
+
+    def on_error(ws, error):
+        print(":D:D:D:D::D:D::D:D")
+        print(error)
         
     def connect(self):
         #When fully implemented use self.ip_address, for now we connect to localhost 3001.
-        self.socket.connect(self.ip_address)
-        #self.ws = create_connection("ws://localhost:3001")
+        
+        # 2022-04-29
+        #self.socket.connect(self.ip_address)
+
+        self.socket.run_forever()
+        #self.socket.ws = create_connection("ws://localhost:3001")
         
     
     def disconnect(self):
@@ -118,18 +139,29 @@ class Hub:
     def dispatch_async(self, hardware=None, task=None, priority=0): #outside mvp
         pass
 
-    def dispatch(self, hardware=None, task=None, priority=0, cpu=None, gpu=None, os=None):
+    async def dispatch(self, hardware=None, task=None, priority=0, cpu=None, gpu=None, os=None):
+
+        print("sending task...")
 
         # send task to hub
         buffer = _build_message(TASK, task)
-        self.socket.send_binary(buffer)
+        #self.socket.send_binary(buffer)
+        self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
 
-        # send all files after we have sent the task
-        #to-do: fix so it works for stuff idk
-        #if len(task.stage.data) and False:
-        #    self.send_files()
+        print("task sent! awaiting response...")
 
-    def send_files(self):
+        response = await self.socket.recv()
+        if response == "200":
+            # send all files after we have sent the task
+            for stage in task.stages:
+                if len(stage.data):
+                    self.send_files(stage)
+
+        response = await self.socket.recv()
+        if response == "200":
+            print("yay i did it :-D")
+        
+    def send_files(self, stage):
 
         # process each file in the data vector
         for current_file in self.data:
@@ -158,7 +190,9 @@ class Hub:
 
     def dispatch_file(self, byte, filename, nr, eof=False):
         buffer = _build_message(FILE, [byte, filename, nr, eof])
-        self.socket.send_binary(buffer)  
+        #self.socket.send_binary(buffer)  
+        self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
+
   
 
 def _build_message(msg_type, data, cpu="any", gpu="any", os="any"):
