@@ -7,11 +7,10 @@ frontend/node_modules/
 database/node_modules
 node_modules/
 server/*.*~
-server/dist/*.js
 env/
 package-lock.json
 server/**.js
-server/dist/
+server/dist/*
 python_api/__pycache__/
 __pycache__/
 hwf
