@@ -179,26 +179,63 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
 
 userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
-    console.log(`\nNew User-client connected from [${req.socket.remoteAddress}].`)
+    
+    ws.on("message", (binaryMessage:Uint8Array) => {
+        console.log(`\nNew User-client connected from [${req.socket.remoteAddress}].`)
+        /*
+            TASK = 1
+            RESULT = 2
+            GET_RESULT = 2
+            HARDWARE_POOL = 3
+            GET_HARDWARE_POOL = 3
+            FILE = 4
+        */
+        
+        switch (fbHelper.getFlatbufferType(binaryMessage)){
+            case 1: {
 
-    ws.on("message", (message:Uint8Array) => {
+                let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
 
-        let readableMessage = fbHelper.readFlatbufferBinary(message)
-
-        let agent = findAgentForTask(readableMessage)
-        if (agent == null){
-            console.log("no fitting agent could be found for this task")
-            sendToUser(ws, "No fitting agent could be found for this task") //TODO: add way to force queuing of task even if no matching agent is connected?
+                let agent = findAgentForTask(readableMessage)
+                if (agent == null){
+                    console.log("no fitting agent could be found for this task")
+                    sendToUser(ws, "No fitting agent could be found for this task") //TODO: add way to force queuing of task even if no matching agent is connected?
+                }
+                else if (agent.isIdle)
+                {
+                    console.log("agent for task found, sending data")
+                    agent.send(binaryMessage)
+                }
+                else {
+                    console.log("adding task to queue")
+                    balancer.queue.enqueue(binaryMessage) 
+                }
+                
+                // console.log("\nws.onMessage from [Client]")
+                // let message = fHelper.readFlatbufferBinary(binaryMessage)
+                // //console.log(JSON.stringify(message))
+                // //console.log(message.task.hardware)
+                // //console.log(message.task.stages[0])
+                // //console.log(`Artifact 0: [${message.task.artifacts.files[0]}]`)
+        
+                // console.log(JSON.stringify(message.task))
+                // db.addTask(JSON.stringify(message.task))
+                // let agent = agents[0]
+                // sendToAgent(binaryMessage, agent)
+            }
+            case 2: {
+                
+            }
+            case 3: {
+                
+            }
+            case 4: {
+                
+            }
         }
-        else if (agent.isIdle)
-        {
-            console.log("agent for task found, sending data")
-            agent.send(message)
-        }
-        else {
-            console.log("adding task to queue")
-            balancer.queue.enqueue(message) 
-        }
+        
+        
+        
     })
 
 })
@@ -207,7 +244,10 @@ function createAgent(socket:WebSocket, ip:string): Agent {
     let agent = new Agent(socket)
     agents.push(agent)
     agent.ip = ip
-    agent.id = db.addDaemon(agent.ip)
+    db.addDaemon(JSON.stringify({'ip':agent.ip, 'specs':agent.specs})).then(result => {
+        agent.id = result
+    })
+    //console.log(agent)
     return agent
 }
 

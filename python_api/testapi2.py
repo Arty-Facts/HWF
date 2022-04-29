@@ -1,5 +1,5 @@
 #import HWF
-import HWFtest as HWF #För att testa nya schemat
+import HWF as HWF #För att testa nya schemat
 
 task1 = HWF.Task(
     HWF.Stage(

@@ -1,4 +1,4 @@
-import { schema } from "./testSchema_generated"
+import { schema } from "./hwfSchema_generated"
 import * as flatbuffers from "flatbuffers"
 import { IntegerType } from "mongodb"
 
@@ -12,7 +12,8 @@ export class FlatbufferHelper
     getFlatbufferType(data:Uint8Array)
     {
         let buffer = new flatbuffers.ByteBuffer(data)
-        return schema.Message.getRootAsMessage(buffer).bodyType()
+        return schema.Message.getRootAsMessage(buffer).type()
+        //return schema.Message.getRootAsMessage(buffer).bodyType()
     }
     
 }
@@ -42,6 +43,7 @@ class Message
 
 class Task
 {
+    public hardware:Hardware
     public stages:Stage[]
     public artifacts:Artifact
 
@@ -56,7 +58,7 @@ class Task
             }
             this.artifacts = new Artifact(fbTask)
         }
-        
+        this.hardware = new Hardware(fbTask.hardware()!)
     }
 }
 
@@ -103,5 +105,19 @@ class Artifact
         {
             this.files.push(fbTask!.artifacts(i))
         }
+    }
+}
+
+class Hardware
+{
+    public cpu:string | null | undefined
+    public gpu:string | null | undefined
+    public os:string | null | undefined
+    
+    constructor(fbTask:schema.Hardware)
+    {
+        this.cpu = fbTask!.cpu()
+        this.gpu = fbTask!.gpu()
+        this.os = fbTask!.os()
     }
 }

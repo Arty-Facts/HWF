@@ -19,8 +19,19 @@ class Task(object):
         self._tab = flatbuffers.table.Table(buf, pos)
 
     # Task
-    def Stages(self, j):
+    def Hardware(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
+        if o != 0:
+            x = self._tab.Indirect(o + self._tab.Pos)
+            from .Hardware import Hardware
+            obj = Hardware()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+    # Task
+    def Stages(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
@@ -33,14 +44,14 @@ class Task(object):
 
     # Task
     def StagesLength(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
 
     # Task
     def Artifacts(self, j):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             a = self._tab.Vector(o)
             return self._tab.String(a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4))
@@ -48,14 +59,15 @@ class Task(object):
 
     # Task
     def ArtifactsLength(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
 
-def TaskStart(builder): builder.StartObject(2)
-def TaskAddStages(builder, stages): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(stages), 0)
+def TaskStart(builder): builder.StartObject(3)
+def TaskAddHardware(builder, hardware): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(hardware), 0)
+def TaskAddStages(builder, stages): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(stages), 0)
 def TaskStartStagesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def TaskAddArtifacts(builder, artifacts): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(artifacts), 0)
+def TaskAddArtifacts(builder, artifacts): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(artifacts), 0)
 def TaskStartArtifactsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def TaskEnd(builder): return builder.EndObject()

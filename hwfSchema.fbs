@@ -1,13 +1,12 @@
 namespace schema;
- 
+
+union MessageBody {Task, GetResult, GetHardwarePool, File}
+
 table Message {
-    type:int; //Determines which table the following data will be treated as
-    task:Task; 
-    get_result:GetResult;
-    get_hardware_pool:GetHardwarePool;
+    type:int;
+    body:MessageBody;
 }
 
-//Should never be sent on its own (always nest in a Task)
 table Stage {
     name:string;
     data:[byte];
@@ -17,33 +16,35 @@ table Stage {
     track_cpu:bool = false;
     track_gpu:bool = false;
     comment:string;
-
 }
 
-//type 1
 table Task {
+    hardware:Hardware;
     stages:[Stage]; //Be sure to create a vector that can store several Stages
     artifacts:[string];
 }
 
-//type 2
 table GetResult {
     id_list:[string];
-    
 }
 
-//type 3
 table GetHardwarePool {
     hardware:[string];
 }
 
+table File {
+    filename:string; 
+    packetnumber:int; 
+    eof:bool;
+    data:[ubyte];
+}
+
+table Hardware {
+    cpu:string;
+    gpu:string;
+    os:string;
+}
+
 root_type Message;
 
-//TODO: Create new table for results, or add result field to other tables?
-
-
-//4 - Is this used?
-// table Get {
-//     hardware:[string];
-// }
 
