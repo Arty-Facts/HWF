@@ -15,6 +15,29 @@ import (
 
 var open_files map[string]*os.File
 
+type file_data struct {
+	filename string
+	path     string
+
+	downloaded bool
+}
+
+type stage struct {
+	name     string
+	data     []file_data
+	cmd_list []string
+
+	track_time bool
+	track_ram  bool
+	track_cpu  bool
+	track_gpu  bool
+
+	comment string
+}
+
+var current_artifacts []string
+var current_stage stage
+
 //connect to the server via websockets
 func connect() *websocket.Conn {
 	u := url.URL{
@@ -140,10 +163,10 @@ func read_task(msg *message.Message) {
 			unionTask := new(message.Task)
 			unionTask.Init(unionTable.Bytes, unionTable.Pos)
 
-			// get all stages from the task
 			stages := make([]*message.Stage, unionTask.StagesLength())
 			tempStage := new(message.Stage)
 
+			// get all stages from the task
 			for i := 0; i < unionTask.StagesLength(); i++ {
 
 				if unionTask.Stages(tempStage, i) {
@@ -163,6 +186,42 @@ func read_task(msg *message.Message) {
 					}
 
 				}
+			}
+
+			// set current task to first stage of task
+			if len(stages) > 0 {
+				s := stages[0]
+
+				// get all cmds from stage
+				var cmd_list = make([]string, s.CmdListLength())
+				for i := 0; i < s.CmdListLength(); i++ {
+					cmd_list[i] = string(s.CmdList(i))
+				}
+
+				tempData := new(message.Data)
+
+				// get all file data from stage
+				var data_list = make([]file_data, s.DataLength())
+				for i := 0; i < s.DataLength(); i++ {
+
+					if s.Data(tempData, i) {
+						fmt.Println("filename:")
+						fmt.Println(string(tempData.Filename()))
+
+						data_list[i] = file_data{path: string(tempData.Path()), filename: string(tempData.Filename()), downloaded: false}
+					}
+
+				}
+
+				// save current stage for later :)
+				current_stage := stage{name: string(s.Name()), data: data_list,
+					cmd_list: cmd_list, track_time: s.TrackTime(),
+					track_ram: s.TrackRam(), track_cpu: s.TrackCpu(),
+					track_gpu: s.TrackGpu(), comment: string(s.Comment())}
+
+				fmt.Println("loaded stage into current stage")
+				fmt.Println("current stage name:")
+				fmt.Println(string(current_stage.name))
 			}
 
 		}

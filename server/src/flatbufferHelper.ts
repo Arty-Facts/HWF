@@ -66,7 +66,7 @@ class Task
 class Stage
 {
     public name:string | null | undefined
-    public data:any
+    public data:Data[] | null | undefined
     public cmd:string[] | undefined
     public track_time:boolean| undefined
     public track_ram:boolean| undefined
@@ -76,14 +76,20 @@ class Stage
 
     constructor(fbStage:schema.Stage)
     {
+        this.data = []
         let stageCommands:string[] = []
         for (let i = 0; i < fbStage!.cmdListLength(); i++) 
         {
             stageCommands.push(fbStage!.cmdList(i))
         }
 
+        for (let i = 0; i < fbStage!.dataLength(); i++) 
+        {
+            this.data.push(new Data(fbStage!.data(i)!))
+        }
+
         this.name = fbStage?.name(), 
-        this.data = fbStage?.dataArray(), 
+        //this.data = fbStage?.dataArray(), 
         this.cmd = stageCommands, 
         this.track_time = fbStage?.trackTime(), 
         this.track_ram = fbStage?.trackRam(), 
@@ -119,5 +125,17 @@ class Hardware
         this.cpu = fbTask!.cpu()
         this.gpu = fbTask!.gpu()
         this.os = fbTask!.os()
+    }
+}
+
+class Data
+{
+    public path:string | null | undefined
+    public filename:string | null | undefined
+    
+    constructor(fbData:schema.Data)
+    {
+        this.path = fbData!.path()
+        this.filename = fbData!.filename()
     }
 }

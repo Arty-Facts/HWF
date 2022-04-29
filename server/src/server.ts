@@ -125,6 +125,7 @@ userWss.on("connection", (ws, req) => {
                 //console.log(message.task.stages[0])
                 //console.log(`Artifact 0: [${message.task.artifacts.files[0]}]`)
         
+                console.log(JSON.stringify(message.task.stages[0].data))
                 console.log(JSON.stringify(message.task))
                 db.addTask(JSON.stringify(message.task))
                 let agent = agents[0]

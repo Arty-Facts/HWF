@@ -119,14 +119,19 @@ class Hub:
         pass
 
     def dispatch(self, hardware=None, task=None, priority=0, cpu=None, gpu=None, os=None):
+
+        # send task to hub
         buffer = _build_message(TASK, task)
         self.socket.send_binary(buffer)
 
-        if len(self.data):
-            self.send_files()
+        # send all files after we have sent the task
+        #to-do: fix so it works for stuff idk
+        #if len(task.stage.data) and False:
+        #    self.send_files()
 
     def send_files(self):
 
+        # process each file in the data vector
         for current_file in self.data:
             self.process_file(current_file)
 
@@ -136,7 +141,7 @@ class Hub:
         self.packet_nr = 0
 
         byte = file.read(BUFFER_SIZE)
-        self.dispatch_file(byte, data.filename)
+        self.dispatch_file(byte, data.filename, packet_count)
         packet_count += 1
 
         while byte:
@@ -144,15 +149,15 @@ class Hub:
             byte = file.read(BUFFER_SIZE)
 
             # skicka flatbuffer med byte i
-            self.dispatch_file(byte, data.filename)
+            self.dispatch_file(byte, data.filename, packet_count)
             packet_count += 1
 
-        self.dispatch_file(bytearray(), data.filename, True)
+        self.dispatch_file(bytearray(), data.filename, packet_count, True)
             
         file.close()
 
-    def dispatch_file(self, byte, filename, eof=False):
-        buffer = _build_message(FILE, byte)
+    def dispatch_file(self, byte, filename, nr, eof=False):
+        buffer = _build_message(FILE, [byte, filename, nr, eof])
         self.socket.send_binary(buffer)  
   
 
@@ -172,7 +177,7 @@ def _build_message(msg_type, data, cpu="any", gpu="any", os="any"):
         body_type =FbMessageBody.MessageBody.GetHardwarePool
 
     elif msg_type == FILE:
-        builder, done_body = _build_file(builder, data)
+        builder, done_body = _build_file(builder, data[0], data[1], data[2], data[3])
         body_type =FbMessageBody.MessageBody.File
     else:
         print("Unknown message type number. Aborting...")
@@ -261,15 +266,36 @@ def _build_stage(builder, stage):
 
     fb_stage_name = builder.CreateString(stage.name)
     fb_stage_comment = builder.CreateString(stage.comment)
-    FbStage.StageStart(builder)
 
+    # build all data flatbuffers
+    datas = []
+    if len(stage.data):
+        for dat in stage.data:
+            builder, built_data = _build_data(builder, dat.path, dat.filename)
+            datas.append(built_data)
+
+        FbStage.StageStartDataVector(builder, len(datas))
+
+        for item in reversed(datas):
+            builder.PrependUOffsetTRelative(item)
+
+        data_vector = builder.EndVector()
+
+
+    FbStage.StageStart(builder)
     FbStage.StageAddName(builder, fb_stage_name)
-    #FbStage.AddData(builder, stage.data)
-    FbStage.StageAddCmdList(builder, cmd_vector)
+
+    if data_vector:
+        FbStage.StageAddData(builder, data_vector)
+
+    if cmd_vector:
+        FbStage.StageAddCmdList(builder, cmd_vector)
+
     FbStage.StageAddTrackTime(builder, stage.track_time)
     FbStage.StageAddTrackRam(builder, stage.track_ram)
     FbStage.StageAddTrackCpu(builder, stage.track_cpu)
     FbStage.StageAddTrackGpu(builder, stage.track_gpu)
+
     FbStage.StageAddComment(builder, fb_stage_comment)
 
     done_stage = FbStage.StageEnd(builder)
@@ -277,17 +303,32 @@ def _build_stage(builder, stage):
     return builder, done_stage
 
 def _build_data(builder, path, filename):
+    fbpath = builder.CreateString(path)
+    fname = builder.CreateString(filename)
+
     FbData.DataStart(builder)
 
-    FbData.DataAddPath(builder, path)
-    FbData.DataAddFilename(builder, filename)
+    FbData.DataAddPath(builder, fbpath)
+    FbData.DataAddFilename(builder, fname)
     
     done_data = FbData.DataEnd(builder)
 
     return builder, done_data
 
-def _build_file(builder, file):
-    return
+def _build_file(builder, byte, filename, nr, eof=False):
+    fname = builder.CreateString(filename)
+    data = builder.CreateByteVector(byte)
+
+    FbFile.FileStart(builder)
+
+    FbFile.FileAddFilename(builder, fname)
+    FbFile.FileAddPacketnumber(builder, nr)
+    FbFile.FileAddEof(builder, eof)
+    FbFile.FileAddData(builder, data)
+
+    done_file = FbFile.FileEnd(builder)
+
+    return builder, done_file
 
 def _build_get_result(builder, jobs):
     pass
