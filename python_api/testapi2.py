@@ -18,11 +18,14 @@ async def main():
     id_test = []
 
     hub = HWF.Hub(ip_address="ws://localhost:3001")
+    await hub.connect()
     await hub.dispatch(task=task1)
 
 # "NoneType" object has no attribute "dispatch"??
 # with HWF.Hub(ip_address="ws://localhost:3001") as hub:
 #     hub.dispatch(task=task1)
+
+#main()
 
 asyncio.run(main())
 

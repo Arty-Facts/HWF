@@ -39,7 +39,6 @@ var current_artifacts []string
 var current_stage stage
 
 var tasks []stage
-currentstage = 0
 
 //connect to the server via websockets
 func connect() *websocket.Conn {
@@ -92,6 +91,10 @@ func listen(connection *websocket.Conn) {
 func main() {
 	// init the map for all open output files
 	open_files = make(map[string]*os.File)
+	current_stage := 0
+
+	// debug to remove compilation warning DELETE THIS
+	fmt.Println(current_stage)
 
 	connection := connect()
 

@@ -130,6 +130,9 @@ userWss.on("connection", (ws, req) => {
                 db.addTask(JSON.stringify(message.task))
                 let agent = agents[0]
                 sendToAgent(binaryMessage, agent)
+
+                // send response to python_api (debug ish)
+                ws.send("200")
             }
             case 2: {
                 

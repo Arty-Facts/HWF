@@ -3,6 +3,7 @@ import websocket as ws
 import sys
 import os
 import threading
+import time
 
 sys.path.append(".")
 sys.path.append("../.")
@@ -93,9 +94,13 @@ class Hub:
     def __init__(self, ip_address=None):
         self.ip_address = ip_address
         self.conected = False
-        self.socket = ws.WebSocketApp(ip_address, on_error=self.on_error)
+        self.socket = ws.WebSocketApp(ip_address, 
+                    on_message = lambda ws,msg: self.on_message(ws, msg),
+                    on_error   = lambda ws,msg: self.on_error(ws, msg),
+                    on_close   = lambda ws:     self.on_close(ws),
+                    on_open    = lambda ws:     self.on_open(ws))
 
-        threading.Thread(target=self.connect).start()
+        #threading.Thread(target=self.socket.run_forever, args=(None, None, 60, 30), daemon=True).start()
         #self.connect()
 
     def __enter__(self):
@@ -109,20 +114,59 @@ class Hub:
     def __del__(self):
         self.disconnect()
 
-    def on_error(ws, error):
+    def on_message(self, ws, message):
+        print("MESSAGE RECEIVED :o")
+        print(message)
+
+        if isinstance(message, str):
+            # send all files after we have sent the task
+            # for stage in task.stages:
+            #     if len(stage.data):
+            #         self.send_files(stage)
+            if message == "200":
+                print("yay time to send my files :)")
+
+            elif message == "300":
+                print("wow")
+
+            elif message == "400":
+                print(":(")
+
+        else:
+            print("uh oh trouble")
+
+            # handle flatbuffers here!!!!!
+
+
+    def on_error(self, ws, error):
         print(":D:D:D:D::D:D::D:D")
         print(error)
+
+    def on_close(self, ws):
+        print("connection CLOSED :(")
+
+    def on_open(self, ws):
+        print("connection opened :)")
         
-    def connect(self):
+    async def connect(self):
         #When fully implemented use self.ip_address, for now we connect to localhost 3001.
         
         # 2022-04-29
         #self.socket.connect(self.ip_address)
 
-        self.socket.run_forever()
+        threading.Thread(target=self.connect_socket).start()
+
+        # make sure that websocket has started running properly
+        # if this is not here, dispatch will run too quickly and result in
+        # websocket._exceptions.WebSocketConnectionClosedException: socket is already closed.
+        time.sleep(1)
+        
         #self.socket.ws = create_connection("ws://localhost:3001")
         
     
+    def connect_socket(self):
+        self.socket.run_forever(ping_timeout=100)
+
     def disconnect(self):
         self.socket.close()
         pass
@@ -141,25 +185,30 @@ class Hub:
 
     async def dispatch(self, hardware=None, task=None, priority=0, cpu=None, gpu=None, os=None):
 
-        print("sending task...")
+        print("building task...")
 
         # send task to hub
         buffer = _build_message(TASK, task)
         #self.socket.send_binary(buffer)
+
+        print("sending task...")
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
 
         print("task sent! awaiting response...")
 
-        response = await self.socket.recv()
-        if response == "200":
-            # send all files after we have sent the task
-            for stage in task.stages:
-                if len(stage.data):
-                    self.send_files(stage)
 
-        response = await self.socket.recv()
-        if response == "200":
-            print("yay i did it :-D")
+        # DELETE THIS WHEN ON_MESSAGE IS DONE
+
+        # response = await self.socket.recv()
+        # if response == "200":
+        #     # send all files after we have sent the task
+        #     for stage in task.stages:
+        #         if len(stage.data):
+        #             self.send_files(stage)
+
+        # response = await self.socket.recv()
+        # if response == "200":
+        #     print("yay i did it :-D")
         
     def send_files(self, stage):
 
