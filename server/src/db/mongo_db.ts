@@ -110,7 +110,7 @@ export class dbAdapter <T extends dbInterface> {
     async addDaemon(agent:string):Promise<string> {
         let result = await this.daemons.insertOne(JSON.parse(agent))
         console.log(`Inserted new Daemon successfully with ID[${result.insertedId.toString()}]`)
-        console.log(await this.getTask(result.insertedId.toString()))
+        //console.log(await this.getTask(result.insertedId.toString()))
         return result.insertedId.toString();
     }
 
