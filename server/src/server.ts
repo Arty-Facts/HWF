@@ -7,10 +7,6 @@ import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
 
 import { FlatbufferHelper } from "./flatbufferHelper"
-import { randomInt } from "crypto"
-import { ADDRGETNETWORKPARAMS } from "dns"
-import { assert } from "console"
-import { Http2ServerRequest } from "http2"
 const fbHelper = new FlatbufferHelper()
 
 const app = express()
@@ -39,8 +35,9 @@ app.use(cors({
     //Maybe add timestamps to log messages? ("[2022-03-13, 16:33:24] Error: bla bla bla")
 
 //TODO: KNOWN BUGS
-    // Adding a task to the queue when a matching agent is not connected 
-    //  and then connecting with a matching agent will not properly send the task to that agent immediately after it's connected.
+    // 1) Adding a task to the queue when a matching agent is not connected 
+    //    and then connecting with a matching agent will not always properly send the task to that agent immediately after it's connected.
+    //    It usually works, but it has failed once so far.
 
 class Agent {
     socket:WebSocket
