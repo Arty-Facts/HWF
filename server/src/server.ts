@@ -153,7 +153,7 @@ class LoadBalancer {
     }
 }
 
-function createAgent(socket:WebSocket, ip:string, req:IncomingMessage): Agent {
+async function createAgent(socket:WebSocket, ip:string, req:IncomingMessage): Promise<Agent> {
 
     let agent = new Agent(socket)
     agents.push(agent)
@@ -162,7 +162,7 @@ function createAgent(socket:WebSocket, ip:string, req:IncomingMessage): Agent {
     let params = new URLSearchParams(agentUrl.search)
     agent.specs = {"os": params.get("os"), "gpu": params.get("gpu"), "cpu": params.get("cpu"), "ram": params.get("ram"),}
     
-    db.addDaemon(JSON.stringify({'ip':agent.ip, 'specs':agent.specs})).then(result => { //TODO: FIXME: This needs to be finished before continuing!
+    await db.addDaemon(JSON.stringify({'ip':agent.ip, 'specs':agent.specs})).then(result => { //TODO: FIXME: This needs to be finished before continuing!
         agent.id = result
     })
     return agent
@@ -227,7 +227,7 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
 
     console.log(`\nNew Daemon connected from [${ip}].`)
 
-    let agent = createAgent(ws, ip, req!)
+    let agent = await createAgent(ws, ip, req!)
     console.log("Agent id is:", agent.id)
     
     balancer.retryQueuedTasks()
