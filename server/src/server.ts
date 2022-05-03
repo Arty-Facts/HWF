@@ -8,6 +8,9 @@ import cors from "cors"
 
 import { FlatbufferHelper } from "./flatbufferHelper"
 import { randomInt } from "crypto"
+import { ADDRGETNETWORKPARAMS } from "dns"
+import { assert } from "console"
+import { Http2ServerRequest } from "http2"
 const fbHelper = new FlatbufferHelper()
 
 const app = express()
@@ -64,26 +67,26 @@ class Agent {
 
 class Queue {
 
-    contents:[Uint8Array]
+    contents:Uint8Array[] = []
 
-    enqueue(data: Uint8Array, index?: number): void {
-        if (index) {
-            this.contents.splice(index, 0, data)
-        }
+    enqueue(data: Uint8Array): void {
 
-        else {
         this.contents.push(data)
-        }
     }
 
     dequeue(target: Uint8Array | number): void {
     
         if (typeof target == "number") {
-            this.contents.splice(target, 0)
+            this.contents.splice(target, 1)
         }
 
         else {
-            this.contents.splice(this.contents.indexOf(target), 0) 
+            if (this.contents.indexOf(target) == -1) {
+                throw new Error("Could not find target element in the queue")
+            }
+            this.contents.splice(this.contents.indexOf(target), 1) 
+            
+        
         }
     }
 
@@ -102,9 +105,10 @@ class LoadBalancer {
     }
 
     retryQueuedTasks(){
-        if (this.priorityType == "fifo") {
+        console.log("Retrying all queued tasks")
+        if (this.priorityType == "lifo") {
             this.queue.contents.reverse().forEach(task => {
-                let agent = findAgentForTask(task)
+                let agent = findAgentForTask(fbHelper.readFlatbufferBinary(task))
                 if (agent != null && agent.isIdle ) {
                     agent.send(task)
                     this.queue.dequeue(task)
@@ -113,9 +117,9 @@ class LoadBalancer {
             });
         }
 
-        else if (this.priorityType == "lifo") {
+        else if (this.priorityType == "fifo") {
             this.queue.contents.forEach(task => {
-                let agent = findAgentForTask(task)
+                let agent = findAgentForTask(fbHelper.readFlatbufferBinary(task))
                 if (agent != null && agent.isIdle ) {
                     agent.send(task)
                     this.queue.dequeue(task)
@@ -145,33 +149,92 @@ class LoadBalancer {
     }
 }
 
+function createAgent(socket:WebSocket, ip:string, req:IncomingMessage): Agent {
 
-var agents:Agent[] = []
-var balancer = new LoadBalancer("fifo")
-balancer.queue = new Queue()
-
-
-wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
-    
-    let ip = req.socket.remoteAddress
-    console.log(`\nNew Daemon connected from [${ip}].`)
-
-    if (ip == undefined) {
-        throw "Could not read ip of connecting agent, was undefined"
-    }
-    
-    let agent = createAgent(ws, ip)
-
+    let agent = new Agent(socket)
+    agents.push(agent)
+    agent.ip = ip
     let agentUrl = new URL(req.url as string, `http://${req.headers.host}`)
     let params = new URLSearchParams(agentUrl.search)
     agent.specs = {"os": params.get("os"), "gpu": params.get("gpu"), "cpu": params.get("cpu"), "ram": params.get("ram"),}
     
-    console.log("Agent specs:")
-    console.log(agent.specs)
+    db.addDaemon(JSON.stringify({'ip':agent.ip, 'specs':agent.specs})).then(result => { //TODO: FIXME: This needs to be finished before continuing!
+        agent.id = result
+    })
+    return agent
+}
+
+//TODO: implement this properly
+function sendToUser(user:WebSocket, data:any): void {
+
+    user.send(data)
+}
+
+//TODO: fix message type, shouldn't be "any"
+function findAgentForTask(message:any): Agent | null {
+
+    let task = message.task
+    console.log("Finding agent for this task:")
+    console.log(task)
+    for (let agent of agents) {
+        if ( //TODO: Make this less hardcoded, loop through both instead?
+                agent.specs.os == task.hardware["os"] &&
+                agent.specs.cpu == task.hardware["cpu"] &&
+                agent.specs.gpu == task.hardware["gpu"] &&
+                agent.specs.ram == task.hardware["ram"]
+            ) 
+            {
+                return agent
+            }
+    };
+    return null
+
+}
+
+//TODO: expand this with more validatable elements
+function isValid(url:string|null|undefined = null):boolean {
+
+    if(url){
+        console.log("validating url")
+        const result = ["os", "cpu", "gpu", "ram"].every(term => url.includes(term))
+        return result
+    }
+    else {
+        throw new Error("Trying to validate something that can't be validated")
+    }
+}
+
+
+
+var agents:Agent[] = []
+var balancer = new LoadBalancer("fifo")
+balancer.queue = new Queue()
+let currentDate = new Date()
+
+wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
+    
+    let ip = req.socket.remoteAddress
+    
+    if (ip == undefined) {
+        throw new Error("Could not read ip of connecting agent, was undefined")
+    }
+    else if (!isValid(req.url)){
+        throw new Error("Agent connected with invalid URL")
+    }
+
+    console.log(`\nNew Daemon connected from [${ip}].`)
+
+    let agent = createAgent(ws, ip, req!)
+    console.log("Agent id is:", agent.id)
+    
+    balancer.retryQueuedTasks()
+    // console.log("Agent specs:")
+    // console.log(agent.specs)
     
     ws.on("message", (message:Uint8Array | string) => {
-        console.log("\nws.onMessage from [Daemon]")
-        console.log(`Recieved message: ["${message}"] from Daemon: [${agent.name}] `)
+        console.log(`Recieved message: ["${message}"] from Daemon: [${agent.id}] `)
+
+        balancer.retryQueuedTasks() //retrying tasks since the message from the daemon might be one that indicated it's finished and ready to accept a new task
     })
     
     ws.on('close', () => {
@@ -202,15 +265,18 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 let agent = findAgentForTask(readableMessage)
                 if (agent == null){
                     console.log("no fitting agent could be found for this task")
+                    console.log("======queuing anyway=====")
+                    balancer.queue.enqueue(binaryMessage)
                     sendToUser(ws, "No fitting agent could be found for this task") //TODO: add way to force queuing of task even if no matching agent is connected?
                 }
                 else if (agent.isIdle)
                 {
                     console.log("agent for task found, sending data")
                     agent.send(binaryMessage)
+                    agent.isIdle = false //TODO: implement a way of returning an agent to idle state when it's finished
                 }
                 else {
-                    console.log("adding task to queue")
+                    console.log("agent is busy, adding task to queue")
                     balancer.queue.enqueue(binaryMessage) 
                 }
                 
@@ -243,35 +309,11 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
 })
 
-function createAgent(socket:WebSocket, ip:string): Agent {
-    let agent = new Agent(socket)
-    agents.push(agent)
-    agent.ip = ip
-    db.addDaemon(JSON.stringify({'ip':agent.ip, 'specs':agent.specs})).then(result => {
-        agent.id = result
-    })
-    //console.log(agent)
-    return agent
-}
 
-//TODO: implement this properly
-function sendToUser(user:WebSocket, data:any): void {
-    user.send(data)
-}
-//TODO: fix message type
-function findAgentForTask(message:any): Agent | null {
-    let task = message.task
-    console.log("Finding agent for this task:")
-    console.log(task)
-    agents.forEach(agent => {
-        if (agent.specs.os, agent.specs.cpu, agent.specs.gpu, agent.specs.ram 
-            == task.hardware["os"], task.hardware["cpu"], task.hardware["gpu"], task.hardware["ram"]) {
-            return agent
-        }
-    });
-    return null
 
-}
+// function serverLog(text:string|object): void {
+//     console.log(`[${currentDate}]` + text)
+// }
 
 //Gets the specs for all currently connected clients
 app.get('/specs', (req:Request, res:Response) => {
