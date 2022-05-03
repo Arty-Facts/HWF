@@ -17,6 +17,13 @@ func GetRootAsHardware(buf []byte, offset flatbuffers.UOffsetT) *Hardware {
 	return x
 }
 
+func GetSizePrefixedRootAsHardware(buf []byte, offset flatbuffers.UOffsetT) *Hardware {
+	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
+	x := &Hardware{}
+	x.Init(buf, n+offset+flatbuffers.SizeUint32)
+	return x
+}
+
 func (rcv *Hardware) Init(buf []byte, i flatbuffers.UOffsetT) {
 	rcv._tab.Bytes = buf
 	rcv._tab.Pos = i
@@ -50,8 +57,16 @@ func (rcv *Hardware) Os() []byte {
 	return nil
 }
 
+func (rcv *Hardware) Ram() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
 func HardwareStart(builder *flatbuffers.Builder) {
-	builder.StartObject(3)
+	builder.StartObject(4)
 }
 func HardwareAddCpu(builder *flatbuffers.Builder, cpu flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(cpu), 0)
@@ -61,6 +76,9 @@ func HardwareAddGpu(builder *flatbuffers.Builder, gpu flatbuffers.UOffsetT) {
 }
 func HardwareAddOs(builder *flatbuffers.Builder, os flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(os), 0)
+}
+func HardwareAddRam(builder *flatbuffers.Builder, ram flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(3, flatbuffers.UOffsetT(ram), 0)
 }
 func HardwareEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

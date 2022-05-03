@@ -108,6 +108,7 @@ class LoadBalancer {
                 if (agent != null && agent.isIdle ) {
                     agent.send(task)
                     this.queue.dequeue(task)
+                    return
                 }
             });
         }
@@ -118,18 +119,20 @@ class LoadBalancer {
                 if (agent != null && agent.isIdle ) {
                     agent.send(task)
                     this.queue.dequeue(task)
+                    return
                 }
             });
         }
-
-        else if (this.priorityType == "random"){
-            let task = this.queue.contents[randomInt(0, this.queue.contents.length)]
-            let agent = findAgentForTask(task)
-            if (agent != null && agent.isIdle ) {
-                agent.send(task)
-                this.queue.dequeue(task)
-            }
-        }
+        //TODO: implement proper randomization, arr1.sort(() => (Math.random() > .5) ? 1 : -1); ?
+        // else if (this.priorityType == "random"){
+        //     let task = this.queue.contents[randomInt(0, this.queue.contents.length)]
+        //     let agent = findAgentForTask(task)
+        //     if (agent != null && agent.isIdle ) {
+        //         agent.send(task)
+        //         this.queue.dequeue(task)
+        //         return
+        //     }
+        // }
     }
     
     constructor(priority?: "fifo" | "lifo" | "random" ) {
@@ -258,6 +261,7 @@ function sendToUser(user:WebSocket, data:any): void {
 //TODO: fix message type
 function findAgentForTask(message:any): Agent | null {
     let task = message.task
+    console.log("Finding agent for this task:")
     console.log(task)
     agents.forEach(agent => {
         if (agent.specs.os, agent.specs.cpu, agent.specs.gpu, agent.specs.ram 

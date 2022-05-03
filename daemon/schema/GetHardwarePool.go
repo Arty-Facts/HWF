@@ -17,6 +17,13 @@ func GetRootAsGetHardwarePool(buf []byte, offset flatbuffers.UOffsetT) *GetHardw
 	return x
 }
 
+func GetSizePrefixedRootAsGetHardwarePool(buf []byte, offset flatbuffers.UOffsetT) *GetHardwarePool {
+	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
+	x := &GetHardwarePool{}
+	x.Init(buf, n+offset+flatbuffers.SizeUint32)
+	return x
+}
+
 func (rcv *GetHardwarePool) Init(buf []byte, i flatbuffers.UOffsetT) {
 	rcv._tab.Bytes = buf
 	rcv._tab.Pos = i

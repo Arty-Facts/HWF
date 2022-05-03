@@ -140,7 +140,7 @@ def _build_message(msg_type, data):
 def _build_task(builder, task):
     serialized_stages = []
     serialized_artifacts = []
-    builder, done_hardware = _build_hardware(builder, cpu = task.hardware["cpu"], gpu = task.hardware["gpu"], os = task.hardware["os"], ram = task.hardware["os"])
+    builder, done_hardware = _build_hardware(builder, cpu = task.hardware["cpu"], gpu = task.hardware["gpu"], os = task.hardware["os"], ram = task.hardware["ram"])
     if len(task.stages) > 0:    
         for stage in task.stages:
             builder, done_stage = _build_stage(builder, stage)
