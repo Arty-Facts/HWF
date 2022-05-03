@@ -1,6 +1,5 @@
 import { schema } from "./hwfSchema_generated"
 import * as flatbuffers from "flatbuffers"
-import { IntegerType } from "mongodb"
 
 export class FlatbufferHelper 
 {
@@ -113,11 +112,13 @@ class Hardware
     public cpu:string | null | undefined
     public gpu:string | null | undefined
     public os:string | null | undefined
-    
+    public ram:string |null | undefined
+
     constructor(fbTask:schema.Hardware)
     {
         this.cpu = fbTask!.cpu()
         this.gpu = fbTask!.gpu()
         this.os = fbTask!.os()
+        this.ram = fbTask!.ram()
     }
 }

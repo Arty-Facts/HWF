@@ -17,6 +17,13 @@ func GetRootAsMessage(buf []byte, offset flatbuffers.UOffsetT) *Message {
 	return x
 }
 
+func GetSizePrefixedRootAsMessage(buf []byte, offset flatbuffers.UOffsetT) *Message {
+	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
+	x := &Message{}
+	x.Init(buf, n+offset+flatbuffers.SizeUint32)
+	return x
+}
+
 func (rcv *Message) Init(buf []byte, i flatbuffers.UOffsetT) {
 	rcv._tab.Bytes = buf
 	rcv._tab.Pos = i
@@ -38,16 +45,16 @@ func (rcv *Message) MutateType(n int32) bool {
 	return rcv._tab.MutateInt32Slot(4, n)
 }
 
-func (rcv *Message) BodyType() byte {
+func (rcv *Message) BodyType() MessageBody {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
-		return rcv._tab.GetByte(o + rcv._tab.Pos)
+		return MessageBody(rcv._tab.GetByte(o + rcv._tab.Pos))
 	}
 	return 0
 }
 
-func (rcv *Message) MutateBodyType(n byte) bool {
-	return rcv._tab.MutateByteSlot(6, n)
+func (rcv *Message) MutateBodyType(n MessageBody) bool {
+	return rcv._tab.MutateByteSlot(6, byte(n))
 }
 
 func (rcv *Message) Body(obj *flatbuffers.Table) bool {
@@ -65,8 +72,8 @@ func MessageStart(builder *flatbuffers.Builder) {
 func MessageAddType(builder *flatbuffers.Builder, type_ int32) {
 	builder.PrependInt32Slot(0, type_, 0)
 }
-func MessageAddBodyType(builder *flatbuffers.Builder, bodyType byte) {
-	builder.PrependByteSlot(1, bodyType, 0)
+func MessageAddBodyType(builder *flatbuffers.Builder, bodyType MessageBody) {
+	builder.PrependByteSlot(1, byte(bodyType), 0)
 }
 func MessageAddBody(builder *flatbuffers.Builder, body flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(body), 0)

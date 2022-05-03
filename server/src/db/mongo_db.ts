@@ -24,10 +24,11 @@ export class dbAdapter <T extends dbInterface> {
 
     constructor() {
 
-        if(process.env.HWF_DB_URL){
-            console.log("env variable is " + process.env.HWF_DB_URL)
-            this.SERVER_URL = process.env.HWF_DB_URL }//"mongodb://database:27017/test"
-        else{throw "HWF_DB_URL environment variable can't be read!"}
+        // if(process.env.HWF_DB_URL){
+        //     console.log("env variable is " + process.env.HWF_DB_URL)
+        //     this.SERVER_URL = process.env.HWF_DB_URL }//"mongodb://database:27017/test"
+        // else{throw new Error("HWF_DB_URL environment variable can't be read!")}
+        this.SERVER_URL = "mongodb://localhost:27017/test"
         this.DB_NAME = "test"
 
         this.connect()
@@ -63,8 +64,8 @@ export class dbAdapter <T extends dbInterface> {
                 //console.log(task)
 
                 //console.log('DEBUG STAGES:::::::: :D')
-                //let id = await this.addTask(["hello world!"])
-                //let task = await this.getTask(id)
+                // let id = await this.addTask(["hello world!"])
+                // let task = await this.getTask(id)
                 //console.log("task:")
                 //console.log(await this.getTask(id))
                     /*
@@ -81,8 +82,8 @@ export class dbAdapter <T extends dbInterface> {
 
                 //await this.updateStage("625533e6244171f5f8cc504a", "testing4...", "very GOOD", undefined, undefined, "WAHAHAHAH")
                 
-                //await this.addStage(id, "yay", ["hello world", "bye"], "comment",true, true, false,false)
-                //await this.addStage(id, "weeo", ["hello world", "bye"], "comment",true, true, false,false)
+                // await this.addStage(id, "yay", ["hello world", "bye"], "comment",true, true, false,false)
+                // await this.addStage(id, "weeo", ["hello world", "bye"], "comment",true, true, false,false)
 
                 //console.log("updated:")
                 //console.log(await this.getTask(id))
@@ -109,7 +110,7 @@ export class dbAdapter <T extends dbInterface> {
     async addDaemon(agent:string):Promise<string> {
         let result = await this.daemons.insertOne(JSON.parse(agent))
         console.log(`Inserted new Daemon successfully with ID[${result.insertedId.toString()}]`)
-        console.log(await this.getTask(result.insertedId.toString()))
+        //console.log(await this.getTask(result.insertedId.toString()))
         return result.insertedId.toString();
     }
 

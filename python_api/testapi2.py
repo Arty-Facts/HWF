@@ -9,7 +9,8 @@ task1 = HWF.Task(
     ),
     HWF.Artifacts( # get some files back
         "log.txt"
-    )
+    ),
+    hardware = {"os": "windows11", "gpu": "rtx4090", "cpu": "r9_9999x", "ram": "400gb"}
 )
 
 id_test = []

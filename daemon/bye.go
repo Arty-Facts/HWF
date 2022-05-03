@@ -21,7 +21,7 @@ func connect() *websocket.Conn {
 	// 	Path:   "/",
 	// }
 
-	server_url := "ws://localhost:9000?os=windows11&gpu=rtx4090&cpu=r9_9999x&ram=400gb"//os.Getenv("HWF_SERVER_URL")
+	server_url := "ws://localhost:9000?os=windows7&gpu=rtx3090&cpu=r5_3600x&ram=10gb"//os.Getenv("HWF_SERVER_URL")
 	connection, _, err := websocket.DefaultDialer.Dial(server_url, nil)
 	if err != nil {
 		log.Fatal(err)
