@@ -27,7 +27,7 @@ export class dbAdapter <T extends dbInterface> {
         // if(process.env.HWF_DB_URL){
         //     console.log("env variable is " + process.env.HWF_DB_URL)
         //     this.SERVER_URL = process.env.HWF_DB_URL }//"mongodb://database:27017/test"
-        // else{throw "HWF_DB_URL environment variable can't be read!"}
+        // else{throw new Error("HWF_DB_URL environment variable can't be read!")}
         this.SERVER_URL = "mongodb://localhost:27017/test"
         this.DB_NAME = "test"
 

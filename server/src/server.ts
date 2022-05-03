@@ -127,15 +127,19 @@ class LoadBalancer {
                 }
             });
         }
-        //TODO: implement proper randomization, arr1.sort(() => (Math.random() > .5) ? 1 : -1); ?
+        //TODO: properly implement this 
         // else if (this.priorityType == "random"){
-        //     let task = this.queue.contents[randomInt(0, this.queue.contents.length)]
-        //     let agent = findAgentForTask(task)
-        //     if (agent != null && agent.isIdle ) {
-        //         agent.send(task)
-        //         this.queue.dequeue(task)
-        //         return
-        //     }
+        //     let indexes = range(0, this.queue.size())
+        //     indexes.sort(() => (Math.random() > .5) ? 1: -1)
+        //     for (let index in indexes) {
+        //          let task = this.queue.contents[index]
+        //          let agent = findAgentForTask(task)
+        //          if (agent != null && agent.isIdle ) {
+        //              agent.send(task)
+        //              this.queue.dequeue(task)
+        //              return
+        //          }
+        //      }
         // }
     }
     
@@ -195,7 +199,6 @@ function findAgentForTask(message:any): Agent | null {
 function isValid(url:string|null|undefined = null):boolean {
 
     if(url){
-        console.log("validating url")
         const result = ["os", "cpu", "gpu", "ram"].every(term => url.includes(term))
         return result
     }
