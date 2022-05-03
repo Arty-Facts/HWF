@@ -31,12 +31,16 @@ app.use(cors({
      allowedHeaders: ["Content-Type", "*"]
  }))
 
-//TODOs & General thoughts: 
+//General thoughts: 
     //Should agents be able to name themselved when connecting? The daemon could maybe pick the systems own name automatically when first connecting
     //We should save info about connected agents even after they disconnect (currently nothing is saved for a disconnected client). That way their name, id & info could be "reserved" in case of a temporary diconnect
     //According to what i've read ws doesn't propely close a socket if it's disconnected improperly (such as a network cable getting unplugged). We should test this (and solve it if necessary)
     //Should something be logged to a file? That being things that aren't saved in the DB, such as connects/disconnects.
     //Maybe add timestamps to log messages? ("[2022-03-13, 16:33:24] Error: bla bla bla")
+
+//TODO: KNOWN BUGS
+    // Adding a task to the queue when a matching agent is not connected 
+    //  and then connecting with a matching agent will not properly send the task to that agent immediately after it's connected.
 
 class Agent {
     socket:WebSocket
@@ -53,7 +57,7 @@ class Agent {
 
     //used when agent is performing a task
     currentTask:string | null;
-    taskStartTime:string | null;
+    taskStartTime:string | Date;
 
     constructor(ws:WebSocket) {
         this.socket = ws
@@ -228,8 +232,7 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
     console.log(`\nNew Daemon connected from [${ip}].`)
 
     let agent = await createAgent(ws, ip, req!)
-    console.log("Agent id is:", agent.id)
-    
+
     balancer.retryQueuedTasks()
     // console.log("Agent specs:")
     // console.log(agent.specs)
@@ -241,7 +244,7 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
     })
     
     ws.on('close', () => {
-        console.log(`Client "${agent.name}" disconnected`)
+        console.log(`Agent from"${agent.ip}" disconnected`)
     })
 })
 
@@ -259,7 +262,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
             GET_HARDWARE_POOL = 3
             FILE = 4
         */
-        
+        //TODO: Check if the task matches an agent, but one that isn't connected right now
         switch (fbHelper.getFlatbufferType(binaryMessage)){
             case 1: {
 
@@ -277,23 +280,13 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                     console.log("agent for task found, sending data")
                     agent.send(binaryMessage)
                     agent.isIdle = false //TODO: implement a way of returning an agent to idle state when it's finished
+                    agent.taskStartTime = currentDate
                 }
                 else {
                     console.log("agent is busy, adding task to queue")
                     balancer.queue.enqueue(binaryMessage) 
                 }
-                
-                // console.log("\nws.onMessage from [Client]")
-                // let message = fHelper.readFlatbufferBinary(binaryMessage)
-                // //console.log(JSON.stringify(message))
-                // //console.log(message.task.hardware)
-                // //console.log(message.task.stages[0])
-                // //console.log(`Artifact 0: [${message.task.artifacts.files[0]}]`)
-        
-                // console.log(JSON.stringify(message.task))
-                // db.addTask(JSON.stringify(message.task))
-                // let agent = agents[0]
-                // sendToAgent(binaryMessage, agent)
+
             }
             case 2: {
                 
