@@ -7,7 +7,7 @@ async def main():
     HWF.Stage(
         name = "Bob",
         cmd = ["ls -la > log.txt","echo banana"], # run the command
-        data = [HWF.Data("files/portal2.zip", "portal2.zip")],
+        data = [HWF.Data("files/SPODERMAN.jpg", "SPODERMAN.jpg")],
         comment = "Grapefruits are an excellent source of potassium."
     ),
     HWF.Artifacts( # get some files back

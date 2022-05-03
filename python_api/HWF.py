@@ -29,11 +29,17 @@ HARDWARE_POOL = 3
 GET_HARDWARE_POOL = 3
 FILE = 4
 
+GB = 1000000000
+
 # 1.99 GB
 #BUFFER_SIZE = 1990000000
 
 # 1.99 MB
-BUFFER_SIZE = 1990000
+FILE_BUFFER_SIZE = 1990000
+
+# 4 GB
+MEMORY = 4 * GB
+BUFFER_SIZE = MEMORY // FILE_BUFFER_SIZE
 
 # 50 MB
 #BUFFER_SIZE = 500000000
@@ -67,9 +73,9 @@ class Stage:
         self.data = data
         self.cmd = cmd #Will be string or array of strings
 
-        # file information
-        self.packet_nr = 0
-        self.transmitted_files = []
+        # # file information
+        # self.packet_nr = 0
+        # self.transmitted_files = []
 
         self.track_time = track_time
         self.track_ram = track_ram
@@ -100,6 +106,10 @@ class Hub:
                     on_close   = lambda ws:     self.on_close(ws),
                     on_open    = lambda ws:     self.on_open(ws))
 
+        self.current_task = None
+
+        #self.locked = False
+
         #threading.Thread(target=self.socket.run_forever, args=(None, None, 60, 30), daemon=True).start()
         #self.connect()
 
@@ -123,8 +133,13 @@ class Hub:
             # for stage in task.stages:
             #     if len(stage.data):
             #         self.send_files(stage)
+
+            #self.locked = False
+
             if message == "200":
                 print("yay time to send my files :)")
+                #self.locked = False
+                self.send_files()
 
             elif message == "300":
                 print("wow")
@@ -185,6 +200,8 @@ class Hub:
 
     async def dispatch(self, hardware=None, task=None, priority=0, cpu=None, gpu=None, os=None):
 
+        self.current_task = task
+
         print("building task...")
 
         # send task to hub
@@ -193,6 +210,13 @@ class Hub:
 
         print("sending task...")
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
+
+        #self.locked = True
+
+        # '''
+        # while self.locked:
+        #     time.sleep(0.2)
+        # '''
 
         print("task sent! awaiting response...")
 
@@ -210,26 +234,19 @@ class Hub:
         # if response == "200":
         #     print("yay i did it :-D")
         
-    def send_files(self, stage):
+    def send_files(self):
 
         # process each file in the data vector
-        for current_file in self.data:
-            self.process_file(current_file)
+        for current_stage in self.current_task.stages:
+            for current_file in current_stage.data:
+                self.process_file(current_file)
 
     def process_file(self, data):
         file = open(data.path, "rb")
 
-        self.packet_nr = 0
+        packet_count = 0
 
-        byte = file.read(BUFFER_SIZE)
-        self.dispatch_file(byte, data.filename, packet_count)
-        packet_count += 1
-
-        while byte:
-            #print("progress: ", packet_count, "/?")
-            byte = file.read(BUFFER_SIZE)
-
-            # skicka flatbuffer med byte i
+        while (byte := file.read(FILE_BUFFER_SIZE)):
             self.dispatch_file(byte, data.filename, packet_count)
             packet_count += 1
 
@@ -238,6 +255,7 @@ class Hub:
         file.close()
 
     def dispatch_file(self, byte, filename, nr, eof=False):
+        print("dispatching", nr)
         buffer = _build_message(FILE, [byte, filename, nr, eof])
         #self.socket.send_binary(buffer)  
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)

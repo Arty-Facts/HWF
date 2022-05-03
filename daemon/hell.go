@@ -152,7 +152,7 @@ func read_message(msg []byte) {
 		read_file(fb_msg)
 	}
 
-	fmt.Println(fb_msg.Type())
+	//fmt.Println(fb_msg.Type())
 }
 
 func read_task(msg *message.Message) {
@@ -343,20 +343,19 @@ func read_file(msg *message.Message) {
 
 // returns an open file or opens new file instead
 func getOutputFile(filename string) *os.File {
-
 	output_file, opened := open_files[filename]
 
 	if !opened {
+		//fmt.Println("opening new file...")
 		output_file, err := os.OpenFile(string(filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 		if err != nil {
 			log.Fatal(err)
-
-			// unused variable fix
-			fmt.Println(opened, output_file)
 		} else {
+			//fmt.Println("saving to map...")
 			// save the opened file to the map
 			open_files[filename] = output_file
+			return output_file
 		}
 	}
 
@@ -375,10 +374,18 @@ func saveFile(msgFile *message.File) {
 
 	// save arr to output file
 	output_file := getOutputFile(string(filename))
+	if output_file == nil {
+		fmt.Println("big trouble idk")
+	}
+	//output_file.Write(arr)
 
-	output_file.Write(arr)
-
-	output_file.Close()
+	if eof {
+		//fmt.Println("now closing file...")
+		output_file.Close()
+		// to-do: remove file from opened_files map
+	} else {
+		output_file.Write(arr)
+	}
 }
 
 // WIP

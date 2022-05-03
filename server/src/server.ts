@@ -133,15 +133,20 @@ userWss.on("connection", (ws, req) => {
 
                 // send response to python_api (debug ish)
                 ws.send("200")
+                break
             }
             case 2: {
-                
+                break
             }
             case 3: {
-                
+                break
             }
             case 4: {
-                
+               console.log("this is 4 :)")
+               
+               let agent = agents[0]
+               sendToAgent(binaryMessage, agent)
+               break
             }
         }
         
