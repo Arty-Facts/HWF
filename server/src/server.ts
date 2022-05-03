@@ -51,6 +51,7 @@ class Agent {
         "ram": string | undefined | null
     };
     isIdle:boolean;
+    isConnected:boolean;
 
     //used when agent is performing a task
     currentTask:string | null;
@@ -129,19 +130,19 @@ class LoadBalancer {
             });
         }
         //TODO: properly implement this 
-        // else if (this.priorityType == "random"){
-        //     let indexes = range(0, this.queue.size())
-        //     indexes.sort(() => (Math.random() > .5) ? 1: -1)
-        //     for (let index in indexes) {
-        //          let task = this.queue.contents[index]
-        //          let agent = findAgentForTask(task)
-        //          if (agent != null && agent.isIdle ) {
-        //              agent.send(task)
-        //              this.queue.dequeue(task)
-        //              return
-        //          }
-        //      }
-        // }
+        else if (this.priorityType == "random"){
+            let indexes = [...Array(this.queue.size()).keys()].map(i => i + 0);
+            indexes.sort(() => (Math.random() > .5) ? 1: -1)
+            for (let index in indexes) {
+                 let task = this.queue.contents[index]
+                 let agent = findAgentForTask(task)
+                 if (agent != null && agent.isIdle ) {
+                     agent.send(task)
+                     this.queue.dequeue(task)
+                     return
+                 }
+             }
+        }
     }
     
     constructor(priority?: "fifo" | "lifo" | "random" ) {
