@@ -17,13 +17,6 @@ func GetRootAsStage(buf []byte, offset flatbuffers.UOffsetT) *Stage {
 	return x
 }
 
-func GetSizePrefixedRootAsStage(buf []byte, offset flatbuffers.UOffsetT) *Stage {
-	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
-	x := &Stage{}
-	x.Init(buf, n+offset+flatbuffers.SizeUint32)
-	return x
-}
-
 func (rcv *Stage) Init(buf []byte, i flatbuffers.UOffsetT) {
 	rcv._tab.Bytes = buf
 	rcv._tab.Pos = i

@@ -3,6 +3,7 @@ import { dbInterface } from './db_interface'
 import * as mongoDB from "mongodb"
 import { ObjectId } from "mongodb"
 
+
 //https://www.mongodb.com/compatibility/using-typescript-with-mongodb-tutorial
 
 export const collections: {tasks?: mongoDB.Collection} = {}
@@ -23,22 +24,18 @@ export class dbAdapter <T extends dbInterface> {
 
     constructor() {
 
-        if(process.env.HWF_DB_URL){
-            console.log("env variable is " + process.env.HWF_DB_URL)
-            this.SERVER_URL = process.env.HWF_DB_URL }//"mongodb://database:27017/test"
-        else{throw "HWF_DB_URL environment variable can't be read!"}
+        // if(process.env.HWF_DB_URL){
+        //     console.log("env variable is " + process.env.HWF_DB_URL)
+        //     this.SERVER_URL = process.env.HWF_DB_URL }//"mongodb://database:27017/test"
+        // else{throw new Error("HWF_DB_URL environment variable can't be read!")}
+        this.SERVER_URL = "mongodb://localhost:27017/test"
         this.DB_NAME = "test"
 
         this.connect()
     }
     
-    connectToDatabase():void {
-        //:D
-        this.connect()
-    }
-    
     async connect() {
-        console.log('connecting to database...');
+        //console.log('connecting to database...');
 
         try {
             if (!this.client) {
@@ -46,10 +43,11 @@ export class dbAdapter <T extends dbInterface> {
                 await this.client.connect();
                 this.db = this.client.db(this.DB_NAME);
 
-                console.log('db client created successfully');
+                //console.log('db client created successfully');
                 this.tasks = this.db.collection("tasks")
                 this.daemons = this.db.collection("daemons")
 
+                console.log(`Connected to Database at: ${this.SERVER_URL}`)
                 // debug: now try finding the newly added task
                 //this.findTask("622b23e7bec9c63a78067581")
 
@@ -65,15 +63,37 @@ export class dbAdapter <T extends dbInterface> {
                 //console.log('DEBUG::::: task:')
                 //console.log(task)
 
-                console.log('DEBUG STAGES:::::::: :D')
-                let id = await this.addTask(["hello world!"])
-                let task = await this.getTask(id)
-                console.log("task:")
-                console.log(await this.getTask(id))
-
+                //console.log('DEBUG STAGES:::::::: :D')
+                // let id = await this.addTask(["hello world!"])
+                // let task = await this.getTask(id)
+                //console.log("task:")
+                //console.log(await this.getTask(id))
+                    /*
                 await this.addStage(id, "testing...", ["hello world", "bye"], "comment",true, true, false,false)
-                console.log("updated:")
-                console.log(await this.getTask(id))
+                await this.addStage(id, "testing2...", ["hello world", "bye"], "comment",true, true, false,false)
+                await this.addStage(id, "testing3...", ["hello world", "bye"], "comment",true, true, false,false)
+                await this.addStage(id, "testing4...", ["hello world", "bye"], "comment",true, true, false,false)
+
+                await this.updateStage(id, "testing...", "very GOOD")
+                await this.updateStage(id, "testing2...", "very GOOD", "test", "wahoo", "wee")
+                await this.updateStage(id, "testing3...", "very GOOD", "bla")
+                await this.updateStage(id, "testing4...", "very GOOD", "peep", undefined, "bloop")
+                */
+
+                //await this.updateStage("625533e6244171f5f8cc504a", "testing4...", "very GOOD", undefined, undefined, "WAHAHAHAH")
+                
+                // await this.addStage(id, "yay", ["hello world", "bye"], "comment",true, true, false,false)
+                // await this.addStage(id, "weeo", ["hello world", "bye"], "comment",true, true, false,false)
+
+                //console.log("updated:")
+                //console.log(await this.getTask(id))
+
+                //console.log("updated:")
+                //console.log(await this.getTask(id))
+
+
+
+                
             }
             
         } 
@@ -86,14 +106,14 @@ export class dbAdapter <T extends dbInterface> {
         
     }
 
-    async addDaemon(ip:string):Promise<string> {
-        let id:string;
-        let result = await this.daemons.insertOne({'ip': ip})
-
+    //to-do: add specs + other fields?
+    async addDaemon(agent:string):Promise<string> {
+        let result = await this.daemons.insertOne(JSON.parse(agent))
+        console.log(`Inserted new Daemon successfully with ID[${result.insertedId.toString()}]`)
+        //console.log(await this.getTask(result.insertedId.toString()))
         return result.insertedId.toString();
     }
 
-    // to-do: finish this, it's copypaste from gettask atm
     async getDaemon(id:string) {
         try{
 
@@ -112,13 +132,13 @@ export class dbAdapter <T extends dbInterface> {
         
     }
 
-    //to-do: remove cmd since its now a part of stages instead of tasks
-    async addTask(cmd:string[]):Promise<string> {
+    async addTask(task:string):Promise<string> {
         try {
-            // to-do: remove cmd from tasks - move to stages
-            let result = await this.tasks.insertOne({'cmd': cmd, 'stages': [], 'artifacts': []})
-
-            console.log('inserted new task successfully!')
+            let result = await this.tasks.insertOne(JSON.parse(task))
+            
+            console.log(`Inserted new Task successfully with ID[${result.insertedId.toString()}]`)
+            console.log(await this.getTask(result.insertedId.toString()))
+            
             return result.insertedId.toString(); 
         }
         catch(error) {
@@ -151,8 +171,7 @@ export class dbAdapter <T extends dbInterface> {
     async deleteTask(id:string) {
         try {
 
-            this.tasks.deleteOne({_id: new ObjectId(id)})
-            const result = this.tasks.deleteOne({_id: id})
+            const result = this.tasks.deleteOne({_id: new ObjectId(id)})
 
             if (result)
             {
@@ -169,57 +188,6 @@ export class dbAdapter <T extends dbInterface> {
         }
 
     }
-
-    //to-do: remove cmd since its now a part of stages instead of tasks
-    updateTask(id:string, cmd:string[]) {
-        try {
-            this.tasks.updateOne({_id: new ObjectId(id)}, {$set: {'cmd': cmd, 'stages': [], 'artifacts': []}})
-            console.log("updated task successfully :)")
-        } 
-        catch(error:any) {
-            console.log('error updating task')
-            console.error(error)
-        }
-
-    }
-
-    async getStages(task_id:string): Promise<Record<string,any>[]>{
-
-        // let testmap:Record<string, any>[]
-        // testmap = []
-
-        const task = await this.tasks.findOne({_id: new ObjectId(task_id)})
-        if (task != null){
-            return task['stages']
-        }
-
-        return []
-    }
-
-    async addStage(task_id:string, name:string, cmd:string[], comment:string, 
-        track_time:boolean, track_ram:boolean, track_cpu:boolean, track_gpu:boolean): Promise<void> {
-            
-        try {
-            
-            const stages = await this.getStages(task_id);
-
-            // to-do: get actual time
-            let time = '2022/4/20-13:37'
-            stages.push({'name': name, 'cmd': cmd, 'comment': comment, 'status': 'queued', 
-            'track_time': track_time, 'track_ram': track_ram, 'track_cpu': track_cpu, 'track_gpu': track_gpu, 
-            'time_started': time, 'time_finished': 'N/A', 'ram_usage': 'N/A', 'cpu_usage': 'N/A', 'gpu_usage': 'N/A'});
-
-            console.log("tasks stages......:")
-            console.log(stages)
-
-            await this.tasks.updateOne({_id: new ObjectId(task_id)}, {$set: {'stages': stages}});
-        }
-        catch(error:any){
-            console.log('error adding stage to task')
-            console.error(error)
-        }
-    } 
-
 
     addResult(daemon:string, status:string, timestamp:string): void {
         

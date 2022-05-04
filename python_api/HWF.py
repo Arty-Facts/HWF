@@ -13,19 +13,24 @@ sys.path.append("../.")
 import schema.GetHardwarePool as FbGetHardwarePool
 import schema.GetResult as FbGetResult
 import schema.Message as FbMessage
+import schema.MessageBody as FbMessageBody
 import schema.Task as FbTask
 import schema.Stage as FbStage
+import schema.File as FbFile
+import schema.Hardware as FbHardware
 
 TASK = 1
 RESULT = 2
 GET_RESULT = 2
 HARDWARE_POOL = 3
 GET_HARDWARE_POOL = 3
+FILE = 4
 
 class Task:
-    def __init__(self, *actions):
+    def __init__(self, *actions, hardware):
         self.stages = []
         self.artifacts = []
+        self.hardware = hardware
         for action in actions:
             if isinstance(action, Stage):
                 self.stages.append(action)
@@ -85,84 +90,65 @@ class Hub:
         pass
     
     def get_result(self, job_ids, wait=True): #outside mvp
-        
-        buffer = fb_build_message(RESULT, job_ids) #Not implemented
-        self.socket.send_binary(buffer)
         pass
 
     def get_hardware_pool(self): #outside mvp
-
         pass
 
     def dispatch_async(self, hardware=None, task=None, priority=0): #outside mvp
-        
-
         pass
 
-    def dispatch(self, hardware=None, task=None, priority=0):
-        # cmd_to_send = task[0].cmd #later on we will just send the task, for now use the cmd
-        # placeholder_id = 1 #schema will be changed later
-        # placeholder_filename = "hellgo.png" #schema will be changed later
-        # buf = self.__build_binary_message(placeholder_id, cmd_to_send, placeholder_filename)
-
-
-        # # create bin file from message
-        # global binFile
-        # with open(binFile, "wb") as bin:
-        #     bin.write(buf)
-        buffer = fb_build_message(TASK, task)
+    def dispatch(self, hardware=None, task=None, priority=0, cpu=None, gpu=None, os=None):
+        buffer = _build_message(TASK, task,)
         self.socket.send_binary(buffer)  
+  
 
-
-
-
-    
-    
-
-def fb_build_message(type, data):
+def _build_message(msg_type, data):
     
     builder = flatbuffers.Builder(0)
+    if msg_type == TASK:
+        builder, done_body = _build_task(builder, data)
+        body_type = FbMessageBody.MessageBody.Task
 
-    if type == 1:
-        builder, done_task = fb_build_task(builder, data)
-        FbMessage.Start(builder)
-        FbMessage.AddTask(builder, done_task)
-
-    elif type == 2:
-        builder, done_result = fb_build_get_result(builder, data)
-        FbMessage.Start(builder)
-        FbMessage.AddGetResult(builder, done_result)
+    elif msg_type == GET_RESULT:
+        builder, done_body = _build_get_result(builder, data)
+        body_type =FbMessageBody.MessageBody.GetResult
     
-    elif type == 3:
-        builder, done_hardware_pool = fb_build_get_hardware_pool(builder, data)
-        FbMessage.Start(builder)
-        FbMessage.AddGetHardwarePool(builder, done_hardware_pool)
-        
+    elif msg_type == GET_HARDWARE_POOL:
+        builder, done_body = _build_get_hardware_pool(builder, data)
+        body_type =FbMessageBody.MessageBody.GetHardwarePool
+
+    elif msg_type == FILE:
+        builder, done_body = _build_file(builder, data)
+        body_type =FbMessageBody.MessageBody.File
     else:
         print("Unknown message type number. Aborting...")
         return
     
+    FbMessage.MessageStart(builder)
+    FbMessage.MessageAddType(builder, msg_type)
+    FbMessage.MessageAddBodyType(builder, body_type)
+    FbMessage.MessageAddBody(builder, done_body)
 
-    
-    FbMessage.AddType(builder, type)
-    message = FbMessage.End(builder)
+
+    message = FbMessage.MessageEnd(builder)
     builder.Finish(message)
     buffer = builder.Output()
 
     return buffer
 
-def fb_build_task(builder, task):
+def _build_task(builder, task):
     serialized_stages = []
     serialized_artifacts = []
-
+    builder, done_hardware = _build_hardware(builder, cpu = task.hardware["cpu"], gpu = task.hardware["gpu"], os = task.hardware["os"], ram = task.hardware["ram"])
     if len(task.stages) > 0:    
         for stage in task.stages:
-            builder, done_stage = fb_build_stage(builder, stage)
+            builder, done_stage = _build_stage(builder, stage)
             serialized_stages.append(done_stage)
 
-        FbTask.StartStagesVector(builder, len(task.stages))
+        FbTask.TaskStartStagesVector(builder, len(task.stages))
 
-        for stage in serialized_stages:
+        for stage in reversed(serialized_stages):
             builder.PrependUOffsetTRelative(stage)
         
         stage_vector = builder.EndVector()
@@ -173,62 +159,77 @@ def fb_build_task(builder, task):
             for file in artifact.files:
                 serialized_artifacts.append(builder.CreateString(file))
 
-        FbTask.StartArtifactsVector(builder, len(serialized_artifacts))    
+        FbTask.TaskStartArtifactsVector(builder, len(serialized_artifacts))    
 
-        for artifact in serialized_artifacts:
+        for artifact in reversed(serialized_artifacts):
             builder.PrependUOffsetTRelative(artifact)    
         
         artifact_vector = builder.EndVector()
 
 
-    FbTask.Start(builder)
-    FbTask.AddStages(builder, stage_vector)
-    FbTask.AddArtifacts(builder, artifact_vector)
-    done_task = FbTask.End(builder)
+    FbTask.TaskStart(builder)
+    FbTask.TaskAddHardware(builder, done_hardware)
+    FbTask.TaskAddStages(builder, stage_vector)
+    FbTask.TaskAddArtifacts(builder, artifact_vector)
+    done_task = FbTask.TaskEnd(builder)
 
     return builder, done_task
 
-def fb_build_get_result(builder, jobs):
-    pass
+def _build_hardware(builder, cpu=None, gpu=None, os=None, ram=None):
+    fb_hardware_cpu = builder.CreateString(cpu)
+    fb_hardware_gpu = builder.CreateString(gpu)
+    fb_hardware_os = builder.CreateString(os) 
+    fb_hardware_ram = builder.CreateString(ram)
+    FbHardware.HardwareStart(builder)
+    FbHardware.HardwareAddCpu(builder, fb_hardware_cpu)
+    FbHardware.HardwareAddGpu(builder,fb_hardware_gpu)
+    FbHardware.HardwareAddOs(builder,fb_hardware_os)
+    FbHardware.HardwareAddRam(builder,fb_hardware_ram)
+    done_hardware = FbHardware.HardwareEnd(builder)
+    return builder, done_hardware   
 
-def fb_build_get_hardware_pool(builder, hardware):
-    pass
-
-def fb_build_stage(builder, stage):
+def _build_stage(builder, stage):
 
     if len(stage.cmd) > 0:
         cmd_serialized = []
         if type(stage.cmd) == list:
             for cmd in stage.cmd:
                 cmd_serialized.append(builder.CreateString(cmd))
-            
-            FbStage.StartCmdListVector(builder, len(stage.cmd))
+            FbStage.StageStartCmdListVector(builder, len(stage.cmd))
 
         else:
             cmd_serialized.append(builder.CreateString(stage.cmd))
-            FbStage.StartCmdListVector(builder,1)
+            FbStage.StageStartCmdListVector(builder,1)
 
-        for item in cmd_serialized:
+        for item in reversed(cmd_serialized):
             builder.PrependUOffsetTRelative(item)
+            
 
         cmd_vector = builder.EndVector()
 
 
     fb_stage_name = builder.CreateString(stage.name)
     fb_stage_comment = builder.CreateString(stage.comment)
-    FbStage.Start(builder)
+    FbStage.StageStart(builder)
 
-    FbStage.AddName(builder, fb_stage_name)
-    #TODO: FbStage.AddData(builder, stage.data)
-    FbStage.AddCmdList(builder, cmd_vector)
-    FbStage.AddTrackTime(builder, stage.track_time)
-    FbStage.AddTrackRam(builder, stage.track_ram)
-    FbStage.AddTrackCpu(builder, stage.track_cpu)
-    FbStage.AddTrackGpu(builder, stage.track_gpu)
-    FbStage.AddComment(builder, fb_stage_comment)
+    FbStage.StageAddName(builder, fb_stage_name)
+    #FbStage.AddData(builder, stage.data)
+    FbStage.StageAddCmdList(builder, cmd_vector)
+    FbStage.StageAddTrackTime(builder, stage.track_time)
+    FbStage.StageAddTrackRam(builder, stage.track_ram)
+    FbStage.StageAddTrackCpu(builder, stage.track_cpu)
+    FbStage.StageAddTrackGpu(builder, stage.track_gpu)
+    FbStage.StageAddComment(builder, fb_stage_comment)
 
-    done_stage = FbStage.End(builder)
+    done_stage = FbStage.StageEnd(builder)
 
     return builder, done_stage
 
-        
+def _build_file(builder, file):
+    return
+
+def _build_get_result(builder, jobs):
+    pass
+
+def _build_get_hardware_pool(builder, hardware):
+    pass

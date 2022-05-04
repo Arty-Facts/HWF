@@ -1,14 +1,16 @@
-import HWF
+#import HWF
+import HWF as HWF #För att testa nya schemat
 
 task1 = HWF.Task(
     HWF.Stage(
-        name = "Olof",
-        cmd = ["ls -la > log.txt","echo cat"], # run the command
-        comment = "Bananas are an excellent source of potassium."
+        name = "Bob",
+        cmd = ["ls -la > log.txt","echo banana", "cat log.txt"], # run the command
+        comment = "Grapefruits are an excellent source of potassium."
     ),
     HWF.Artifacts( # get some files back
         "log.txt"
-    )
+    ),
+    hardware = {"os": "windows11", "gpu": "rtx4090", "cpu": "r9_9999x", "ram": "400gb"}
 )
 
 id_test = []
