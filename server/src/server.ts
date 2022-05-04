@@ -42,7 +42,7 @@ class Agent {
     socket:WebSocket
     ip:string;
     name:string; //Should this be used?
-    id:string | Promise<string>; //TODO: fix so that this does not have to accept a promise type
+    id:string;
     specs:{
         "os": string | undefined | null, 
         "gpu": string | undefined | null, 
@@ -52,7 +52,6 @@ class Agent {
     isIdle:boolean;
     isConnected:boolean;
 
-    //used when agent is performing a task
     currentTask:string | null;
     taskStartTime:string | Date;
 
@@ -279,7 +278,6 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
             GET_HARDWARE_POOL = 3
             FILE = 4
         */
-        //TODO: Check if the task matches an agent, but one that isn't connected right now
         switch (fbHelper.getFlatbufferType(binaryMessage)){
 
             case 1: {
