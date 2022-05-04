@@ -64,7 +64,7 @@ class Agent {
 
     send(data:Uint8Array) {
         this.socket.send(data)
-        this.isIdle = true 
+        this.isIdle = false 
     }
 }
 

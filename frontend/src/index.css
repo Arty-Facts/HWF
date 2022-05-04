@@ -11,3 +11,16 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.home {
+  width: 100vw;
+  height: 88vh;
+  
+ 
+}
+
+#test {
+border: 2px 2px solid black;
+font-size: 15px;
+text-shadow: 2px 2px black;
+}
