@@ -35,10 +35,15 @@ type stage struct {
 	comment string
 }
 
-var current_artifacts []string
-var current_stage stage
+type task struct {
+	stages    []stage
+	artifacts []string
 
-var tasks []stage
+	ready_to_execute bool
+}
+
+var current_stage stage
+var current_task task
 
 //connect to the server via websockets
 func connect() *websocket.Conn {
@@ -74,11 +79,11 @@ func listen(connection *websocket.Conn) {
 		case data := <-received_bytes:
 			// if received_bytes contains something
 
-			send_message(connection, []byte("Received data, now processing..."))
+			//send_message(connection, []byte("Received data, now processing..."))
 
 			read_message(data)
 
-			send_message(connection, []byte("Done reading data."))
+			//send_message(connection, []byte("Done reading data."))
 
 		case err := <-errCh:
 			// if we got an error during read
@@ -110,8 +115,20 @@ func send_message(connection *websocket.Conn, msg []byte) {
 	connection.WriteMessage(websocket.TextMessage, msg)
 }
 
-func execute_command(command []byte) []byte {
-	cmd := exec.Command("bash", "-c", string(command))
+func run_task() {
+	for i := 0; i < len(current_task.stages); i++ {
+		for j := 0; j < len(current_task.stages[i].cmd_list); j++ {
+			fmt.Println(string(execute_command(current_task.stages[i].cmd_list[j])))
+		}
+	}
+
+	// to-do: return results from execution
+
+}
+
+func execute_command(command string) []byte {
+	//fmt.Println("now executing command", command)
+	cmd := exec.Command("bash", "-c", command)
 
 	out, err := cmd.Output()
 	if err != nil {
@@ -169,68 +186,115 @@ func read_task(msg *message.Message) {
 			unionTask := new(message.Task)
 			unionTask.Init(unionTable.Bytes, unionTable.Pos)
 
-			stages := make([]*message.Stage, unionTask.StagesLength())
+			//temp_stages := make([]*message.Stage, unionTask.StagesLength())
 			tempStage := new(message.Stage)
+			stages := make([]stage, 0)
+
+			// get all artifacts from task
+			var artifacts_list = make([]string, unionTask.ArtifactsLength())
+			for i := 0; i < unionTask.ArtifactsLength(); i++ {
+				artifacts_list[i] = string(unionTask.Artifacts(i))
+			}
 
 			// get all stages from the task
 			for i := 0; i < unionTask.StagesLength(); i++ {
+				fmt.Println("STAGE", i)
 
 				if unionTask.Stages(tempStage, i) {
-					stages[i] = tempStage
 
-					// execute the stage's commands=========
-					var results = make([][]byte, tempStage.CmdListLength())
+					/*
+						// execute the stage's commands=========
+						var results = make([][]byte, tempStage.CmdListLength())
+						for i := 0; i < tempStage.CmdListLength(); i++ {
+							//fmt.Println(string(tempStage.CmdList(i)))
+							result := execute_command(tempStage.CmdList(i))
+							results[i] = result
+						}
+
+						// print the results from cmd exec
+
+						for i, s := range results {
+							fmt.Println(i, string(s))
+						}
+						//======================================
+					*/
+
+					// get all cmds from stage
+					var cmd_list = make([]string, tempStage.CmdListLength())
 					for i := 0; i < tempStage.CmdListLength(); i++ {
-						//fmt.Println(string(tempStage.CmdList(i)))
-						result := execute_command(tempStage.CmdList(i))
-						results[i] = result
+						cmd_list[i] = string(tempStage.CmdList(i))
 					}
 
-					// print the results from cmd exec
+					tempData := new(message.Data)
 
-					for i, s := range results {
-						fmt.Println(i, string(s))
+					// get all file data from stage
+					var data_list = make([]file_data, tempStage.DataLength())
+					for i := 0; i < tempStage.DataLength(); i++ {
+
+						if tempStage.Data(tempData, i) {
+							fmt.Println("filename:")
+							fmt.Println(string(tempData.Filename()))
+
+							data_list[i] = file_data{path: string(tempData.Path()), filename: string(tempData.Filename()), downloaded: false}
+						}
+
 					}
-					//======================================
+
+					// save current stage for later :)
+					temp_stage := stage{name: string(tempStage.Name()), data: data_list,
+						cmd_list: cmd_list, track_time: tempStage.TrackTime(),
+						track_ram: tempStage.TrackRam(), track_cpu: tempStage.TrackCpu(),
+						track_gpu: tempStage.TrackGpu(), comment: string(tempStage.Comment())}
+
+					stages = append(stages, temp_stage)
 
 				}
 			}
 
-			// set current task to first stage of task
-			if len(stages) > 0 {
-				s := stages[0]
+			fmt.Println("loaded stage into current stage")
+			fmt.Println("current stage name:")
+			fmt.Println(string(current_stage.name))
 
-				// get all cmds from stage
-				var cmd_list = make([]string, s.CmdListLength())
-				for i := 0; i < s.CmdListLength(); i++ {
-					cmd_list[i] = string(s.CmdList(i))
-				}
+			task := task{stages: stages, artifacts: artifacts_list}
+			current_task = task
+			current_stage = stages[0]
 
-				tempData := new(message.Data)
+			/*
+				// set current task to first stage of task
+				if len(temp_stages) > 0 {
+					s := temp_stages[0]
 
-				// get all file data from stage
-				var data_list = make([]file_data, s.DataLength())
-				for i := 0; i < s.DataLength(); i++ {
-
-					if s.Data(tempData, i) {
-						fmt.Println("filename:")
-						fmt.Println(string(tempData.Filename()))
-
-						data_list[i] = file_data{path: string(tempData.Path()), filename: string(tempData.Filename()), downloaded: false}
+					// get all cmds from stage
+					var cmd_list = make([]string, s.CmdListLength())
+					for i := 0; i < s.CmdListLength(); i++ {
+						cmd_list[i] = string(s.CmdList(i))
 					}
 
-				}
+					tempData := new(message.Data)
 
-				// save current stage for later :)
-				current_stage := stage{name: string(s.Name()), data: data_list,
-					cmd_list: cmd_list, track_time: s.TrackTime(),
-					track_ram: s.TrackRam(), track_cpu: s.TrackCpu(),
-					track_gpu: s.TrackGpu(), comment: string(s.Comment())}
+					// get all file data from stage
+					var data_list = make([]file_data, s.DataLength())
+					for i := 0; i < s.DataLength(); i++ {
 
-				fmt.Println("loaded stage into current stage")
-				fmt.Println("current stage name:")
-				fmt.Println(string(current_stage.name))
-			}
+						if s.Data(tempData, i) {
+							fmt.Println("filename:")
+							fmt.Println(string(tempData.Filename()))
+
+							data_list[i] = file_data{path: string(tempData.Path()), filename: string(tempData.Filename()), downloaded: false}
+						}
+
+					}
+
+					// save current stage for later :)
+					current_stage := stage{name: string(s.Name()), data: data_list,
+						cmd_list: cmd_list, track_time: s.TrackTime(),
+						track_ram: s.TrackRam(), track_cpu: s.TrackCpu(),
+						track_gpu: s.TrackGpu(), comment: string(s.Comment())}
+
+					fmt.Println("loaded stage into current stage")
+					fmt.Println("current stage name:")
+					fmt.Println(string(current_stage.name))
+				}*/
 
 		}
 	}
@@ -256,6 +320,24 @@ func read_task(msg *message.Message) {
 		}
 	*/
 
+	debug_print_current_task()
+
+}
+
+func debug_print_current_task() {
+	fmt.Println("DEBUG PRINT CURRENT TASK")
+	fmt.Println(current_task)
+
+	fmt.Println("Artifacts:")
+	fmt.Println(current_task.artifacts)
+
+	for i := 0; i < len(current_task.stages); i++ {
+		fmt.Println("Stage", i)
+		stage := current_task.stages[i]
+		fmt.Println(stage.name)
+		fmt.Println(stage.cmd_list)
+		fmt.Println(stage.data)
+	}
 }
 
 // this function might be useless, don't think daemon is going to
@@ -380,12 +462,52 @@ func saveFile(msgFile *message.File) {
 	//output_file.Write(arr)
 
 	if eof {
-		//fmt.Println("now closing file...")
 		output_file.Close()
-		// to-do: remove file from opened_files map
+
+		// remove the file from the opened files map
+		delete(open_files, string(filename))
+
+		// check if all files downloaded for stage
+		if check_and_set_downloaded(string(filename)) {
+			// EXECUTE ALL COMMANDS HERE >:)
+			fmt.Println("ALL FILES ARE NOW DOWNLOADED YAY :D")
+
+			// we know all files are downloaded, it's a go time!!!!!!
+			run_task()
+		}
+
 	} else {
 		output_file.Write(arr)
 	}
+}
+
+func check_and_set_downloaded(filename string) bool {
+	downloaded_set := false
+	status := true
+
+	for i := 0; i < len(current_task.stages); i++ {
+		for j := 0; j < len(current_task.stages[i].data); j++ {
+			// check if we found the right data to set as downloaded
+			if current_task.stages[i].data[j].filename == filename {
+				current_task.stages[i].data[j].downloaded = true
+				downloaded_set = true
+
+				if !status {
+					return false
+				}
+
+				// check if any data is still not downloaded
+			} else if current_task.stages[i].data[j].downloaded == false {
+				// stop checking if we are already done setting downloaded for "filename" data
+				if downloaded_set {
+					return false
+				}
+				status = false
+			}
+		}
+	}
+
+	return status
 }
 
 // WIP
