@@ -13,7 +13,6 @@ const app = express()
 
 const server = createServer(app)
 const wss:ws.WebSocketServer = new ws.Server({ server:server });
-
 const userServer = createServer(app)
 const userWss = new ws.Server({server:userServer})
 
@@ -87,8 +86,6 @@ class Queue {
                 throw new Error("Could not find target element in the queue")
             }
             this.contents.splice(this.contents.indexOf(target), 1) 
-            
-        
         }
     }
 
@@ -129,7 +126,7 @@ class LoadBalancer {
                 }
             });
         }
-        //TODO: properly implement this 
+
         else if (this.priorityType == "random"){
             let indexes = [...Array(this.queue.size()).keys()].map(i => i + 0);
             indexes.sort(() => (Math.random() > .5) ? 1: -1)
@@ -140,8 +137,8 @@ class LoadBalancer {
                      agent.send(task)
                      this.queue.dequeue(task)
                      return
-                 }
-             }
+                }
+            }
         }
     }
     
@@ -194,7 +191,6 @@ function findAgentForTask(message:any): Agent | null {
             }
     };
     return null
-
 }
 
 //TODO: expand this with more validatable elements
@@ -209,6 +205,16 @@ function isValid(url:string|null|undefined = null):boolean {
     }
 }
 
+//TODO: expand this with more thorough comparisons
+function doesAgentExist(connectingIp:string):boolean|Agent {
+    for (let agent of agents){
+        if (agent.ip == connectingIp){
+            return agent
+        }
+    }
+    return false
+}
+
 
 
 var agents:Agent[] = []
@@ -217,7 +223,7 @@ balancer.queue = new Queue()
 let currentDate = new Date()
 
 wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
-    
+    var agent:Agent
     let ip = req.socket.remoteAddress
     
     if (ip == undefined) {
@@ -228,9 +234,22 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
     }
 
     console.log(`\nNew Daemon connected from [${ip}].`)
+    
+    let lookupResult:boolean|Agent = doesAgentExist(ip)
+    if (!lookupResult) {
+        console.log("IP not recognized from before, creating new agent object")
+        agent = await createAgent(ws, ip, req!)
+    }
+    else{
+        console.log("IP recognized, welcome back mr.agent")
+        agent = lookupResult as Agent
 
-    let agent = await createAgent(ws, ip, req!)
+        if (agent.socket != ws) {
+            agent.socket = ws
+        }
+    }
 
+    agent.isConnected = true
     balancer.retryQueuedTasks()
     // console.log("Agent specs:")
     // console.log(agent.specs)
@@ -243,14 +262,14 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
     
     ws.on('close', () => {
         console.log(`Agent from"${agent.ip}" disconnected`)
+        agent.isConnected = false
     })
 })
 
-
 userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
-
     
     ws.on("message", (binaryMessage:Uint8Array) => {
+
         console.log(`\nNew User-client connected from [${req.socket.remoteAddress}].`)
         /*
             TASK = 1
@@ -262,29 +281,38 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
         */
         //TODO: Check if the task matches an agent, but one that isn't connected right now
         switch (fbHelper.getFlatbufferType(binaryMessage)){
+
             case 1: {
 
                 let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
 
                 let agent = findAgentForTask(readableMessage)
-                if (agent == null){
-                    console.log("no fitting agent could be found for this task")
-                    console.log("======queuing anyway=====")
+
+                if (agent == null) {
+
+                    console.log("no fitting agent could be found for this task, queueing anyway")
                     balancer.queue.enqueue(binaryMessage)
-                    sendToUser(ws, "No fitting agent could be found for this task") //TODO: add way to force queuing of task even if no matching agent is connected?
                 }
-                else if (agent.isIdle)
-                {
+
+                else if (!agent.isConnected) {
+
+                    console.log("Matching agent found, but it is not connected to the hub, queueing task")
+                    balancer.queue.enqueue(binaryMessage)
+                }
+
+                else if (agent.isIdle) {
+
                     console.log("agent for task found, sending data")
                     agent.send(binaryMessage)
                     agent.isIdle = false //TODO: implement a way of returning an agent to idle state when it's finished
                     agent.taskStartTime = currentDate
                 }
+
                 else {
+
                     console.log("agent is busy, adding task to queue")
                     balancer.queue.enqueue(binaryMessage) 
                 }
-
             }
             case 2: {
                 
@@ -295,15 +323,9 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
             case 4: {
                 
             }
-        }
-        
-        
-        
+        } 
     })
-
 })
-
-
 
 // function serverLog(text:string|object): void {
 //     console.log(`[${currentDate}]` + text)
@@ -330,7 +352,6 @@ app.get('/specs', (req:Request, res:Response) => {
         })
     })
     return res.json(result)   
-
 })
 
 userServer.listen(3001, () => {
@@ -338,7 +359,5 @@ userServer.listen(3001, () => {
 })
 
 server.listen(9000, () => {
-
-
     console.log("Listening on port: 9000") 
 })
