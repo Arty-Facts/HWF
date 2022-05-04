@@ -36,7 +36,9 @@ app.use(cors({
 //TODO: KNOWN BUGS
     // 1) Adding a task to the queue when a matching agent is not connected 
     //    and then connecting with a matching agent will not always properly send the task to that agent immediately after it's connected.
-    //    It usually works, but it has failed once so far.
+    //    It usually works, but it has failed a couple of times so far.
+    //
+    // 2) The agents id appears to be set to "true" instead of the id returned by addDaemon() for some reason
 
 class Agent {
     socket:WebSocket
@@ -49,7 +51,7 @@ class Agent {
         "cpu": string | undefined | null, 
         "ram": string | undefined | null
     };
-    isIdle:boolean;
+    isIdle:boolean;  //TODO: implement a way of returning an agent to idle state when it's finished
     isConnected:boolean;
 
     currentTask:string | null;
@@ -62,6 +64,7 @@ class Agent {
 
     send(data:Uint8Array) {
         this.socket.send(data)
+        this.isIdle = true 
     }
 }
 
@@ -160,8 +163,8 @@ async function createAgent(socket:WebSocket, ip:string, req:IncomingMessage): Pr
     let params = new URLSearchParams(agentUrl.search)
     agent.specs = {"os": params.get("os"), "gpu": params.get("gpu"), "cpu": params.get("cpu"), "ram": params.get("ram"),}
     
-    await db.addDaemon(JSON.stringify({'ip':agent.ip, 'specs':agent.specs})).then(result => { //TODO: FIXME: This needs to be finished before continuing!
-        agent.id = result
+    await db.addDaemon(JSON.stringify({'ip':agent.ip, 'specs':agent.specs})).then(result => {
+        agent.id = result 
     })
     return agent
 }
@@ -302,7 +305,6 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
                     console.log("agent for task found, sending data")
                     agent.send(binaryMessage)
-                    agent.isIdle = false //TODO: implement a way of returning an agent to idle state when it's finished
                     agent.taskStartTime = currentDate
                 }
 
@@ -333,7 +335,6 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 app.get('/specs', (req:Request, res:Response) => {
     
     if (agents.length == 0) {    
-        console.log("Could not retrieve specs. No agents are connected")
         return res.sendStatus(404)
     }
 
@@ -350,6 +351,52 @@ app.get('/specs', (req:Request, res:Response) => {
         })
     })
     return res.json(result)   
+})
+
+app.get('/daemons', (req:Request, res:Response) => {
+    if(agents.length == 0) {
+        return res.sendStatus(404)
+    }
+    
+    let result:{}[] = []
+    agents.forEach( (agent) => {
+        result.push({
+            "name": agent.name,
+            "ip": agent.ip,
+            "id": agent.isIdle, 
+            "specs":{
+                "os": agent.specs.os, 
+                "gpu": agent.specs.gpu, 
+                "cpu": agent.specs.cpu, 
+                "ram": agent.specs.ram
+            },
+            "idle": agent.isIdle,
+            "connected": agent.isConnected,
+            "current_task": agent.currentTask,
+            "task_start_date": agent.taskStartTime
+        })
+    })
+    return res.json(result)   
+
+})
+
+app.get('/queuedtasks', (req:Request, res:Response) => {
+    if (balancer.queue.size() == 0){
+        return res.sendStatus(404)
+    }
+
+    let result:{}[] = []
+    for ( let taskBinary of balancer.queue.contents) {
+        let fbTask = fbHelper.readFlatbufferBinary(taskBinary)
+
+        result.push({
+            "target_hardware": fbTask.task.hardware,
+            "stages": fbTask.task.stages,
+            "artifacts": fbTask.task.artifacts
+        })
+    }
+
+    return res.json(result)
 })
 
 userServer.listen(3001, () => {
