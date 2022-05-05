@@ -113,6 +113,9 @@ class LoadBalancer {
                 if (agent != null && agent.isIdle ) {
                     agent.send(task)
                     this.queue.dequeue(task)
+
+                    // TO-DO: send response to python_api >:(
+                    //ws.send("200")
                     return
                 }
             });
@@ -290,7 +293,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 let agent = findAgentForTask(readableMessage)
 
                 if (agent == null) {
-
+                    // to-do: don't ENqueue here, send response instead :-o
                     console.log("no fitting agent could be found for this task, queueing anyway")
                     balancer.queue.enqueue(binaryMessage)
                 }
@@ -306,6 +309,9 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                     console.log("agent for task found, sending data")
                     agent.send(binaryMessage)
                     agent.taskStartTime = currentDate
+
+                    // send response to python_api
+                    ws.send("200")
                 }
 
                 else {
@@ -325,6 +331,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 console.log("this is 4 :)")
 
                 let agent = agents[0]
+                
                 // to-do: send this to the correct agent!!!!!
                 //sendToAgent(binaryMessage, agent)
                 break
