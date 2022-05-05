@@ -4,10 +4,6 @@ import (
 	//"context"
 	"fmt"
 	"log"
-<<<<<<< HEAD
-	"net/url"
-=======
->>>>>>> origin/main
 	"os"
 	"os/exec"
 
@@ -56,7 +52,19 @@ func connect() *websocket.Conn {
 	// 	Path:   "/",
 	// }
 
-	server_url := os.Getenv("HWF_SERVER_URL")
+	server_url := "ws://localhost:9000"
+
+	docker_server_url := os.Getenv("HWF_SERVER_URL")
+	if len(docker_server_url) > 1 {
+		server_url = docker_server_url
+	}
+
+	// if os.Getenv("HWF_SERVER_URL") {
+	// 	server_url := "localhost:9000"
+	// }
+
+	// hell.go:7:1: expected 'STRING', found '<<'
+
 	connection, _, err := websocket.DefaultDialer.Dial(server_url, nil)
 	if err != nil {
 		log.Fatal(err)
