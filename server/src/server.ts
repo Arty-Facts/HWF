@@ -313,15 +313,21 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                     console.log("agent is busy, adding task to queue")
                     balancer.queue.enqueue(binaryMessage) 
                 }
+                break
             }
             case 2: {
-                
+                break
             }
             case 3: {
-                
+                break
             }
             case 4: {
-                
+                console.log("this is 4 :)")
+
+                let agent = agents[0]
+                // to-do: send this to the correct agent!!!!!
+                //sendToAgent(binaryMessage, agent)
+                break
             }
         } 
     })

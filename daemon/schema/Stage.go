@@ -41,13 +41,16 @@ func (rcv *Stage) Name() []byte {
 	return nil
 }
 
-func (rcv *Stage) Data(j int) int8 {
+func (rcv *Stage) Data(obj *Data, j int) bool {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
-		a := rcv._tab.Vector(o)
-		return rcv._tab.GetInt8(a + flatbuffers.UOffsetT(j*1))
+		x := rcv._tab.Vector(o)
+		x += flatbuffers.UOffsetT(j) * 4
+		x = rcv._tab.Indirect(x)
+		obj.Init(rcv._tab.Bytes, x)
+		return true
 	}
-	return 0
+	return false
 }
 
 func (rcv *Stage) DataLength() int {
@@ -56,15 +59,6 @@ func (rcv *Stage) DataLength() int {
 		return rcv._tab.VectorLen(o)
 	}
 	return 0
-}
-
-func (rcv *Stage) MutateData(j int, n int8) bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
-	if o != 0 {
-		a := rcv._tab.Vector(o)
-		return rcv._tab.MutateInt8(a+flatbuffers.UOffsetT(j*1), n)
-	}
-	return false
 }
 
 func (rcv *Stage) CmdList(j int) []byte {
@@ -150,7 +144,7 @@ func StageAddData(builder *flatbuffers.Builder, data flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(data), 0)
 }
 func StageStartDataVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
-	return builder.StartVector(1, numElems, 1)
+	return builder.StartVector(4, numElems, 4)
 }
 func StageAddCmdList(builder *flatbuffers.Builder, cmdList flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(cmdList), 0)

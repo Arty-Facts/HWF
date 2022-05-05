@@ -9,13 +9,18 @@ table Message {
 
 table Stage {
     name:string;
-    data:[byte];
+    data:[Data];
     cmd_list:[string];
     track_time:bool = true;
     track_ram:bool = false;
     track_cpu:bool = false;
     track_gpu:bool = false;
     comment:string;
+}
+
+table Data {
+    path:string;
+    filename:string;
 }
 
 table Task {
@@ -47,5 +52,3 @@ table Hardware {
 }
 
 root_type Message;
-
-

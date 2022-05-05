@@ -1,0 +1,9 @@
+namespace schema;
+ 
+table File {
+    filename:string; 
+    packetnumber:int; 
+    eof:bool;
+    data:[ubyte];
+}
+
