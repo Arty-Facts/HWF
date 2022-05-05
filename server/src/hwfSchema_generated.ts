@@ -1174,10 +1174,21 @@ os(optionalEncoding?:any):string|Uint8Array|null {
 };
 
 /**
+ * @param flatbuffers.Encoding= optionalEncoding
+ * @returns string|Uint8Array|null
+ */
+ram():string|null
+ram(optionalEncoding:flatbuffers.Encoding):string|Uint8Array|null
+ram(optionalEncoding?:any):string|Uint8Array|null {
+  var offset = this.bb!.__offset(this.bb_pos, 10);
+  return offset ? this.bb!.__string(this.bb_pos + offset, optionalEncoding) : null;
+};
+
+/**
  * @param flatbuffers.Builder builder
  */
 static startHardware(builder:flatbuffers.Builder) {
-  builder.startObject(3);
+  builder.startObject(4);
 };
 
 /**
@@ -1206,6 +1217,14 @@ static addOs(builder:flatbuffers.Builder, osOffset:flatbuffers.Offset) {
 
 /**
  * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset ramOffset
+ */
+static addRam(builder:flatbuffers.Builder, ramOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(3, ramOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
 static endHardware(builder:flatbuffers.Builder):flatbuffers.Offset {
@@ -1213,11 +1232,12 @@ static endHardware(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static createHardware(builder:flatbuffers.Builder, cpuOffset:flatbuffers.Offset, gpuOffset:flatbuffers.Offset, osOffset:flatbuffers.Offset):flatbuffers.Offset {
+static createHardware(builder:flatbuffers.Builder, cpuOffset:flatbuffers.Offset, gpuOffset:flatbuffers.Offset, osOffset:flatbuffers.Offset, ramOffset:flatbuffers.Offset):flatbuffers.Offset {
   Hardware.startHardware(builder);
   Hardware.addCpu(builder, cpuOffset);
   Hardware.addGpu(builder, gpuOffset);
   Hardware.addOs(builder, osOffset);
+  Hardware.addRam(builder, ramOffset);
   return Hardware.endHardware(builder);
 }
 }

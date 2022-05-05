@@ -41,8 +41,16 @@ class Hardware(object):
             return self._tab.String(o + self._tab.Pos)
         return None
 
-def HardwareStart(builder): builder.StartObject(3)
+    # Hardware
+    def Ram(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        if o != 0:
+            return self._tab.String(o + self._tab.Pos)
+        return None
+
+def HardwareStart(builder): builder.StartObject(4)
 def HardwareAddCpu(builder, cpu): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(cpu), 0)
 def HardwareAddGpu(builder, gpu): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(gpu), 0)
 def HardwareAddOs(builder, os): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(os), 0)
+def HardwareAddRam(builder, ram): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(ram), 0)
 def HardwareEnd(builder): return builder.EndObject()

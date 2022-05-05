@@ -1,26 +1,19 @@
-import * as  http from "http"
+import { createServer, IncomingMessage } from "http"
 import * as  ws from 'ws'
-import {Data, WebSocket, WebSocketServer} from 'ws'
+import {WebSocket} from 'ws'
 import {Request, Response,} from 'express'
 import express from 'express'
-import * as  url from "url"
-import { ParsedUrlQuery } from "querystring";
-import * as flatbuffers from "flatbuffers"
-import * as fs from "fs"
-import { schema } from "./hwfSchema_generated"
-import * as bodyparser from "body-parser";
 import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
 
 import { FlatbufferHelper } from "./flatbufferHelper"
-const fHelper = new FlatbufferHelper()
+const fbHelper = new FlatbufferHelper()
 
 const app = express()
 
-const server = http.createServer(app)
-const wss:WebSocketServer = new ws.Server({ server:server });
-
-const userServer = http.createServer(app)
+const server = createServer(app)
+const wss:ws.WebSocketServer = new ws.Server({ server:server });
+const userServer = createServer(app)
 const userWss = new ws.Server({server:userServer})
 
 //connect to the database:
@@ -33,80 +26,253 @@ app.use(cors({
      allowedHeaders: ["Content-Type", "*"]
  }))
 
-//TODOs & General thoughts: 
+//General thoughts: 
     //Should agents be able to name themselved when connecting? The daemon could maybe pick the systems own name automatically when first connecting
     //We should save info about connected agents even after they disconnect (currently nothing is saved for a disconnected client). That way their name, id & info could be "reserved" in case of a temporary diconnect
     //According to what i've read ws doesn't propely close a socket if it's disconnected improperly (such as a network cable getting unplugged). We should test this (and solve it if necessary)
     //Should something be logged to a file? That being things that aren't saved in the DB, such as connects/disconnects.
     //Maybe add timestamps to log messages? ("[2022-03-13, 16:33:24] Error: bla bla bla")
 
-var agents:Agent[] = []
-//TODO: Fix specs typing (get rid of string[] type)
+//TODO: KNOWN BUGS
+    // 1) Adding a task to the queue when a matching agent is not connected 
+    //    and then connecting with a matching agent will not always properly send the task to that agent immediately after it's connected.
+    //    It usually works, but it has failed a couple of times so far.
+    //
+    // 2) The agents id appears to be set to "true" instead of the id returned by addDaemon() for some reason
 
 class Agent {
     socket:WebSocket
     ip:string;
-    id:string
-    name:string;
+    name:string; //Should this be used?
+    id:string;
     specs:{
-        "os": string | string[] | undefined, 
-        "gpu": string | string[] | undefined, 
-        "cpu": string | string[] | undefined, 
-        "ram": string | string[] | undefined
+        "os": string | undefined | null, 
+        "gpu": string | undefined | null, 
+        "cpu": string | undefined | null, 
+        "ram": string | undefined | null
     };
+    isIdle:boolean;  //TODO: implement a way of returning an agent to idle state when it's finished
+    isConnected:boolean;
 
-    // currently assigned info:
-    task:string;
-    timestamp:string; // when task was assigned
-    isIdle:boolean = true;
+    currentTask:string | null;
+    taskStartTime:string | Date;
 
-
-    constructor(ws:WebSocket){
+    constructor(ws:WebSocket) {
         this.socket = ws
+        this.isIdle = true
+    }
+
+    send(data:Uint8Array) {
+        this.socket.send(data)
+        this.isIdle = false 
     }
 }
 
-wss.on('connection', async (ws:WebSocket, req:http.IncomingMessage) =>{
+class Queue {
 
-    let agent = addAgent(ws)
-    console.log(`\nNew Daemon connected from [${req.socket.remoteAddress}].`)
-    // save the new daemon in the 
-    let temp:number = 1
-    let ip = req.socket.remoteAddress
+    contents:Uint8Array[] = []
 
-    if (ip !== undefined){
-        //let id = await db.addDaemon(ip)
-        //console.log(`added new daemon with id: ["${id}"]`)
-        agent.name = "testname (" + temp + ")"
-        temp++
+    enqueue(data: Uint8Array): void {
+
+        this.contents.push(data)
     }
 
-    // don't send this message right now, 
-    // we only want to send Message bin for testing
-    // ws.send("You have connected to the server!")
+    dequeue(target: Uint8Array | number): void {
     
-    //Saves the specs that were sent in the URL. TODO: Proper handling of empty or missing fields
-    let queries:ParsedUrlQuery = url.parse(req.url!, true).query
-    agent.specs = {"os": queries["os"], "gpu": queries["gpu"], "cpu": queries["cpu"], "ram": queries["ram"],}
-    console.log("Agent specs:")
-    console.log(agent.specs)
+        if (typeof target == "number") {
+            this.contents.splice(target, 1)
+        }
+
+        else {
+            if (this.contents.indexOf(target) == -1) {
+                throw new Error("Could not find target element in the queue")
+            }
+            this.contents.splice(this.contents.indexOf(target), 1) 
+        }
+    }
+
+    size(): number {
+        return this.contents.length
+    }
+}
+
+class LoadBalancer {
+
+    queue:Queue
+    priorityType: string //fifo, lifo, random, more?
+
+    queueTask(task:Uint8Array): void {
+        this.queue.enqueue(task)
+    }
+
+    retryQueuedTasks(){
+        console.log("Retrying all queued tasks")
+        if (this.priorityType == "lifo") {
+            this.queue.contents.reverse().forEach(task => {
+                let agent = findAgentForTask(fbHelper.readFlatbufferBinary(task))
+                if (agent != null && agent.isIdle ) {
+                    agent.send(task)
+                    this.queue.dequeue(task)
+                    return
+                }
+            });
+        }
+
+        else if (this.priorityType == "fifo") {
+            this.queue.contents.forEach(task => {
+                let agent = findAgentForTask(fbHelper.readFlatbufferBinary(task))
+                if (agent != null && agent.isIdle ) {
+                    agent.send(task)
+                    this.queue.dequeue(task)
+                    return
+                }
+            });
+        }
+
+        else if (this.priorityType == "random"){
+            let indexes = [...Array(this.queue.size()).keys()].map(i => i + 0);
+            indexes.sort(() => (Math.random() > .5) ? 1: -1)
+            for (let index in indexes) {
+                 let task = this.queue.contents[index]
+                 let agent = findAgentForTask(task)
+                 if (agent != null && agent.isIdle ) {
+                     agent.send(task)
+                     this.queue.dequeue(task)
+                     return
+                }
+            }
+        }
+    }
     
-    ws.on("message", (message) => {
-        console.log("\nws.onMessage from [Daemon]")
-        console.log(`Recieved message: ["${message}"] from Daemon: [${agent.name}] `)
-        
-        //ws.send("The server recieved your message")
+    constructor(priority?: "fifo" | "lifo" | "random" ) {
+        if (priority){
+            this.priorityType = priority
+        }
+        else {
+            priority = "fifo"
+        }
+    }
+}
+
+async function createAgent(socket:WebSocket, ip:string, req:IncomingMessage): Promise<Agent> {
+
+    let agent = new Agent(socket)
+    agents.push(agent)
+    agent.ip = ip
+    let agentUrl = new URL(req.url as string, `http://${req.headers.host}`)
+    let params = new URLSearchParams(agentUrl.search)
+    agent.specs = {"os": params.get("os"), "gpu": params.get("gpu"), "cpu": params.get("cpu"), "ram": params.get("ram"),}
+    
+    await db.addDaemon(JSON.stringify({'ip':agent.ip, 'specs':agent.specs})).then(result => {
+        agent.id = result 
+    })
+    return agent
+}
+
+//TODO: implement this properly
+function sendToUser(user:WebSocket, data:any): void {
+
+    user.send(data)
+}
+
+//TODO: fix message type, shouldn't be "any"
+function findAgentForTask(message:any): Agent | null {
+
+    let task = message.task
+    console.log("Finding agent for this task:")
+    console.log(task)
+    for (let agent of agents) {
+        if ( //TODO: Make this less hardcoded, loop through both instead?
+                agent.specs.os == task.hardware["os"] &&
+                agent.specs.cpu == task.hardware["cpu"] &&
+                agent.specs.gpu == task.hardware["gpu"] &&
+                agent.specs.ram == task.hardware["ram"]
+            ) 
+            {
+                return agent
+            }
+    };
+    return null
+}
+
+//TODO: expand this with more validatable elements
+function isValid(url:string|null|undefined = null):boolean {
+
+    if(url){
+        const result = ["os", "cpu", "gpu", "ram"].every(term => url.includes(term))
+        return result
+    }
+    else {
+        throw new Error("Trying to validate something that can't be validated")
+    }
+}
+
+//TODO: expand this with more thorough comparisons
+function doesAgentExist(connectingIp:string):boolean|Agent {
+    for (let agent of agents){
+        if (agent.ip == connectingIp){
+            return agent
+        }
+    }
+    return false
+}
+
+
+
+var agents:Agent[] = []
+var balancer = new LoadBalancer("fifo")
+balancer.queue = new Queue()
+let currentDate = new Date()
+
+wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
+    var agent:Agent
+    let ip = req.socket.remoteAddress
+    
+    if (ip == undefined) {
+        throw new Error("Could not read ip of connecting agent, was undefined")
+    }
+    else if (!isValid(req.url)){
+        throw new Error("Agent connected with invalid URL")
+    }
+
+    console.log(`\nNew Daemon connected from [${ip}].`)
+    
+    let lookupResult:boolean|Agent = doesAgentExist(ip)
+    if (!lookupResult) {
+        console.log("IP not recognized from before, creating new agent object")
+        agent = await createAgent(ws, ip, req!)
+    }
+    else{
+        console.log("IP recognized, welcome back mr.agent")
+        agent = lookupResult as Agent
+
+        if (agent.socket != ws) {
+            agent.socket = ws
+        }
+    }
+
+    agent.isConnected = true
+    balancer.retryQueuedTasks()
+    // console.log("Agent specs:")
+    // console.log(agent.specs)
+    
+    ws.on("message", (message:Uint8Array | string) => {
+        console.log(`Recieved message: ["${message}"] from Daemon: [${agent.id}] `)
+
+        balancer.retryQueuedTasks() //retrying tasks since the message from the daemon might be one that indicated it's finished and ready to accept a new task
     })
     
     ws.on('close', () => {
-        console.log(`Client "${agent.name}" disconnected`)
-        
+        console.log(`Agent from"${agent.ip}" disconnected`)
+        agent.isConnected = false
     })
 })
 
-userWss.on("connection", (ws, req) => {
-    console.log(`\nNew User-client connected from [${req.socket.remoteAddress}].`)
+userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
+    
     ws.on("message", (binaryMessage:Uint8Array) => {
+
+        console.log(`\nNew User-client connected from [${req.socket.remoteAddress}].`)
         /*
             TASK = 1
             RESULT = 2
@@ -115,24 +281,38 @@ userWss.on("connection", (ws, req) => {
             GET_HARDWARE_POOL = 3
             FILE = 4
         */
-        
-        switch (fHelper.getFlatbufferType(binaryMessage)){
-            case 1: {
-                console.log("\nws.onMessage from [Client]")
-                let message = fHelper.readFlatbufferBinary(binaryMessage)
-                //console.log(JSON.stringify(message))
-                //console.log(message.task.hardware)
-                //console.log(message.task.stages[0])
-                //console.log(`Artifact 0: [${message.task.artifacts.files[0]}]`)
-        
-                console.log(JSON.stringify(message.task.stages[0].data))
-                console.log(JSON.stringify(message.task))
-                db.addTask(JSON.stringify(message.task))
-                let agent = agents[0]
-                sendToAgent(binaryMessage, agent)
+        switch (fbHelper.getFlatbufferType(binaryMessage)){
 
-                // send response to python_api (debug ish)
-                ws.send("200")
+            case 1: {
+
+                let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
+
+                let agent = findAgentForTask(readableMessage)
+
+                if (agent == null) {
+
+                    console.log("no fitting agent could be found for this task, queueing anyway")
+                    balancer.queue.enqueue(binaryMessage)
+                }
+
+                else if (!agent.isConnected) {
+
+                    console.log("Matching agent found, but it is not connected to the hub, queueing task")
+                    balancer.queue.enqueue(binaryMessage)
+                }
+
+                else if (agent.isIdle) {
+
+                    console.log("agent for task found, sending data")
+                    agent.send(binaryMessage)
+                    agent.taskStartTime = currentDate
+                }
+
+                else {
+
+                    console.log("agent is busy, adding task to queue")
+                    balancer.queue.enqueue(binaryMessage) 
+                }
                 break
             }
             case 2: {
@@ -142,94 +322,25 @@ userWss.on("connection", (ws, req) => {
                 break
             }
             case 4: {
-               console.log("this is 4 :)")
-               
-               let agent = agents[0]
-               sendToAgent(binaryMessage, agent)
-               break
-            }
-        }
-        
-        
-        
-    })
+                console.log("this is 4 :)")
 
+                let agent = agents[0]
+                // to-do: send this to the correct agent!!!!!
+                //sendToAgent(binaryMessage, agent)
+                break
+            }
+        } 
+    })
 })
 
-function addAgent(socket:WebSocket){
-    let agent = new Agent(socket)
-    agents.push(agent)
-    db.addDaemon(JSON.stringify({'ip':agent.ip, 'specs':agent.specs})).then(result => {
-        agent.id = result
-    })
-    //console.log(agent)
-    return agent
-}
-//TODO: implement this properly
-function sendToUser(data:any, user:WebSocket){
-    user.send(data)
-}
-
-
-
-function sendToAgent(message:Uint8Array, agent:Agent) {
-
-    if (agent) {
-
-        try {
-            agent.socket.send(message)
-
-            // save task to database
-            let buf = new flatbuffers.ByteBuffer(message)
-            let fbMessage = schema.Message.getRootAsMessage(buf)
-
-            if (fbMessage.type() == 1) {
-                //console.log("message type is 1. continuing...")
-                /*
-                let stageCommands:string[] = []
-                let fbTask = fbMessage.task()
-                
-                if (fbTask == null){return 1}
-                for (let stage = 0; stage < fbTask.stagesLength(); stage++) {
-                    let fbStage = fbTask.stages(stage)
-
-                    for (let cmd = 0; cmd < fbStage!.cmdListLength(); cmd++) {
-                        stageCommands.push(fbStage!.cmdList(cmd))
-                    }              
-                }
-
-                if (stageCommands !== null){
-
-                    // to-do: this needs to add a full task
-                    // with stages and all
-                    db.addTask(stageCommands)
-                }
-                */
-                return 200
-            }
-        }
-
-        catch (err) {
-            console.error("Could not send data to agent")
-            console.error(err)
-            return 500
-        }
-    }
-    else if (!agent){
-        console.error("Agent with given id could not be found")
-        return 404
-    }
-    else {
-        console.error("You should not be here")
-        return 500
-    }
-}
+// function serverLog(text:string|object): void {
+//     console.log(`[${currentDate}]` + text)
+// }
 
 //Gets the specs for all currently connected clients
 app.get('/specs', (req:Request, res:Response) => {
     
     if (agents.length == 0) {    
-        console.log("Could not retrieve specs. No agents are connected")
         return res.sendStatus(404)
     }
 
@@ -246,37 +357,58 @@ app.get('/specs', (req:Request, res:Response) => {
         })
     })
     return res.json(result)   
+})
+
+app.get('/daemons', (req:Request, res:Response) => {
+    if(agents.length == 0) {
+        return res.sendStatus(404)
+    }
+    
+    let result:{}[] = []
+    agents.forEach( (agent) => {
+        result.push({
+            "name": agent.name,
+            "ip": agent.ip,
+            "id": agent.isIdle, 
+            "specs":{
+                "os": agent.specs.os, 
+                "gpu": agent.specs.gpu, 
+                "cpu": agent.specs.cpu, 
+                "ram": agent.specs.ram
+            },
+            "idle": agent.isIdle,
+            "connected": agent.isConnected,
+            "current_task": agent.currentTask,
+            "task_start_date": agent.taskStartTime
+        })
+    })
+    return res.json(result)   
 
 })
 
+app.get('/queuedtasks', (req:Request, res:Response) => {
+    if (balancer.queue.size() == 0){
+        return res.sendStatus(404)
+    }
 
-/*
-//TODO: implement this
-app.post('/createNewJob', (req, res) => {
-    let newMessage = req.body.message //string
-    let newHardwareParameters = req.body.hardwareParameters //array
-    
-    //call function to find appropriate client -> return correct websocket
-    //ws.send send message to client
-    //wait for response
-    //save data in database
-    //res.status(200).json({status: true, time: number })
-})*/
+    let result:{}[] = []
+    for ( let taskBinary of balancer.queue.contents) {
+        let fbTask = fbHelper.readFlatbufferBinary(taskBinary)
 
-/*
-//TODO: implement this
-app.get('/abortTask'), (req:Request, res:Response) => {
-    //Get ID, send "cancelling message" to agent, wait for confirmation from agent.
-    return;
-}*/
+        result.push({
+            "target_hardware": fbTask.task.hardware,
+            "stages": fbTask.task.stages,
+            "artifacts": fbTask.task.artifacts
+        })
+    }
+
+    return res.json(result)
+})
 
 userServer.listen(3001, () => {
     console.log("Userserver listening on port: 3001")
 })
 
 server.listen(9000, () => {
-
-
     console.log("Listening on port: 9000") 
 })
-

@@ -56,9 +56,10 @@ BUFFER_SIZE = MEMORY // FILE_BUFFER_SIZE
 # vi ändra tillbaka till websocket istället :-(
 
 class Task:
-    def __init__(self, *actions):
+    def __init__(self, *actions, hardware):
         self.stages = []
         self.artifacts = []
+        self.hardware = hardware
         for action in actions:
             if isinstance(action, Stage):
                 self.stages.append(action)
@@ -262,11 +263,11 @@ class Hub:
 
   
 
-def _build_message(msg_type, data, cpu="any", gpu="any", os="any"):
+def _build_message(msg_type, data):
     
     builder = flatbuffers.Builder(0)
     if msg_type == TASK:
-        builder, done_body = _build_task(builder, data, cpu, gpu, os)
+        builder, done_body = _build_task(builder, data)
         body_type = FbMessageBody.MessageBody.Task
 
     elif msg_type == GET_RESULT:
@@ -296,10 +297,10 @@ def _build_message(msg_type, data, cpu="any", gpu="any", os="any"):
 
     return buffer
 
-def _build_task(builder, task, cpu, gpu, os):
+def _build_task(builder, task):
     serialized_stages = []
     serialized_artifacts = []
-    builder, done_hardware = _build_hardware(builder, cpu, gpu, os)
+    builder, done_hardware = _build_hardware(builder, cpu = task.hardware["cpu"], gpu = task.hardware["gpu"], os = task.hardware["os"], ram = task.hardware["ram"])
     if len(task.stages) > 0:    
         for stage in task.stages:
             builder, done_stage = _build_stage(builder, stage)
@@ -334,14 +335,16 @@ def _build_task(builder, task, cpu, gpu, os):
 
     return builder, done_task
 
-def _build_hardware(builder, cpu=None, gpu=None, os=None):
+def _build_hardware(builder, cpu=None, gpu=None, os=None, ram=None):
     fb_hardware_cpu = builder.CreateString(cpu)
     fb_hardware_gpu = builder.CreateString(gpu)
     fb_hardware_os = builder.CreateString(os) 
+    fb_hardware_ram = builder.CreateString(ram)
     FbHardware.HardwareStart(builder)
     FbHardware.HardwareAddCpu(builder, fb_hardware_cpu)
     FbHardware.HardwareAddGpu(builder,fb_hardware_gpu)
     FbHardware.HardwareAddOs(builder,fb_hardware_os)
+    FbHardware.HardwareAddRam(builder,fb_hardware_ram)
     done_hardware = FbHardware.HardwareEnd(builder)
     return builder, done_hardware   
 

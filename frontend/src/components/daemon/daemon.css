@@ -1,0 +1,30 @@
+.daemon{
+    border: 6px solid #004f4e;
+    border-radius: 5px;
+    background-color: aliceblue;
+    /*float:left;*/
+    margin-left: 10px;
+    margin-right: 10px;
+    font-size:30px;
+    width:fit-content;
+    padding:15px;
+    list-style:none;
+}
+
+.daemon_inactive{
+    border: 6px solid #004f4e;
+    border-radius: 5px;
+    background-color: aliceblue;
+    /*float:left;*/
+    margin-left: 10px;
+    margin-right: 10px;
+    font-size:30px;
+    width:fit-content;
+    padding:15px;
+    list-style:none;
+    opacity: 50%;
+    
+}
+.indent{
+    text-indent:20%;
+}

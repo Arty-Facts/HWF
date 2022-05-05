@@ -17,6 +17,13 @@ func GetRootAsFile(buf []byte, offset flatbuffers.UOffsetT) *File {
 	return x
 }
 
+func GetSizePrefixedRootAsFile(buf []byte, offset flatbuffers.UOffsetT) *File {
+	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
+	x := &File{}
+	x.Init(buf, n+offset+flatbuffers.SizeUint32)
+	return x
+}
+
 func (rcv *File) Init(buf []byte, i flatbuffers.UOffsetT) {
 	rcv._tab.Bytes = buf
 	rcv._tab.Pos = i

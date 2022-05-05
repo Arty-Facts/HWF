@@ -27,8 +27,16 @@ async def main():
     ),
     HWF.Artifacts( # get some files back
         "log.txt"
-        )
-    )
+    ),
+    hardware = {"os": "windows11", "gpu": "rtx4090", "cpu": "r9_9999x", "ram": "400gb"}
+)
+
+    """"
+    id_test = []
+
+    hub = HWF.Hub(ip_address="ws://localhost:3001")
+    await hub.dispatch(task=task1)
+    """
 
     id_test = []
 

@@ -66,8 +66,8 @@ export class dbAdapter <T extends dbInterface> {
                 //console.log(task)
 
                 //console.log('DEBUG STAGES:::::::: :D')
-                //let id = await this.addTask(["hello world!"])
-                //let task = await this.getTask(id)
+                // let id = await this.addTask(["hello world!"])
+                // let task = await this.getTask(id)
                 //console.log("task:")
                 //console.log(await this.getTask(id))
                     /*
@@ -84,8 +84,8 @@ export class dbAdapter <T extends dbInterface> {
 
                 //await this.updateStage("625533e6244171f5f8cc504a", "testing4...", "very GOOD", undefined, undefined, "WAHAHAHAH")
                 
-                //await this.addStage(id, "yay", ["hello world", "bye"], "comment",true, true, false,false)
-                //await this.addStage(id, "weeo", ["hello world", "bye"], "comment",true, true, false,false)
+                // await this.addStage(id, "yay", ["hello world", "bye"], "comment",true, true, false,false)
+                // await this.addStage(id, "weeo", ["hello world", "bye"], "comment",true, true, false,false)
 
                 //console.log("updated:")
                 //console.log(await this.getTask(id))
@@ -112,7 +112,7 @@ export class dbAdapter <T extends dbInterface> {
     async addDaemon(agent:string):Promise<string> {
         let result = await this.daemons.insertOne(JSON.parse(agent))
         console.log(`Inserted new Daemon successfully with ID[${result.insertedId.toString()}]`)
-        console.log(await this.getTask(result.insertedId.toString()))
+        //console.log(await this.getTask(result.insertedId.toString()))
         return result.insertedId.toString();
     }
 
