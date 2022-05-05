@@ -23,7 +23,11 @@ export class dbAdapter <T extends dbInterface> {
     daemons : mongoDB.Collection
 
     constructor() {
-        this.SERVER_URL = "mongodb://localhost:27017/test"
+
+        if(process.env.HWF_DB_URL){
+            console.log("env variable is " + process.env.HWF_DB_URL)
+            this.SERVER_URL = process.env.HWF_DB_URL }//"mongodb://database:27017/test"
+        else{throw "HWF_DB_URL environment variable can't be read!"}
         this.DB_NAME = "test"
 
         this.connect()
