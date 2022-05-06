@@ -291,14 +291,16 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
                 if (agent == null) {
 
-                    console.log("no fitting agent could be found for this task, queueing anyway")
-                    balancer.queue.enqueue(binaryMessage)
+                    console.log("no fitting agent could be found for this task")
+                    ws.send("404")
                 }
 
                 else if (!agent.isConnected) {
 
                     console.log("Matching agent found, but it is not connected to the hub, queueing task")
                     balancer.queue.enqueue(binaryMessage)
+                    ws.send("200")
+                    db.addTask(JSON.stringify(readableMessage.task))
                 }
 
                 else if (agent.isIdle) {
@@ -306,12 +308,17 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                     console.log("agent for task found, sending data")
                     agent.send(binaryMessage)
                     agent.taskStartTime = currentDate
+                    agent.isIdle = false
+                    ws.send("200")
+                    db.addTask(JSON.stringify(readableMessage.task))
                 }
 
                 else {
 
                     console.log("agent is busy, adding task to queue")
                     balancer.queue.enqueue(binaryMessage) 
+                    ws.send("200")
+                    db.addTask(JSON.stringify(readableMessage.task))
                 }
                 break
             }
@@ -326,7 +333,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
                 let agent = agents[0]
                 // to-do: send this to the correct agent!!!!!
-                //sendToAgent(binaryMessage, agent)
+                agent.send(binaryMessage)
                 break
             }
         } 
