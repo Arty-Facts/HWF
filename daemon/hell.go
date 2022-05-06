@@ -54,12 +54,12 @@ func connect() *websocket.Conn {
 	// 	Path:   "/",
 	// }
 
-	server_url := "ws://localhost:9000?os=windows11&gpu=rtx4090&cpu=r9_9999x&ram=400gb"//os.Getenv("HWF_SERVER_URL")
+	server_url := "ws://localhost:9000?os=windows11&gpu=rtx4090&cpu=r9_9999x&ram=400gb" //os.Getenv("HWF_SERVER_URL")
 	//server_url := "ws://localhost:9000"
 
 	docker_server_url := os.Getenv("HWF_SERVER_URL")
 	if len(docker_server_url) > 1 {
-		server_url = docker_server_url
+		server_url = docker_server_url + "?os=windows11&gpu=rtx4090&cpu=r9_9999x&ram=400gb"
 	}
 
 	// if os.Getenv("HWF_SERVER_URL") {
