@@ -44,6 +44,13 @@ async def main():
     await hub.connect()
     await hub.dispatch(task=task1)
 
+    await hub.dispatch(task=task1)
+
+    #await hub.dispatch(task=task1)
+
+    #await hub.dispatch(task=task1)
+
+
 # "NoneType" object has no attribute "dispatch"??
 # with HWF.Hub(ip_address="ws://localhost:3001") as hub:
 #     hub.dispatch(task=task1)

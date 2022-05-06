@@ -44,6 +44,8 @@ type task struct {
 var current_stage stage
 var current_task task
 
+var connectiongrabben *websocket.Conn
+
 //connect to the server via websockets
 func connect() *websocket.Conn {
 	// u := url.URL{
@@ -71,6 +73,7 @@ func connect() *websocket.Conn {
 		log.Fatal(err)
 	}
 
+	connectiongrabben = connection
 	return connection
 }
 
@@ -137,6 +140,7 @@ func run_task() {
 	}
 
 	// to-do: return results from execution
+	send_message(connectiongrabben, []byte("200"))
 
 }
 
