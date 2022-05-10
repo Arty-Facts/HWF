@@ -138,7 +138,7 @@ func run_task() {
 			out, err, status_code := execute_command(current_task.stages[i].cmd_list[j])
 
 			// debug prints:
-			fmt.Println(string(out))
+			fmt.Println("output: " + string(out))
 			if err != nil {
 				fmt.Println("err: " + string(err))
 				fmt.Println("status code: " + string(status_code))
@@ -152,8 +152,11 @@ func run_task() {
 }
 
 func execute_command(command string) ([]byte, []byte, int) {
-	//fmt.Println("now executing command", command)
 	cmd := exec.Command("bash", "-c", command)
+
+	// debug for error codes:
+	//cmd := exec.Command("bash", "-c", "python3 trash.py")
+
 	status_code := 0
 	std_err := []byte("")
 
@@ -165,14 +168,11 @@ func execute_command(command string) ([]byte, []byte, int) {
 		exitError, ok := err.(*exec.ExitError)
 		fmt.Println(exitError, ok)
 
-		// double check that this persists outside of the scope
 		status_code = exitError.ExitCode()
 		std_err = exitError.Stderr
 	}
 
 	return out, std_err, status_code
-
-	//https://zetcode.com/golang/exec-command/
 }
 
 func read_message(msg []byte) {
