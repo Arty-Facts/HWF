@@ -24,7 +24,7 @@ type file_data struct {
 type stage struct {
 	name     string
 	data     []file_data
-	cmd_list []string
+	cmd_list []cmd
 
 	track_time bool
 	track_ram  bool
@@ -32,6 +32,16 @@ type stage struct {
 	track_gpu  bool
 
 	comment string
+}
+
+type cmd struct {
+	command string
+
+	status_code int
+	std_err     []byte
+	output      []byte
+
+	executed bool
 }
 
 type task struct {
@@ -135,7 +145,14 @@ func send_message(connection *websocket.Conn, msg []byte) {
 func run_task() {
 	for i := 0; i < len(current_task.stages); i++ {
 		for j := 0; j < len(current_task.stages[i].cmd_list); j++ {
-			out, err, status_code := execute_command(current_task.stages[i].cmd_list[j])
+			curr_cmd := current_task.stages[i].cmd_list[j]
+			out, err, status_code := execute_command(curr_cmd.command)
+
+			// update current cmd struct
+			curr_cmd.output = out
+			curr_cmd.std_err = err
+			curr_cmd.status_code = status_code
+			curr_cmd.executed = true
 
 			// debug prints:
 			fmt.Println("output: " + string(out))
@@ -254,9 +271,11 @@ func read_task(msg *message.Message) {
 					*/
 
 					// get all cmds from stage
-					var cmd_list = make([]string, tempStage.CmdListLength())
+					//var cmd_list = make([]string, tempStage.CmdListLength())
+					var cmd_list = make([]cmd, tempStage.CmdListLength())
 					for i := 0; i < tempStage.CmdListLength(); i++ {
-						cmd_list[i] = string(tempStage.CmdList(i))
+						//cmd_list[i] = string(tempStage.CmdList(i))
+						cmd_list[i] = cmd{command: string(tempStage.CmdList(i)), executed: false, std_err: nil, output: nil}
 					}
 
 					tempData := new(message.Data)
