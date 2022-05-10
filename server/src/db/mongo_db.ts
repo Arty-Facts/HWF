@@ -21,6 +21,7 @@ export class dbAdapter <T extends dbInterface> {
     db : mongoDB.Db
     tasks : mongoDB.Collection 
     daemons : mongoDB.Collection
+    results : mongoDB.Collection 
 
     constructor() {
 
@@ -48,6 +49,7 @@ export class dbAdapter <T extends dbInterface> {
                 //console.log('db client created successfully');
                 this.tasks = this.db.collection("tasks")
                 this.daemons = this.db.collection("daemons")
+                this.daemons = this.db.collection("results")
 
                 console.log(`Connected to Database at: ${this.SERVER_URL}`)
                 // debug: now try finding the newly added task
@@ -120,12 +122,7 @@ export class dbAdapter <T extends dbInterface> {
         try{
 
             const agent = await this.daemons.findOne({_id: new ObjectId(id)})
-
-            if (agent != null){
-                return agent;
-            }
-
-            return undefined;
+            return agent != null? agent : undefined;
         }
         catch(error) {
             console.log('error finding agent with id!');
@@ -154,12 +151,7 @@ export class dbAdapter <T extends dbInterface> {
         try{
 
             const task = await this.tasks.findOne({_id: new ObjectId(id)})
-
-            if (task != null){
-                return task;
-            }
-
-            return undefined;
+            return task != null? task : undefined
         }
         catch(error) {
             console.log('error finding task with id!');
@@ -191,7 +183,33 @@ export class dbAdapter <T extends dbInterface> {
 
     }
 
-    addResult(daemon:string, status:string, timestamp:string): void {
-        
+    async addResult(res:string) {
+        try {
+            let result = await this.results.insertOne(JSON.parse(res))
+            console.log(`Inserted new Result successfully with ID[${result.insertedId.toString()}]`)
+            console.log(await this.getResult(result.insertedId.toString()))
+            
+            return result.insertedId.toString(); 
+        }
+        catch(error)
+        {
+            console.log('error adding Result to db!');
+            console.error(error);
+            return "ERROR";
+        }
+    }
+
+    async getResult(id:string) {
+        try {
+            const result = await this.results.findOne({_id: new ObjectId(id)})
+            return result != null? result : undefined
+        }
+        catch(error)
+        {
+            console.log('error finding Result with id!');
+            console.error(error);
+
+            return undefined;
+        }
     }
 }
