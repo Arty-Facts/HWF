@@ -303,6 +303,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 
                 if (agent == null) {
 
+
                     console.log("no fitting agent could be found for this task")
                     ws.send("404")
                 }
@@ -320,6 +321,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                     console.log("agent for task found, sending data")
                     agent.send(binaryMessage, ws)
                     agent.taskStartTime = currentDate
+
                     agent.isIdle = false
                     let id = await db.addTask(JSON.stringify(readableMessage.task))
                     ws.send(`200 ${id}`)
@@ -344,7 +346,6 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
             case 4: {
                 console.log("this is 4 :)")
 
-                // let agent = agents[0]
                 // to-do: send this to the correct agent!!!!!
                 targetAgent.send(binaryMessage, ws)
                 break
