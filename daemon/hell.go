@@ -54,7 +54,7 @@ func connect() *websocket.Conn {
 	// 	Path:   "/",
 	// }
 
-	server_url := "ws://localhost:9000?os=windows11&gpu=rtx4090&cpu=r9_9999x&ram=400gb"//os.Getenv("HWF_SERVER_URL")
+	server_url := "ws://localhost:9000?os=windows11&gpu=rtx4090&cpu=r9_9999x&ram=400gb" //os.Getenv("HWF_SERVER_URL")
 	//server_url := "ws://localhost:9000"
 
 	docker_server_url := os.Getenv("HWF_SERVER_URL")
@@ -135,7 +135,14 @@ func send_message(connection *websocket.Conn, msg []byte) {
 func run_task() {
 	for i := 0; i < len(current_task.stages); i++ {
 		for j := 0; j < len(current_task.stages[i].cmd_list); j++ {
-			fmt.Println(string(execute_command(current_task.stages[i].cmd_list[j])))
+			out, err, status_code := execute_command(current_task.stages[i].cmd_list[j])
+
+			// debug prints:
+			fmt.Println(string(out))
+			if err != nil {
+				fmt.Println("err: " + string(err))
+				fmt.Println("status code: " + string(status_code))
+			}
 		}
 	}
 
@@ -144,17 +151,26 @@ func run_task() {
 
 }
 
-func execute_command(command string) []byte {
+func execute_command(command string) ([]byte, []byte, int) {
 	//fmt.Println("now executing command", command)
 	cmd := exec.Command("bash", "-c", command)
+	status_code := 0
+	std_err := []byte("")
 
 	out, err := cmd.Output()
+
 	if err != nil {
 		// log.Fatal(err)
-		panic(err)
+
+		exitError, ok := err.(*exec.ExitError)
+		fmt.Println(exitError, ok)
+
+		// double check that this persists outside of the scope
+		status_code = exitError.ExitCode()
+		std_err = exitError.Stderr
 	}
 
-	return out
+	return out, std_err, status_code
 
 	//https://zetcode.com/golang/exec-command/
 }
