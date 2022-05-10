@@ -95,7 +95,19 @@ class Artifacts:
         self.files = files
 
 class Result:
-    pass
+
+    exit_code = -1
+    stage = {} # {"stagename": StageResult}
+    time_elapsed = 0
+    artifacts = {} # {"name.txt": "C:/Path/To/File/name.txt"}
+
+class StageResult:
+    time = 0
+    ram = "NotImplemented%"
+    gpu = "NotImplemented%"
+    cpu = "NotImplemented%"
+
+    
 
 class Hub:
     def __init__(self, ip_address=None):
@@ -111,6 +123,7 @@ class Hub:
         self.tasks = {}
 
         self.locked = False
+        self.recieved_result = []
 
         #threading.Thread(target=self.socket.run_forever, args=(None, None, 60, 30), daemon=True).start()
         #self.connect()
@@ -147,9 +160,11 @@ class Hub:
             elif received[0] == "404":
                 print("no matching agents available at this time :((")
 
+        elif isinstance(message, bytearray):
+            self.recieved_result = deserialize_message(message)
+
         else:
-            print("might need to handle flatbuffers for artifacts here")
-            print("i'll consider it maybe")
+            print("Error: Recieved a response of an invalid type")
 
             # handle flatbuffers here!!!!!
 
@@ -193,8 +208,19 @@ class Hub:
     def get(self, *hardware): #outside mvp
         pass
     
-    def get_result(self, job_ids, wait=True): #outside mvp
-        pass
+    async def get_result(self, job_ids, wait=True):
+
+        buffer = _build_message(GET_RESULT, job_ids)
+        self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
+
+        self.locked = True
+
+        while self.locked:
+            time.sleep(0.2)
+        
+        result = self.recieved_result
+        self.recieved_result = ""
+        return result
 
     def get_hardware_pool(self): #outside mvp
         pass
@@ -422,7 +448,41 @@ def _build_file(builder, byte, filename, nr, eof=False):
     return builder, done_file
 
 def _build_get_result(builder, jobs):
-    pass
+    taskId_serialized = []
+    if type(jobs) == list:
+        for id in jobs:
+            taskId_serialized.append(builder.CreateString(id))
+    else:
+        taskId_serialized.append(builder.CreateString(id))
+
+    FbGetResult.GetResultStartIdListVector(builder, len(taskId_serialized))
+
+    for id in taskId_serialized:
+        builder.PrependUOffsetTRelative(taskId_serialized)
+    
+    taskId_vector = builder.EndVector()
+    FbGetResult.GetResultStart(builder)
+    
+    FbGetResult.GetResultAddIdList(taskId_vector)
+    FbGetResult.GetResultEnd(builder)
+
+    done_file = FbGetResult.GetResultEnd(builder)
+    
+    return done_file, builder
+
 
 def _build_get_hardware_pool(builder, hardware):
+    pass
+
+def deserialize_message(buffer):
+
+    message = FbMessage.Message.GetRootAsMessage(buffer ,0)
+    type = message.BodyType()
+
+    if type == GET_RESULT:
+        
+    #decode result, pick out artifacts and stagesresult
+        pass
+    else:
+        print("Tried deserializing a message with invalid BodyType")
     pass

@@ -1,6 +1,6 @@
 namespace schema;
 
-union MessageBody {Task, GetResult, GetHardwarePool, File}
+union MessageBody {Task, GetResult, GetHardwarePool, File, Result}
 
 table Message {
     type:int;
@@ -25,12 +25,13 @@ table Data {
 
 table Task {
     hardware:Hardware;
-    stages:[Stage]; //Be sure to create a vector that can store several Stages
+    stages:[Stage]; 
     artifacts:[string];
 }
 
 table GetResult {
     id_list:[string];
+
 }
 
 table GetHardwarePool {
@@ -49,6 +50,25 @@ table Hardware {
     gpu:string;
     os:string;
     ram:string;
+}
+
+table Result {
+    exit_code:int;
+    time:int; 
+    stages:[StageResult];
+    artifacts:[Artifact];
+}
+
+table StageResult {
+    time:int;
+    cpu:string;
+    gpu:string;
+    ram:string;
+}
+
+table Artifact {
+    file_name:string;
+    data:[ubyte];
 }
 
 root_type Message;
