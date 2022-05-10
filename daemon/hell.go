@@ -44,6 +44,8 @@ type task struct {
 var current_stage stage
 var current_task task
 
+var connectiongrabben *websocket.Conn
+
 //connect to the server via websockets
 func connect() *websocket.Conn {
 	// u := url.URL{
@@ -57,7 +59,7 @@ func connect() *websocket.Conn {
 
 	docker_server_url := os.Getenv("HWF_SERVER_URL")
 	if len(docker_server_url) > 1 {
-		server_url = docker_server_url
+		server_url = docker_server_url + "?os=windows11&gpu=rtx4090&cpu=r9_9999x&ram=400gb"
 	}
 
 	// if os.Getenv("HWF_SERVER_URL") {
@@ -71,6 +73,7 @@ func connect() *websocket.Conn {
 		log.Fatal(err)
 	}
 
+	connectiongrabben = connection
 	return connection
 }
 
@@ -137,6 +140,7 @@ func run_task() {
 	}
 
 	// to-do: return results from execution
+	send_message(connectiongrabben, []byte("200"))
 
 }
 

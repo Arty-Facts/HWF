@@ -1,7 +1,7 @@
 import { createServer, IncomingMessage } from "http"
 import * as  ws from 'ws'
 import {WebSocket} from 'ws'
-import {Request, Response,} from 'express'
+import {Request, response, Response,} from 'express'
 import express from 'express'
 import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
@@ -62,35 +62,44 @@ class Agent {
         this.isIdle = true
     }
 
-    send(data:Uint8Array) {
-        this.socket.send(data)
+    send(data:Uint8Array, responseSocket: WebSocket, id?:string) {
+        this.socket.send(data) //TODO: reply to python api here
         this.isIdle = false 
+
+        if (id){
+        responseSocket.send(`424 ${id}`)
+    }
     }
 }
 
 class Queue {
 
-    contents:Uint8Array[] = []
+    //Binary and the socket it was sent from
+    contents:[Uint8Array, WebSocket, string][] = []
 
-    enqueue(data: Uint8Array): void {
+    enqueue(data: Uint8Array, socket:WebSocket, id:string): void {
 
-        this.contents.push(data)
+        this.contents.push([data, socket, id])
     }
 
-    dequeue(target: Uint8Array | number): void {
+    dequeue(target: [Uint8Array, WebSocket, string] ): void {
     
-        if (typeof target == "number") {
-            this.contents.splice(target, 1)
-        }
+        // if (typeof target == "number") {
 
-        else {
-            if (this.contents.indexOf(target) == -1) {
-                throw new Error("Could not find target element in the queue")
+        //     this.contents.splice(target, 1)
+        // }
+        this.contents.forEach(tuple => {
+
+            if (tuple == target) {
+                this.contents.splice(this.contents.indexOf(tuple), 1)
+                console.log("YO WE FOUD IT :))))))))))))))))))))))))")
+                return    
             }
-            this.contents.splice(this.contents.indexOf(target), 1) 
-        }
+        }); 
+        //TODO: FIX THIS 
+            console.log("Could not find tuple to be removed in the queue") 
     }
-
+        
     size(): number {
         return this.contents.length
     }
@@ -101,32 +110,29 @@ class LoadBalancer {
     queue:Queue
     priorityType: string //fifo, lifo, random, more?
 
-    queueTask(task:Uint8Array): void {
-        this.queue.enqueue(task)
+    queueTask(task:Uint8Array, socket:WebSocket, id:string): void {
+        this.queue.enqueue(task, socket, id)
     }
 
     retryQueuedTasks(){
         console.log("Retrying all queued tasks")
         if (this.priorityType == "lifo") {
-            this.queue.contents.reverse().forEach(task => {
-                let agent = findAgentForTask(fbHelper.readFlatbufferBinary(task))
+            this.queue.contents.reverse().forEach(tuple => {
+                let agent = findAgentForTask(fbHelper.readFlatbufferBinary(tuple[0]))
                 if (agent != null && agent.isIdle ) {
-                    agent.send(task)
-                    this.queue.dequeue(task)
-
-                    // TO-DO: send response to python_api >:(
-                    //ws.send("200")
+                    agent.send(tuple[0], tuple[1], tuple[2])
+                    this.queue.dequeue(tuple)
                     return
                 }
             });
         }
 
         else if (this.priorityType == "fifo") {
-            this.queue.contents.forEach(task => {
-                let agent = findAgentForTask(fbHelper.readFlatbufferBinary(task))
+            this.queue.contents.forEach(tuple => {
+                let agent = findAgentForTask(fbHelper.readFlatbufferBinary(tuple[0]))
                 if (agent != null && agent.isIdle ) {
-                    agent.send(task)
-                    this.queue.dequeue(task)
+                    agent.send(tuple[0], tuple[1], tuple[2])
+                    this.queue.dequeue(tuple)
                     return
                 }
             });
@@ -136,11 +142,11 @@ class LoadBalancer {
             let indexes = [...Array(this.queue.size()).keys()].map(i => i + 0);
             indexes.sort(() => (Math.random() > .5) ? 1: -1)
             for (let index in indexes) {
-                 let task = this.queue.contents[index]
-                 let agent = findAgentForTask(task)
+                 let tuple = this.queue.contents[index]
+                 let agent = findAgentForTask(tuple[0])
                  if (agent != null && agent.isIdle ) {
-                     agent.send(task)
-                     this.queue.dequeue(task)
+                     agent.send(tuple[0], tuple[1], tuple[2])
+                     this.queue.dequeue(tuple)
                      return
                 }
             }
@@ -248,6 +254,7 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
     else{
         console.log("IP recognized, welcome back mr.agent")
         agent = lookupResult as Agent
+        agent.isIdle = true
 
         if (agent.socket != ws) {
             agent.socket = ws
@@ -261,7 +268,9 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
     
     ws.on("message", (message:Uint8Array | string) => {
         console.log(`Recieved message: ["${message}"] from Daemon: [${agent.id}] `)
-
+        if (message == "200"){
+            agent.isIdle = true
+        }
         balancer.retryQueuedTasks() //retrying tasks since the message from the daemon might be one that indicated it's finished and ready to accept a new task
     })
     
@@ -272,8 +281,8 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
 })
 
 userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
-    
-    ws.on("message", (binaryMessage:Uint8Array) => {
+    var targetAgent:Agent
+    ws.on("message", async (binaryMessage:Uint8Array) => {
 
         console.log(`\nNew User-client connected from [${req.socket.remoteAddress}].`)
         /*
@@ -291,33 +300,40 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
 
                 let agent = findAgentForTask(readableMessage)
-
+                
                 if (agent == null) {
-                    // to-do: don't ENqueue here, send response instead :-o
-                    console.log("no fitting agent could be found for this task, queueing anyway")
-                    balancer.queue.enqueue(binaryMessage)
+
+
+                    console.log("no fitting agent could be found for this task")
+                    ws.send("404")
                 }
 
                 else if (!agent.isConnected) {
-
+                    targetAgent = agent!
                     console.log("Matching agent found, but it is not connected to the hub, queueing task")
-                    balancer.queue.enqueue(binaryMessage)
+                    let id = await db.addTask(JSON.stringify(readableMessage.task))
+                    balancer.queue.enqueue(binaryMessage, ws, id)
+                    ws.send(`242 ${id}`)
                 }
 
                 else if (agent.isIdle) {
-
+                    targetAgent = agent!
                     console.log("agent for task found, sending data")
-                    agent.send(binaryMessage)
+                    agent.send(binaryMessage, ws)
                     agent.taskStartTime = currentDate
 
-                    // send response to python_api
-                    ws.send("200")
+                    agent.isIdle = false
+                    let id = await db.addTask(JSON.stringify(readableMessage.task))
+                    ws.send(`200 ${id}`)
+                    
                 }
 
                 else {
 
                     console.log("agent is busy, adding task to queue")
-                    balancer.queue.enqueue(binaryMessage) 
+                    let id = await db.addTask(JSON.stringify(readableMessage.task))
+                    balancer.queue.enqueue(binaryMessage, ws, id)
+                    ws.send(`242 ${id}`)
                 }
                 break
             }
@@ -330,10 +346,8 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
             case 4: {
                 console.log("this is 4 :)")
 
-                let agent = agents[0]
-                
                 // to-do: send this to the correct agent!!!!!
-                //sendToAgent(binaryMessage, agent)
+                targetAgent.send(binaryMessage, ws)
                 break
             }
         } 
@@ -400,7 +414,7 @@ app.get('/queuedtasks', (req:Request, res:Response) => {
 
     let result:{}[] = []
     for ( let taskBinary of balancer.queue.contents) {
-        let fbTask = fbHelper.readFlatbufferBinary(taskBinary)
+        let fbTask = fbHelper.readFlatbufferBinary(taskBinary[0])
 
         result.push({
             "target_hardware": fbTask.task.hardware,

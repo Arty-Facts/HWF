@@ -108,8 +108,9 @@ class Hub:
                     on_open    = lambda ws:     self.on_open(ws))
 
         self.current_task = None
+        self.tasks = {}
 
-        #self.locked = False
+        self.locked = False
 
         #threading.Thread(target=self.socket.run_forever, args=(None, None, 60, 30), daemon=True).start()
         #self.connect()
@@ -126,32 +127,34 @@ class Hub:
         self.disconnect()
 
     def on_message(self, ws, message):
-        print("MESSAGE RECEIVED :o")
-        print(message)
 
         if isinstance(message, str):
-            # send all files after we have sent the task
-            # for stage in task.stages:
-            #     if len(stage.data):
-            #         self.send_files(stage)
+            received = message.split()
 
-            #self.locked = False
+            if received[0] == "200":
+                self.tasks[received[1]] = self.current_task
+                print("task was received and accepted, time to send files")
+                self.send_files(received[1])
 
-            if message == "200":
-                print("yay time to send my files :)")
-                #self.locked = False
-                self.send_files()
+            elif received[0] == "242":
+                self.tasks[received[1]] = self.current_task
+                print("task was queued, might send files later :)")
 
-            elif message == "300":
-                print("wow")
+            elif received[0] == "424":
+                print("ok here we go time to send files :-O")
+                self.send_files(received[1])
 
-            elif message == "400":
-                print(":(")
+            elif received[0] == "404":
+                print("no matching agents available at this time :((")
 
         else:
-            print("uh oh trouble")
+            print("might need to handle flatbuffers for artifacts here")
+            print("i'll consider it maybe")
 
             # handle flatbuffers here!!!!!
+
+        # unlock the wait since we got response
+        self.locked = False
 
 
     def on_error(self, ws, error):
@@ -212,33 +215,17 @@ class Hub:
         print("sending task...")
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
 
-        #self.locked = True
-
-        # '''
-        # while self.locked:
-        #     time.sleep(0.2)
-        # '''
 
         print("task sent! awaiting response...")
+        self.locked = True
+         
+        while self.locked:
+            time.sleep(0.2)
 
-
-        # DELETE THIS WHEN ON_MESSAGE IS DONE
-
-        # response = await self.socket.recv()
-        # if response == "200":
-        #     # send all files after we have sent the task
-        #     for stage in task.stages:
-        #         if len(stage.data):
-        #             self.send_files(stage)
-
-        # response = await self.socket.recv()
-        # if response == "200":
-        #     print("yay i did it :-D")
         
-    def send_files(self):
-
+    def send_files(self, id):
         # process each file in the data vector
-        for current_stage in self.current_task.stages:
+        for current_stage in self.tasks[id].stages:
             for current_file in current_stage.data:
                 self.process_file(current_file)
 
