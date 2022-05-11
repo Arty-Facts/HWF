@@ -53,21 +53,29 @@ table Hardware {
 }
 
 table Result {
-    exit_code:int;
     time:int; 
     stages:[StageResult];
     artifacts:[Artifact];
 }
 
 table StageResult {
-    time:int;
+    cmd:[Commands];
+    name:string;
+}
+
+table CommandResult {
+    cmd:string;
+    exit:int;
+    stdout:[ubyte];
+    stderr:[ubyte];
     cpu:string;
     gpu:string;
     ram:string;
+    time:int;
 }
 
 table Artifact {
-    file_name:string;
+    file_names:[string];
     data:[ubyte];
 }
 
