@@ -59,7 +59,7 @@ table Result {
 }
 
 table StageResult {
-    cmd:[Commands];
+    cmd:[CommandResult];
     name:string;
 }
 
@@ -75,7 +75,7 @@ table CommandResult {
 }
 
 table Artifact {
-    file_names:[string];
+    file_name:string;
     data:[ubyte];
 }
 

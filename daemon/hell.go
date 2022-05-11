@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
@@ -41,7 +42,8 @@ type cmd struct {
 	std_err     []byte
 	output      []byte
 
-	executed bool
+	executed       bool
+	execution_time int64
 }
 
 type task struct {
@@ -142,30 +144,149 @@ func send_message(connection *websocket.Conn, msg []byte) {
 	connection.WriteMessage(websocket.TextMessage, msg)
 }
 
-func run_task() {
+func build_command_result(builder *flatbuffers.Builder, curr_cmd *cmd) flatbuffers.UOffsetT {
+	cmd := builder.CreateString(curr_cmd.command)
+	out := builder.CreateByteVector(curr_cmd.output)
+	err := builder.CreateByteVector(curr_cmd.std_err)
+	cpu := builder.CreateString("default")
+	gpu := builder.CreateString("default")
+	ram := builder.CreateString("default")
+
+	message.CommandResultStart(builder)
+	message.CommandResultAddCmd(builder, cmd)
+	message.CommandResultAddExit(builder, int32(curr_cmd.status_code))
+	message.CommandResultAddStdout(builder, out)
+	message.CommandResultAddStderr(builder, err)
+	message.CommandResultAddCpu(builder, cpu)
+	message.CommandResultAddGpu(builder, gpu)
+	message.CommandResultAddRam(builder, ram)
+	message.CommandResultAddTime(builder, int32(curr_cmd.execution_time))
+
+	return message.CommandResultEnd(builder)
+}
+
+func send_results() {
+	var curr_cmd *cmd
+
+	var command_results []flatbuffers.UOffsetT
+	var stage_results []flatbuffers.UOffsetT
+	var artifacts_arr []flatbuffers.UOffsetT
+
+	builder := flatbuffers.NewBuilder(0)
+
+	// BUILD ALL COMMANDRESULTS
+	// to-do: move this to build_command_results
 	for i := 0; i < len(current_task.stages); i++ {
 		for j := 0; j < len(current_task.stages[i].cmd_list); j++ {
-			curr_cmd := current_task.stages[i].cmd_list[j]
+
+			curr_cmd = &current_task.stages[i].cmd_list[j]
+			cmd_result := build_command_result(builder, curr_cmd)
+
+			command_results = append(command_results, cmd_result)
+		}
+	}
+
+	// BUILD ALL STAGERESULTS
+	for i := 0; i < len(current_task.stages); i++ {
+		stage_name := builder.CreateString(current_task.stages[i].name)
+		// create cmd vector
+		message.StageResultStartCmdVector(builder, len(current_task.stages[i].cmd_list))
+		for _, command_result := range command_results {
+
+			builder.PrependUOffsetT(command_result)
+		}
+		cmd_vector := builder.EndVector(len(current_task.stages[i].cmd_list))
+
+		message.StageResultStart(builder)
+		message.StageResultAddCmd(builder, cmd_vector)
+		message.StageResultAddName(builder, stage_name)
+		stage_result := message.StageResultEnd(builder)
+
+		stage_results = append(stage_results, stage_result)
+	}
+
+	// BUILD ALL ARTIFACTS
+	for k := 0; k < len(current_task.artifacts); k++ {
+		file_name := builder.CreateString(current_task.artifacts[k])
+
+		// create file data byte vector
+		bytes, err := os.ReadFile(current_task.artifacts[k])
+		if err != nil {
+			// catch error here
+		}
+		arr := builder.CreateByteVector(bytes)
+
+		message.ArtifactStart(builder)
+		message.ArtifactAddFileName(builder, file_name)
+		message.ArtifactAddData(builder, arr)
+		artifact := message.ArtifactEnd(builder)
+
+		artifacts_arr = append(artifacts_arr, artifact)
+	}
+
+	// create stages vector
+	message.ResultStartStagesVector(builder, len(current_task.stages))
+	for _, stage_result := range stage_results {
+		builder.PrependUOffsetT(stage_result)
+	}
+	stages := builder.EndVector(len(current_task.stages))
+
+	// create artifacts vector
+	message.ResultStartArtifactsVector(builder, len(current_task.artifacts))
+	fmt.Println("before artifacts loop")
+	for _, artifact := range artifacts_arr {
+		builder.PrependUOffsetT(artifact)
+	}
+	artifacts := builder.EndVector(len(current_task.artifacts))
+
+	message.ResultStart(builder)
+	// to-do: add total time for task
+	message.ResultAddStages(builder, stages)
+	message.ResultAddArtifacts(builder, artifacts)
+	binResult := message.ResultEnd(builder)
+
+	builder.Finish(binResult)
+
+	send_message(connectiongrabben, builder.FinishedBytes())
+	fmt.Println("done sending results...")
+}
+
+func build_result() {
+
+}
+
+func run_task() {
+
+	var curr_cmd *cmd
+
+	for i := 0; i < len(current_task.stages); i++ {
+		for j := 0; j < len(current_task.stages[i].cmd_list); j++ {
+			curr_cmd = &current_task.stages[i].cmd_list[j]
+
+			time_before := time.Now().Unix()
 			out, err, status_code := execute_command(curr_cmd.command)
 
 			// update current cmd struct
+			curr_cmd.execution_time = time.Now().Unix() - time_before
 			curr_cmd.output = out
 			curr_cmd.std_err = err
 			curr_cmd.status_code = status_code
 			curr_cmd.executed = true
 
 			// debug prints:
-			fmt.Println("output: " + string(out))
+			fmt.Println("<output: " + string(out) + ">")
 			if err != nil {
-				fmt.Println("err: " + string(err))
-				fmt.Println("status code: " + string(status_code))
+				fmt.Println("err: " + string(err) + ">")
+				fmt.Println("status code: " + string(status_code) + ">")
 			}
 		}
 	}
 
-	// to-do: return results from execution
-	send_message(connectiongrabben, []byte("200"))
+	debug_print_current_task()
 
+	send_results()
+	// to-do: return results from execution
+	//send_message(connectiongrabben, []byte("200"))
 }
 
 func execute_command(command string) ([]byte, []byte, int) {
