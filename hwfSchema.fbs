@@ -78,11 +78,7 @@ table CommandResult {
 }
 
 table Artifact {
-<<<<<<< HEAD
-    file_names:string;
-=======
     file_name:string;
->>>>>>> 029d05d3d96c2d6f375aad6c52d87d31bf89a2db
     data:[ubyte];
 }
 
