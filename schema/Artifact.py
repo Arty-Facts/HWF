@@ -25,24 +25,11 @@ class Artifact(object):
         self._tab = flatbuffers.table.Table(buf, pos)
 
     # Artifact
-    def FileNames(self, j):
+    def FileName(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
-            a = self._tab.Vector(o)
-            return self._tab.String(a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4))
-        return ""
-
-    # Artifact
-    def FileNamesLength(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
-        if o != 0:
-            return self._tab.VectorLen(o)
-        return 0
-
-    # Artifact
-    def FileNamesIsNone(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
-        return o == 0
+            return self._tab.String(o + self._tab.Pos)
+        return None
 
     # Artifact
     def Data(self, j):
@@ -75,14 +62,10 @@ def Start(builder): builder.StartObject(2)
 def ArtifactStart(builder):
     """This method is deprecated. Please switch to Start."""
     return Start(builder)
-def AddFileNames(builder, fileNames): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(fileNames), 0)
-def ArtifactAddFileNames(builder, fileNames):
-    """This method is deprecated. Please switch to AddFileNames."""
-    return AddFileNames(builder, fileNames)
-def StartFileNamesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def ArtifactStartFileNamesVector(builder, numElems):
-    """This method is deprecated. Please switch to Start."""
-    return StartFileNamesVector(builder, numElems)
+def AddFileName(builder, fileName): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(fileName), 0)
+def ArtifactAddFileName(builder, fileName):
+    """This method is deprecated. Please switch to AddFileName."""
+    return AddFileName(builder, fileName)
 def AddData(builder, data): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(data), 0)
 def ArtifactAddData(builder, data):
     """This method is deprecated. Please switch to AddData."""

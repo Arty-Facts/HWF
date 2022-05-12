@@ -81,7 +81,32 @@ class Result(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         return o == 0
 
-def Start(builder): builder.StartObject(3)
+    # Result
+    def Hardware(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        if o != 0:
+            x = self._tab.Vector(o)
+            x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
+            x = self._tab.Indirect(x)
+            from schema.Hardware import Hardware
+            obj = Hardware()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+    # Result
+    def HardwareLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+    # Result
+    def HardwareIsNone(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        return o == 0
+
+def Start(builder): builder.StartObject(4)
 def ResultStart(builder):
     """This method is deprecated. Please switch to Start."""
     return Start(builder)
@@ -105,6 +130,14 @@ def StartArtifactsVector(builder, numElems): return builder.StartVector(4, numEl
 def ResultStartArtifactsVector(builder, numElems):
     """This method is deprecated. Please switch to Start."""
     return StartArtifactsVector(builder, numElems)
+def AddHardware(builder, hardware): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(hardware), 0)
+def ResultAddHardware(builder, hardware):
+    """This method is deprecated. Please switch to AddHardware."""
+    return AddHardware(builder, hardware)
+def StartHardwareVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def ResultStartHardwareVector(builder, numElems):
+    """This method is deprecated. Please switch to Start."""
+    return StartHardwareVector(builder, numElems)
 def End(builder): return builder.EndObject()
 def ResultEnd(builder):
     """This method is deprecated. Please switch to End."""

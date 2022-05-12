@@ -93,34 +93,41 @@ class CommandResult(object):
         return o == 0
 
     # CommandResult
-    def Cpu(self):
+    def Os(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
         return None
 
     # CommandResult
-    def Gpu(self):
+    def Cpu(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
         return None
 
     # CommandResult
-    def Ram(self):
+    def Gpu(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
         return None
 
     # CommandResult
-    def Time(self):
+    def Ram(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
+        if o != 0:
+            return self._tab.String(o + self._tab.Pos)
+        return None
+
+    # CommandResult
+    def Time(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
         return 0
 
-def Start(builder): builder.StartObject(8)
+def Start(builder): builder.StartObject(9)
 def CommandResultStart(builder):
     """This method is deprecated. Please switch to Start."""
     return Start(builder)
@@ -148,19 +155,23 @@ def StartStderrVector(builder, numElems): return builder.StartVector(1, numElems
 def CommandResultStartStderrVector(builder, numElems):
     """This method is deprecated. Please switch to Start."""
     return StartStderrVector(builder, numElems)
-def AddCpu(builder, cpu): builder.PrependUOffsetTRelativeSlot(4, flatbuffers.number_types.UOffsetTFlags.py_type(cpu), 0)
+def AddOs(builder, os): builder.PrependUOffsetTRelativeSlot(4, flatbuffers.number_types.UOffsetTFlags.py_type(os), 0)
+def CommandResultAddOs(builder, os):
+    """This method is deprecated. Please switch to AddOs."""
+    return AddOs(builder, os)
+def AddCpu(builder, cpu): builder.PrependUOffsetTRelativeSlot(5, flatbuffers.number_types.UOffsetTFlags.py_type(cpu), 0)
 def CommandResultAddCpu(builder, cpu):
     """This method is deprecated. Please switch to AddCpu."""
     return AddCpu(builder, cpu)
-def AddGpu(builder, gpu): builder.PrependUOffsetTRelativeSlot(5, flatbuffers.number_types.UOffsetTFlags.py_type(gpu), 0)
+def AddGpu(builder, gpu): builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(gpu), 0)
 def CommandResultAddGpu(builder, gpu):
     """This method is deprecated. Please switch to AddGpu."""
     return AddGpu(builder, gpu)
-def AddRam(builder, ram): builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(ram), 0)
+def AddRam(builder, ram): builder.PrependUOffsetTRelativeSlot(7, flatbuffers.number_types.UOffsetTFlags.py_type(ram), 0)
 def CommandResultAddRam(builder, ram):
     """This method is deprecated. Please switch to AddRam."""
     return AddRam(builder, ram)
-def AddTime(builder, time): builder.PrependInt32Slot(7, time, 0)
+def AddTime(builder, time): builder.PrependInt32Slot(8, time, 0)
 def CommandResultAddTime(builder, time):
     """This method is deprecated. Please switch to AddTime."""
     return AddTime(builder, time)

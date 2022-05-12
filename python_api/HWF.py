@@ -531,7 +531,7 @@ def deserialize_result(message):
         result.time = resultTable.Time()
 
     i = 0
-    while i < resultTable.StagesLength:
+    while i < resultTable.StagesLength():
         
         stage = StageResult()
 
@@ -561,6 +561,11 @@ def deserialize_result(message):
         i += 1
 
     #TODO: artifacts, save on disk, then save path under key (file name) in result.artifacts
+    for i in resultTable.ArtifactsLength():
+
+        with open(resultTable.Artifacts(i).FileName(), "wb") as file:
+            os.write(file, resultTable.Artifacts(i).Data())
+            
     return result
 
 #for testing only
@@ -584,6 +589,5 @@ def temp():
     print( deserialize_message(buf))
 
 if __name__ == "__main__":
-    print("don't run this")
-    # temp()
-    # print("done")
+    temp()
+    print("done")
