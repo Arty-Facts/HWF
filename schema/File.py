@@ -10,12 +10,16 @@ class File(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAsFile(cls, buf, offset):
+    def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = File()
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def GetRootAsFile(cls, buf, offset=0):
+        """This method is deprecated. Please switch to GetRootAs."""
+        return cls.GetRootAs(buf, offset)
     # File
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
@@ -68,10 +72,31 @@ class File(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
         return o == 0
 
-def FileStart(builder): builder.StartObject(4)
-def FileAddFilename(builder, filename): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(filename), 0)
-def FileAddPacketnumber(builder, packetnumber): builder.PrependInt32Slot(1, packetnumber, 0)
-def FileAddEof(builder, eof): builder.PrependBoolSlot(2, eof, 0)
-def FileAddData(builder, data): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(data), 0)
-def FileStartDataVector(builder, numElems): return builder.StartVector(1, numElems, 1)
-def FileEnd(builder): return builder.EndObject()
+def Start(builder): builder.StartObject(4)
+def FileStart(builder):
+    """This method is deprecated. Please switch to Start."""
+    return Start(builder)
+def AddFilename(builder, filename): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(filename), 0)
+def FileAddFilename(builder, filename):
+    """This method is deprecated. Please switch to AddFilename."""
+    return AddFilename(builder, filename)
+def AddPacketnumber(builder, packetnumber): builder.PrependInt32Slot(1, packetnumber, 0)
+def FileAddPacketnumber(builder, packetnumber):
+    """This method is deprecated. Please switch to AddPacketnumber."""
+    return AddPacketnumber(builder, packetnumber)
+def AddEof(builder, eof): builder.PrependBoolSlot(2, eof, 0)
+def FileAddEof(builder, eof):
+    """This method is deprecated. Please switch to AddEof."""
+    return AddEof(builder, eof)
+def AddData(builder, data): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(data), 0)
+def FileAddData(builder, data):
+    """This method is deprecated. Please switch to AddData."""
+    return AddData(builder, data)
+def StartDataVector(builder, numElems): return builder.StartVector(1, numElems, 1)
+def FileStartDataVector(builder, numElems):
+    """This method is deprecated. Please switch to Start."""
+    return StartDataVector(builder, numElems)
+def End(builder): return builder.EndObject()
+def FileEnd(builder):
+    """This method is deprecated. Please switch to End."""
+    return End(builder)

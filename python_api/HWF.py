@@ -21,6 +21,7 @@ import schema.Stage as FbStage
 import schema.File as FbFile
 import schema.Hardware as FbHardware
 import schema.Data as FbData
+import schema.Result as FbResult
 
 TASK = 1
 RESULT = 2
@@ -28,6 +29,7 @@ GET_RESULT = 2
 HARDWARE_POOL = 3
 GET_HARDWARE_POOL = 3
 FILE = 4
+RESULT = 5
 
 GB = 1000000000
 
@@ -94,20 +96,51 @@ class Artifacts:
     def __init__(self, *files):
         self.files = files
 
-class Result:
-
-    exit_code = -1
-    stage = {} # {"stagename": StageResult}
-    time_elapsed = 0
-    artifacts = {} # {"name.txt": "C:/Path/To/File/name.txt"}
-
-class StageResult:
-    time = 0
-    ram = "NotImplemented%"
-    gpu = "NotImplemented%"
-    cpu = "NotImplemented%"
-
+class TaskResult:
+    def __init__(self):
     
+        self.stage = {} # {"stagename": StageResult}
+        self.time = time()
+        self.artifacts = {} # {"name.txt": "C:/Path/To/File/name.txt"}
+        self.hardware #TODO: Put this in the schema
+
+    def time(self, targetStage = None):
+        time = 0
+        if (targetStage):
+            time = self.stage[targetStage].time
+        else:
+            for stage in self.stage:
+                time += stage.time
+        
+        return time 
+
+# "Stages" are contained in Result, unlike "Stage" which is to be sent to the hub
+class StageResult:
+    def __init__(self, name, commands):
+        self.name = name
+        self.time = self.time()
+        self.cmd = {} # {"commandname": {"stdout": "blabla", "exit": 0}}
+
+    def time(self, targetCmd = None):
+        time = 0
+        if(targetCmd):
+            time = self.cmd[targetCmd].time
+        else:
+            for cmd in self.cmd:
+                time += cmd.time
+        #calculate total time taken for all contained commands
+        return time
+
+class CommandResult:
+    def __init__(self):
+        self.cmd
+        self.exit
+        self.stdout
+        self.stderr
+        self.cpu
+        self.gpu
+        self.ram
+        self.time
 
 class Hub:
     def __init__(self, ip_address=None):
@@ -476,13 +509,81 @@ def _build_get_hardware_pool(builder, hardware):
 
 def deserialize_message(buffer):
 
-    message = FbMessage.Message.GetRootAsMessage(buffer ,0)
+    message = FbMessage.Message.GetRootAs(buffer ,0)
     type = message.BodyType()
 
-    if type == GET_RESULT:
+    if type == FbMessageBody.MessageBody().Result:
+        result = deserialize_result(message)
+        return result
         
-    #decode result, pick out artifacts and stagesresult
-        pass
     else:
-        print("Tried deserializing a message with invalid BodyType")
-    pass
+        print("Tried deserializing a message of an invalid type")
+        return -1
+
+def deserialize_result(message):
+
+    result = TaskResult()
+
+    resultTable = FbResult.Result()
+    resultTable.Init(message.Body().Bytes, message.Body().Pos)
+
+    if resultTable.Time() > 0:
+        result.time = resultTable.Time()
+
+    i = 0
+    while i < resultTable.StagesLength:
+        
+        stage = StageResult()
+
+        stageTable = resultTable.Stages(i)
+
+        stage.name = stageTable.Name()
+
+        x = 0
+        while x < stageTable.CmdLength():
+            
+            cmd = CommandResult()
+            cmdTable = stageTable.Cmd(x)
+            cmd.cmd = cmdTable.Cmd()
+            cmd.exit = cmdTable.Exit()
+            cmd.stdout = cmdTable.Stdout()
+            cmd.stderr = cmdTable.Stderr()
+            cmd.os = cmdTable.Os()
+            cmd.cpu = cmdTable.Cpu()
+            cmd.gpu = cmdTable.Gpu()
+            cmd.ram = cmdTable.Ram()
+            cmd.time = cmdTable.Time()
+
+            stage.cmd[cmdTable.Name()] = cmd
+            x += 1
+
+        result.stage[stageTable.Name()] = stage
+        i += 1
+
+    #TODO: artifacts, save on disk, then save path under key (file name) in result.artifacts
+    return result
+
+#for testing only
+def temp():
+
+    builder = flatbuffers.Builder(0)
+    
+    FbResult.Start(builder)
+    FbResult.AddTime(builder, 420)
+    resultbuf = FbResult.End(builder)
+    
+
+    FbMessage.Start(builder)
+    FbMessage.AddBodyType(builder, FbMessageBody.MessageBody.Result)
+    FbMessage.AddBody(builder, resultbuf)
+    done = FbMessage.End(builder)
+    builder.Finish(done)
+
+    buf = builder.Output()
+
+    print( deserialize_message(buf))
+
+if __name__ == "__main__":
+    print("don't run this")
+    # temp()
+    # print("done")

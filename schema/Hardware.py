@@ -10,12 +10,16 @@ class Hardware(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAsHardware(cls, buf, offset):
+    def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = Hardware()
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def GetRootAsHardware(cls, buf, offset=0):
+        """This method is deprecated. Please switch to GetRootAs."""
+        return cls.GetRootAs(buf, offset)
     # Hardware
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
@@ -48,9 +52,27 @@ class Hardware(object):
             return self._tab.String(o + self._tab.Pos)
         return None
 
-def HardwareStart(builder): builder.StartObject(4)
-def HardwareAddCpu(builder, cpu): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(cpu), 0)
-def HardwareAddGpu(builder, gpu): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(gpu), 0)
-def HardwareAddOs(builder, os): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(os), 0)
-def HardwareAddRam(builder, ram): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(ram), 0)
-def HardwareEnd(builder): return builder.EndObject()
+def Start(builder): builder.StartObject(4)
+def HardwareStart(builder):
+    """This method is deprecated. Please switch to Start."""
+    return Start(builder)
+def AddCpu(builder, cpu): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(cpu), 0)
+def HardwareAddCpu(builder, cpu):
+    """This method is deprecated. Please switch to AddCpu."""
+    return AddCpu(builder, cpu)
+def AddGpu(builder, gpu): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(gpu), 0)
+def HardwareAddGpu(builder, gpu):
+    """This method is deprecated. Please switch to AddGpu."""
+    return AddGpu(builder, gpu)
+def AddOs(builder, os): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(os), 0)
+def HardwareAddOs(builder, os):
+    """This method is deprecated. Please switch to AddOs."""
+    return AddOs(builder, os)
+def AddRam(builder, ram): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(ram), 0)
+def HardwareAddRam(builder, ram):
+    """This method is deprecated. Please switch to AddRam."""
+    return AddRam(builder, ram)
+def End(builder): return builder.EndObject()
+def HardwareEnd(builder):
+    """This method is deprecated. Please switch to End."""
+    return End(builder)

@@ -42,7 +42,9 @@ for result in hub.get_result(id_test, wait=True): # get the jobs with strategy f
         print(result.stderr)
         continue
     failed=False
-    if (time := result.stage("run cool stuff").time) > 900: 
+    if (time := result.stage("run cool stuff").time()) > 900: 
+        #Atually result.stage["run cool stuff"].time()
+        #result.stage.cmd() gives all info about commands in one big dict?
         print(f"failed on time for hardware: {time}ms {result.hardware}")
         failed = True
 

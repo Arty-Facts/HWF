@@ -10,12 +10,16 @@ class Message(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAsMessage(cls, buf, offset):
+    def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = Message()
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def GetRootAsMessage(cls, buf, offset=0):
+        """This method is deprecated. Please switch to GetRootAs."""
+        return cls.GetRootAs(buf, offset)
     # Message
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
@@ -44,8 +48,23 @@ class Message(object):
             return obj
         return None
 
-def MessageStart(builder): builder.StartObject(3)
-def MessageAddType(builder, type): builder.PrependInt32Slot(0, type, 0)
-def MessageAddBodyType(builder, bodyType): builder.PrependUint8Slot(1, bodyType, 0)
-def MessageAddBody(builder, body): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(body), 0)
-def MessageEnd(builder): return builder.EndObject()
+def Start(builder): builder.StartObject(3)
+def MessageStart(builder):
+    """This method is deprecated. Please switch to Start."""
+    return Start(builder)
+def AddType(builder, type): builder.PrependInt32Slot(0, type, 0)
+def MessageAddType(builder, type):
+    """This method is deprecated. Please switch to AddType."""
+    return AddType(builder, type)
+def AddBodyType(builder, bodyType): builder.PrependUint8Slot(1, bodyType, 0)
+def MessageAddBodyType(builder, bodyType):
+    """This method is deprecated. Please switch to AddBodyType."""
+    return AddBodyType(builder, bodyType)
+def AddBody(builder, body): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(body), 0)
+def MessageAddBody(builder, body):
+    """This method is deprecated. Please switch to AddBody."""
+    return AddBody(builder, body)
+def End(builder): return builder.EndObject()
+def MessageEnd(builder):
+    """This method is deprecated. Please switch to End."""
+    return End(builder)

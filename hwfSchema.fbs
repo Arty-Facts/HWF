@@ -56,11 +56,13 @@ table Result {
     time:int; 
     stages:[StageResult];
     artifacts:[Artifact];
+    hardware:[string];
 }
 
 table StageResult {
-    cmd:[Commands];
+    cmd:[CommandResult];
     name:string;
+    
 }
 
 table CommandResult {
@@ -68,6 +70,7 @@ table CommandResult {
     exit:int;
     stdout:[ubyte];
     stderr:[ubyte];
+    os:string;
     cpu:string;
     gpu:string;
     ram:string;
@@ -75,7 +78,7 @@ table CommandResult {
 }
 
 table Artifact {
-    file_names:[string];
+    file_names:string;
     data:[ubyte];
 }
 

@@ -10,12 +10,16 @@ class GetHardwarePool(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAsGetHardwarePool(cls, buf, offset):
+    def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = GetHardwarePool()
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def GetRootAsGetHardwarePool(cls, buf, offset=0):
+        """This method is deprecated. Please switch to GetRootAs."""
+        return cls.GetRootAs(buf, offset)
     # GetHardwarePool
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
@@ -40,7 +44,19 @@ class GetHardwarePool(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         return o == 0
 
-def GetHardwarePoolStart(builder): builder.StartObject(1)
-def GetHardwarePoolAddHardware(builder, hardware): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(hardware), 0)
-def GetHardwarePoolStartHardwareVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def GetHardwarePoolEnd(builder): return builder.EndObject()
+def Start(builder): builder.StartObject(1)
+def GetHardwarePoolStart(builder):
+    """This method is deprecated. Please switch to Start."""
+    return Start(builder)
+def AddHardware(builder, hardware): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(hardware), 0)
+def GetHardwarePoolAddHardware(builder, hardware):
+    """This method is deprecated. Please switch to AddHardware."""
+    return AddHardware(builder, hardware)
+def StartHardwareVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def GetHardwarePoolStartHardwareVector(builder, numElems):
+    """This method is deprecated. Please switch to Start."""
+    return StartHardwareVector(builder, numElems)
+def End(builder): return builder.EndObject()
+def GetHardwarePoolEnd(builder):
+    """This method is deprecated. Please switch to End."""
+    return End(builder)

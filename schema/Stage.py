@@ -10,12 +10,16 @@ class Stage(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAsStage(cls, buf, offset):
+    def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = Stage()
         x.Init(buf, n + offset)
         return x
 
+    @classmethod
+    def GetRootAsStage(cls, buf, offset=0):
+        """This method is deprecated. Please switch to GetRootAs."""
+        return cls.GetRootAs(buf, offset)
     # Stage
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
@@ -107,15 +111,51 @@ class Stage(object):
             return self._tab.String(o + self._tab.Pos)
         return None
 
-def StageStart(builder): builder.StartObject(8)
-def StageAddName(builder, name): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(name), 0)
-def StageAddData(builder, data): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(data), 0)
-def StageStartDataVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def StageAddCmdList(builder, cmdList): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(cmdList), 0)
-def StageStartCmdListVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def StageAddTrackTime(builder, trackTime): builder.PrependBoolSlot(3, trackTime, 1)
-def StageAddTrackRam(builder, trackRam): builder.PrependBoolSlot(4, trackRam, 0)
-def StageAddTrackCpu(builder, trackCpu): builder.PrependBoolSlot(5, trackCpu, 0)
-def StageAddTrackGpu(builder, trackGpu): builder.PrependBoolSlot(6, trackGpu, 0)
-def StageAddComment(builder, comment): builder.PrependUOffsetTRelativeSlot(7, flatbuffers.number_types.UOffsetTFlags.py_type(comment), 0)
-def StageEnd(builder): return builder.EndObject()
+def Start(builder): builder.StartObject(8)
+def StageStart(builder):
+    """This method is deprecated. Please switch to Start."""
+    return Start(builder)
+def AddName(builder, name): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(name), 0)
+def StageAddName(builder, name):
+    """This method is deprecated. Please switch to AddName."""
+    return AddName(builder, name)
+def AddData(builder, data): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(data), 0)
+def StageAddData(builder, data):
+    """This method is deprecated. Please switch to AddData."""
+    return AddData(builder, data)
+def StartDataVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def StageStartDataVector(builder, numElems):
+    """This method is deprecated. Please switch to Start."""
+    return StartDataVector(builder, numElems)
+def AddCmdList(builder, cmdList): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(cmdList), 0)
+def StageAddCmdList(builder, cmdList):
+    """This method is deprecated. Please switch to AddCmdList."""
+    return AddCmdList(builder, cmdList)
+def StartCmdListVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def StageStartCmdListVector(builder, numElems):
+    """This method is deprecated. Please switch to Start."""
+    return StartCmdListVector(builder, numElems)
+def AddTrackTime(builder, trackTime): builder.PrependBoolSlot(3, trackTime, 1)
+def StageAddTrackTime(builder, trackTime):
+    """This method is deprecated. Please switch to AddTrackTime."""
+    return AddTrackTime(builder, trackTime)
+def AddTrackRam(builder, trackRam): builder.PrependBoolSlot(4, trackRam, 0)
+def StageAddTrackRam(builder, trackRam):
+    """This method is deprecated. Please switch to AddTrackRam."""
+    return AddTrackRam(builder, trackRam)
+def AddTrackCpu(builder, trackCpu): builder.PrependBoolSlot(5, trackCpu, 0)
+def StageAddTrackCpu(builder, trackCpu):
+    """This method is deprecated. Please switch to AddTrackCpu."""
+    return AddTrackCpu(builder, trackCpu)
+def AddTrackGpu(builder, trackGpu): builder.PrependBoolSlot(6, trackGpu, 0)
+def StageAddTrackGpu(builder, trackGpu):
+    """This method is deprecated. Please switch to AddTrackGpu."""
+    return AddTrackGpu(builder, trackGpu)
+def AddComment(builder, comment): builder.PrependUOffsetTRelativeSlot(7, flatbuffers.number_types.UOffsetTFlags.py_type(comment), 0)
+def StageAddComment(builder, comment):
+    """This method is deprecated. Please switch to AddComment."""
+    return AddComment(builder, comment)
+def End(builder): return builder.EndObject()
+def StageEnd(builder):
+    """This method is deprecated. Please switch to End."""
+    return End(builder)

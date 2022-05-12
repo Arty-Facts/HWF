@@ -8,4 +8,5 @@ class MessageBody(object):
     GetResult = 2
     GetHardwarePool = 3
     File = 4
+    Result = 5
 
