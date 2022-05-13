@@ -49,7 +49,7 @@ export class dbAdapter <T extends dbInterface> {
                 //console.log('db client created successfully');
                 this.tasks = this.db.collection("tasks")
                 this.daemons = this.db.collection("daemons")
-                this.daemons = this.db.collection("results")
+                this.results = this.db.collection("results")
 
                 console.log(`Connected to Database at: ${this.SERVER_URL}`)
                 // debug: now try finding the newly added task

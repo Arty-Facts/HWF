@@ -36,6 +36,7 @@ class Message
     constructor(buf:flatbuffers.ByteBuffer)
     {
         let fbMessage = schema.Message.getRootAsMessage(buf)   
+        console.log(fbMessage.type())
         switch(fbMessage.type()){
             case 1:{
                 let temp = fbMessage.body(new schema.Task() as flatbuffers.Table)

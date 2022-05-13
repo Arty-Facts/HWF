@@ -267,14 +267,12 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
     // console.log("Agent specs:")
     // console.log(agent.specs)
     
-    ws.on("message", (message:Uint8Array | string ) => { 
-        console.log("received message from daemon")
-        
-        console.log(`Recieved message: ["${message}"] from Daemon: [${agent.id}] `)
-        if (message == "200"){
-            agent.isIdle = true
-        }
-        
+    ws.on("message", async (binaryMessage:Uint8Array ) => { 
+        // We currently assume that we will always get a flatbuffer Result here, if that changes add a switch on "fbHelper.getFlatbufferType(binaryMessage)""
+        let message = fbHelper.readFlatbufferBinary(binaryMessage)
+        agent.isIdle = true
+        console.log(JSON.stringify(message.messageBody))
+        let id = await db.addResult(JSON.stringify(message.messageBody))
         balancer.retryQueuedTasks() //retrying tasks since the message from the daemon might be one that indicated it's finished and ready to accept a new task
     })
     

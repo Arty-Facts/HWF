@@ -249,8 +249,13 @@ func send_results() {
 	message.ResultAddArtifacts(builder, artifacts)
 	binResult := message.ResultEnd(builder)
 
-	builder.Finish(binResult)
+	message.MessageStart(builder)
+	message.MessageAddBody(builder, binResult)
+	message.MessageAddType(builder, 5)
+	binMessage := message.MessageEnd(builder)
 
+	builder.Finish(binMessage)
+	
 	send_binary_message(connectiongrabben, builder.FinishedBytes())
 	fmt.Println("done sending results...")
 }
