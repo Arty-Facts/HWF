@@ -151,7 +151,7 @@ export class dbAdapter <T extends dbInterface> {
         try{
 
             const task = await this.tasks.findOne({_id: new ObjectId(id)})
-            return task != null? task : undefined
+            return task != null? JSON.parse(JSON.stringify(task)) : undefined
         }
         catch(error) {
             console.log('error finding task with id!');
@@ -183,11 +183,16 @@ export class dbAdapter <T extends dbInterface> {
 
     }
 
-    async addResult(res:string) {
+    async addResult(task_id: string, res:string) {
         try {
-            let result = await this.results.insertOne(JSON.parse(res))
+            let temp = JSON.parse(res)
+            temp["_id"]=new ObjectId(task_id)
+            let result = await this.results.insertOne(temp)
             console.log(`Inserted new Result successfully with ID[${result.insertedId.toString()}]`)
-            console.log(await this.getResult(result.insertedId.toString()))
+            let bla = await this.getResult(result.insertedId.toString())
+            console.log(bla)
+            console.log(bla.stageResults[0])
+            console.log(bla.stageResults[0].cmd[0])
             
             return result.insertedId.toString(); 
         }
@@ -201,12 +206,19 @@ export class dbAdapter <T extends dbInterface> {
 
     async getResult(id:string) {
         try {
+            console.log("i getResult")
+            console.log(id)
+            console.log(new ObjectId(id))
             const result = await this.results.findOne({_id: new ObjectId(id)})
-            return result != null? result : undefined
+            
+            console.log(result)
+            console.log(JSON.parse(JSON.stringify(result)))
+            return result != null? JSON.parse(JSON.stringify(result)) : undefined
         }
         catch(error)
         {
             console.log('error finding Result with id!');
+            console.log(id)
             console.error(error);
 
             return undefined;

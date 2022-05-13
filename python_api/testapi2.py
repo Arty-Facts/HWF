@@ -1,4 +1,5 @@
 #import HWF
+import time
 import HWF as HWF #För att testa nya schemat
 import asyncio
 
@@ -42,9 +43,13 @@ async def main():
 
     hub = HWF.Hub(ip_address="ws://localhost:3001")
     await hub.connect()
-    await hub.dispatch(task=task1)
 
-    await hub.dispatch(task=task1)
+    id_test.append(await hub.dispatch(task=task1))
+    
+    time.sleep(5)
+    await hub.get_result(id_test)
+    print(":D:D")
+    #await hub.dispatch(task=task1)
 
     #await hub.dispatch(task=task1)
 

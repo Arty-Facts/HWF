@@ -6,7 +6,7 @@ import express from 'express'
 import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
 
-import { FlatbufferHelper, Task } from "./flatbufferHelper"
+import { FlatbufferHelper, Task, GetResult} from "./flatbufferHelper"
 const fbHelper = new FlatbufferHelper()
 
 const app = express()
@@ -272,7 +272,9 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
         let message = fbHelper.readFlatbufferBinary(binaryMessage)
         agent.isIdle = true
         console.log(JSON.stringify(message.messageBody))
-        let id = await db.addResult(JSON.stringify(message.messageBody))
+
+        let task_id = agent.currentTask!
+        let id = await db.addResult(task_id, JSON.stringify(message.messageBody))
         balancer.retryQueuedTasks() //retrying tasks since the message from the daemon might be one that indicated it's finished and ready to accept a new task
     })
     
@@ -298,7 +300,6 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
         switch (fbHelper.getFlatbufferType(binaryMessage)){
 
             case 1: {
-
                 let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
 
                 let agent = findAgentForTask(readableMessage)
@@ -327,6 +328,9 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                     agent.isIdle = false
                     let id = await db.addTask(JSON.stringify(readableMessage.messageBody))
                     ws.send(`200 ${id}`)
+
+                    // save the task as agent's current task
+                    agent.currentTask = id
                     
                 }
 
@@ -340,9 +344,24 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 break
             }
             case 2: {
+                console.log("THIS IS 2!!!! *kicks*")
+                let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
+            
+                let results = []
+                console.log("id list:")
+                console.log((readableMessage.messageBody as GetResult).id_list)
+                for ( let id of (readableMessage.messageBody as GetResult).id_list){
+                    results.push( await db.getResult(id))
+                }
+                console.log(results)
+                console.log(typeof(results[0]))
+                fbHelper.buildFlatbufferResult(JSON.stringify(results[0]))
+                //Build a flatbuffer thingy for each result, we get a json object from the db
+                //Send each result back to the pythonapi
                 break
             }
             case 3: {
+                
                 break
             }
             case 4: {
@@ -420,9 +439,9 @@ app.get('/queuedtasks', (req:Request, res:Response) => {
         
        
         result.push({
-            "target_hardware": fbMessage.messageBody.hardware,
+            "target_hardware": (fbMessage.messageBody as Task).hardware,
             "stages": (fbMessage.messageBody as Task).stages,
-            "artifacts": fbMessage.messageBody.artifacts
+            "artifacts": (fbMessage.messageBody as Task).artifacts
         })
         
     }
