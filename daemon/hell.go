@@ -108,7 +108,7 @@ func listen(connection *websocket.Conn) {
 		case data := <-received_bytes:
 			// if received_bytes contains something
 
-			//send_message(connection, []byte("Received data, now processing..."))
+			//send_text_message(connection, []byte("Received data, now processing..."))
 
 			read_message(data)
 
@@ -140,8 +140,12 @@ func main() {
 
 }
 
-func send_message(connection *websocket.Conn, msg []byte) {
+func send_text_message(connection *websocket.Conn, msg []byte) {
 	connection.WriteMessage(websocket.TextMessage, msg)
+}
+
+func send_binary_message(connection *websocket.Conn, msg []byte) {
+	connection.WriteMessage(websocket.BinaryMessage, msg)
 }
 
 func build_command_result(builder *flatbuffers.Builder, curr_cmd *cmd) flatbuffers.UOffsetT {
@@ -247,7 +251,7 @@ func send_results() {
 
 	builder.Finish(binResult)
 
-	send_message(connectiongrabben, builder.FinishedBytes())
+	send_binary_message(connectiongrabben, builder.FinishedBytes())
 	fmt.Println("done sending results...")
 }
 
@@ -286,7 +290,7 @@ func run_task() {
 
 	send_results()
 	// to-do: return results from execution
-	//send_message(connectiongrabben, []byte("200"))
+	//send_text_message(connectiongrabben, []byte("200"))
 }
 
 func execute_command(command string) ([]byte, []byte, int) {
@@ -459,9 +463,7 @@ func read_task(msg *message.Message) {
 
 					}
 
-					// save current stage for later :)
-					current_stage := stage{name: string(s.Name()), data: data_list,
-						cmd_list: cmd_list, track_time: s.TrackTime(),
+					// save current stage for later :)nd_message(connectiongrabben, builder.FinishedBytes())
 						track_ram: s.TrackRam(), track_cpu: s.TrackCpu(),
 						track_gpu: s.TrackGpu(), comment: string(s.Comment())}
 
