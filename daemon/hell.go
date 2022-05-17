@@ -51,6 +51,7 @@ type task struct {
 	artifacts []string
 
 	ready_to_execute bool
+	total_time int64
 }
 
 var current_stage stage
@@ -165,7 +166,6 @@ func build_command_result(builder *flatbuffers.Builder, curr_cmd *cmd) flatbuffe
 	message.CommandResultAddGpu(builder, gpu)
 	message.CommandResultAddRam(builder, ram)
 	message.CommandResultAddTime(builder, int32(curr_cmd.execution_time))
-
 	return message.CommandResultEnd(builder)
 }
 
@@ -245,6 +245,7 @@ func send_results() {
 
 	message.ResultStart(builder)
 	// to-do: add total time for task
+	message.ResultAddTime(builder, int32(current_task.total_time))
 	message.ResultAddStages(builder, stages)
 	message.ResultAddArtifacts(builder, artifacts)
 	binResult := message.ResultEnd(builder)
@@ -277,6 +278,7 @@ func run_task() {
 
 			// update current cmd struct
 			curr_cmd.execution_time = time.Now().Unix() - time_before
+			current_task.total_time += curr_cmd.execution_time
 			curr_cmd.output = out
 			curr_cmd.std_err = err
 			curr_cmd.status_code = status_code
@@ -438,8 +440,9 @@ func read_task(msg *message.Message) {
 			fmt.Println("current stage name:")
 			fmt.Println(string(current_stage.name))
 
-			task := task{stages: stages, artifacts: artifacts_list}
+			task := task{stages: stages, artifacts: artifacts_list, total_time: 0}
 			current_task = task
+			
 			current_stage = stages[0]
 
 			/*

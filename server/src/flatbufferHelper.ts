@@ -365,6 +365,7 @@ class Result
 
         if (fbResult != null)
         {
+            this.time = fbResult.time()
             for (let i = 0; i < fbResult.stagesLength(); i++)
             {
                 this.stageResults.push(new StageResult(fbResult.stages(i)!))
