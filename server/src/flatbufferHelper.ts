@@ -191,7 +191,7 @@ class Message
 {
     public type:number
     //public task:Task
-    public messageBody:Task|Result|GetResult
+    public messageBody:Task|Result|GetResult|Hardware
 
     constructor(buf:flatbuffers.ByteBuffer)
     {
@@ -215,6 +215,12 @@ class Message
                 let temp = fbMessage.body(new schema.Result() as flatbuffers.Table)
                 let result = temp as schema.Result
                 this.messageBody = new Result(result)
+                break
+            }
+            case 6:{
+                let temp = fbMessage.body(new schema.Hardware() as flatbuffers.Table)
+                let hw = temp as schema.Hardware
+                this.messageBody = new Hardware(hw)
                 break
             }
         }
@@ -321,7 +327,7 @@ class Artifact
     }
 }
 
-class Hardware
+export class Hardware
 {
     public cpu:string | null | undefined
     public gpu:string | null | undefined

@@ -6,7 +6,7 @@ import express from 'express'
 import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
 
-import { FlatbufferHelper, Task, GetResult} from "./flatbufferHelper"
+import { FlatbufferHelper, Task, GetResult, Hardware} from "./flatbufferHelper"
 const fbHelper = new FlatbufferHelper()
 
 const app = express()
@@ -270,12 +270,34 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
     ws.on("message", async (binaryMessage:Uint8Array ) => { 
         // We currently assume that we will always get a flatbuffer Result here, if that changes add a switch on "fbHelper.getFlatbufferType(binaryMessage)""
         let message = fbHelper.readFlatbufferBinary(binaryMessage)
-        agent.isIdle = true
-        console.log(JSON.stringify(message.messageBody))
+        
+        switch (fbHelper.getFlatbufferType(binaryMessage)){
+            case 5: {
+                agent.isIdle = true
+                console.log(JSON.stringify(message.messageBody))
+        
+                let task_id = agent.currentTask!
+                let id = await db.addResult(task_id, JSON.stringify(message.messageBody))
+                balancer.retryQueuedTasks() //retrying tasks since the message from the daemon might be one that indicated it's finished and ready to accept a new task
+                break
+            }
 
-        let task_id = agent.currentTask!
-        let id = await db.addResult(task_id, JSON.stringify(message.messageBody))
-        balancer.retryQueuedTasks() //retrying tasks since the message from the daemon might be one that indicated it's finished and ready to accept a new task
+            case 6: {
+                let hw = (message.messageBody as Hardware)
+                agent.specs["os"]  = hw.os
+                agent.specs["cpu"] = hw.cpu
+                agent.specs["gpu"] = hw.gpu
+                agent.specs["ram"] = hw.ram
+
+                console.log("received specs from daemon:")
+                console.log(agent.specs)
+
+                balancer.retryQueuedTasks()
+                break
+            }
+
+        }
+
     })
     
     ws.on('close', () => {
