@@ -563,9 +563,14 @@ def deserialize_result(message):
     #TODO: artifacts, save on disk, then save path under key (file name) in result.artifacts
     for i in resultTable.ArtifactsLength():
 
-        with open(resultTable.Artifacts(i).FileName(), "wb") as file:
-            os.write(file, resultTable.Artifacts(i).Data())
+        try:
+            with open(resultTable.Artifacts(i).FileName(), "wb") as file:
+                os.write(file, resultTable.Artifacts(i).Data())
             
+                result.artifacts[resultTable.Artifacts(i).FileName()] = os.path(file) //TODO: is this right?
+        except:
+            print("Failed to write artifact to file")
+
     return result
 
 #for testing only
