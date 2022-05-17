@@ -154,6 +154,7 @@ class Hub:
 
         self.current_task = None
         self.tasks = {}
+        self.current_task_id = None
 
         self.locked = False
         self.recieved_result = []
@@ -179,6 +180,10 @@ class Hub:
 
             if received[0] == "200":
                 self.tasks[received[1]] = self.current_task
+
+                # to-do: maybe this needs to be done elsewhere as well?
+                self.current_task_id = received[1]
+
                 print("task was received and accepted, time to send files")
                 self.send_files(received[1])
 
@@ -280,6 +285,8 @@ class Hub:
          
         while self.locked:
             time.sleep(0.2)
+
+        return self.current_task_id
 
         
     def send_files(self, id):
@@ -484,24 +491,24 @@ def _build_get_result(builder, jobs):
     taskId_serialized = []
     if type(jobs) == list:
         for id in jobs:
-            taskId_serialized.append(builder.CreateString(id))
+            taskId_serialized.append(builder.CreateString(str(id)))
     else:
-        taskId_serialized.append(builder.CreateString(id))
+        taskId_serialized.append(builder.CreateString(str(id)))
 
     FbGetResult.GetResultStartIdListVector(builder, len(taskId_serialized))
 
     for id in taskId_serialized:
-        builder.PrependUOffsetTRelative(taskId_serialized)
+        builder.PrependUOffsetTRelative(id)
     
     taskId_vector = builder.EndVector()
     FbGetResult.GetResultStart(builder)
     
-    FbGetResult.GetResultAddIdList(taskId_vector)
-    FbGetResult.GetResultEnd(builder)
+    FbGetResult.GetResultAddIdList(builder, taskId_vector)
+    
 
     done_file = FbGetResult.GetResultEnd(builder)
     
-    return done_file, builder
+    return builder, done_file 
 
 
 def _build_get_hardware_pool(builder, hardware):
@@ -561,7 +568,7 @@ def deserialize_result(message):
         i += 1
 
     #TODO: artifacts, save on disk, then save path under key (file name) in result.artifacts
-    for i in resultTable.ArtifactsLength():
+    for i in range(resultTable.ArtifactsLength()):
 
         try:
             with open(resultTable.Artifacts(i).FileName(), "wb") as file:

@@ -1,6 +1,6 @@
 namespace schema;
 
-union MessageBody {Task, GetResult, GetHardwarePool, File, Result}
+union MessageBody {Task, GetResult, GetHardwarePool, File, Result, Hardware}
 
 table Message {
     type:int;

@@ -6,7 +6,7 @@ import express from 'express'
 import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
 
-import { FlatbufferHelper } from "./flatbufferHelper"
+import { FlatbufferHelper, Task, GetResult, Hardware} from "./flatbufferHelper"
 const fbHelper = new FlatbufferHelper()
 
 const app = express()
@@ -192,10 +192,11 @@ function findAgentForTask(message:any): Agent | null {
     console.log(task)
     for (let agent of agents) {
         if ( //TODO: Make this less hardcoded, loop through both instead?
-                agent.specs.os == task.hardware["os"] &&
-                agent.specs.cpu == task.hardware["cpu"] &&
-                agent.specs.gpu == task.hardware["gpu"] &&
-                agent.specs.ram == task.hardware["ram"]
+                //agent.specs.os == task.hardware["os"] &&
+                //agent.specs.cpu == task.hardware["cpu"] &&
+                //agent.specs.gpu == task.hardware["gpu"] &&
+                //agent.specs.ram == task.hardware["ram"]
+                true
             ) 
             {
                 return agent
@@ -266,12 +267,37 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
     // console.log("Agent specs:")
     // console.log(agent.specs)
     
-    ws.on("message", (message:Uint8Array | string) => {
-        console.log(`Recieved message: ["${message}"] from Daemon: [${agent.id}] `)
-        if (message == "200"){
-            agent.isIdle = true
+    ws.on("message", async (binaryMessage:Uint8Array ) => { 
+        // We currently assume that we will always get a flatbuffer Result here, if that changes add a switch on "fbHelper.getFlatbufferType(binaryMessage)""
+        let message = fbHelper.readFlatbufferBinary(binaryMessage)
+        
+        switch (fbHelper.getFlatbufferType(binaryMessage)){
+            case 5: {
+                agent.isIdle = true
+                console.log(JSON.stringify(message.messageBody))
+        
+                let task_id = agent.currentTask!
+                let id = await db.addResult(task_id, JSON.stringify(message.messageBody))
+                balancer.retryQueuedTasks() //retrying tasks since the message from the daemon might be one that indicated it's finished and ready to accept a new task
+                break
+            }
+
+            case 6: {
+                let hw = (message.messageBody as Hardware)
+                agent.specs["os"]  = hw.os
+                agent.specs["cpu"] = hw.cpu
+                agent.specs["gpu"] = hw.gpu
+                agent.specs["ram"] = hw.ram
+
+                console.log("received specs from daemon:")
+                console.log(agent.specs)
+
+                balancer.retryQueuedTasks()
+                break
+            }
+
         }
-        balancer.retryQueuedTasks() //retrying tasks since the message from the daemon might be one that indicated it's finished and ready to accept a new task
+
     })
     
     ws.on('close', () => {
@@ -287,16 +313,15 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
         console.log(`\nNew User-client connected from [${req.socket.remoteAddress}].`)
         /*
             TASK = 1
-            RESULT = 2
-            GET_RESULT = 2
+            GET_RESULT = 2 
             HARDWARE_POOL = 3
             GET_HARDWARE_POOL = 3
             FILE = 4
+            RESULT = 5
         */
         switch (fbHelper.getFlatbufferType(binaryMessage)){
 
             case 1: {
-
                 let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
 
                 let agent = findAgentForTask(readableMessage)
@@ -311,7 +336,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 else if (!agent.isConnected) {
                     targetAgent = agent!
                     console.log("Matching agent found, but it is not connected to the hub, queueing task")
-                    let id = await db.addTask(JSON.stringify(readableMessage.task))
+                    let id = await db.addTask(JSON.stringify(readableMessage.messageBody))
                     balancer.queue.enqueue(binaryMessage, ws, id)
                     ws.send(`242 ${id}`)
                 }
@@ -323,24 +348,42 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                     agent.taskStartTime = currentDate
 
                     agent.isIdle = false
-                    let id = await db.addTask(JSON.stringify(readableMessage.task))
+                    let id = await db.addTask(JSON.stringify(readableMessage.messageBody))
                     ws.send(`200 ${id}`)
+
+                    // save the task as agent's current task
+                    agent.currentTask = id
                     
                 }
 
                 else {
 
                     console.log("agent is busy, adding task to queue")
-                    let id = await db.addTask(JSON.stringify(readableMessage.task))
+                    let id = await db.addTask(JSON.stringify(readableMessage.messageBody))
                     balancer.queue.enqueue(binaryMessage, ws, id)
                     ws.send(`242 ${id}`)
                 }
                 break
             }
             case 2: {
+                console.log("THIS IS 2!!!! *kicks*")
+                let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
+            
+                let results = []
+                console.log("id list:")
+                console.log((readableMessage.messageBody as GetResult).id_list)
+                for ( let id of (readableMessage.messageBody as GetResult).id_list){
+                    results.push( await db.getResult(id))
+                }
+                console.log(results)
+                console.log(typeof(results[0]))
+                fbHelper.buildFlatbufferResult(JSON.stringify(results[0]))
+                //Build a flatbuffer thingy for each result, we get a json object from the db
+                //Send each result back to the pythonapi
                 break
             }
             case 3: {
+                
                 break
             }
             case 4: {
@@ -414,13 +457,15 @@ app.get('/queuedtasks', (req:Request, res:Response) => {
 
     let result:{}[] = []
     for ( let taskBinary of balancer.queue.contents) {
-        let fbTask = fbHelper.readFlatbufferBinary(taskBinary[0])
-
+        let fbMessage = fbHelper.readFlatbufferBinary(taskBinary[0])
+        
+       
         result.push({
-            "target_hardware": fbTask.task.hardware,
-            "stages": fbTask.task.stages,
-            "artifacts": fbTask.task.artifacts
+            "target_hardware": (fbMessage.messageBody as Task).hardware,
+            "stages": (fbMessage.messageBody as Task).stages,
+            "artifacts": (fbMessage.messageBody as Task).artifacts
         })
+        
     }
 
     return res.json(result)

@@ -6,10 +6,15 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/mem"
+
 	message "test.com/test"
 )
 
@@ -51,6 +56,7 @@ type task struct {
 	artifacts []string
 
 	ready_to_execute bool
+	total_time       int64
 }
 
 var current_stage stage
@@ -108,7 +114,7 @@ func listen(connection *websocket.Conn) {
 		case data := <-received_bytes:
 			// if received_bytes contains something
 
-			//send_message(connection, []byte("Received data, now processing..."))
+			//send_text_message(connection, []byte("Received data, now processing..."))
 
 			read_message(data)
 
@@ -135,13 +141,20 @@ func main() {
 	// close connection once we go out of scope
 	defer connection.Close()
 
+	// send hardware to hub
+	send_hardware()
+
 	// wait for requests from server
 	listen(connection)
 
 }
 
-func send_message(connection *websocket.Conn, msg []byte) {
+func send_text_message(connection *websocket.Conn, msg []byte) {
 	connection.WriteMessage(websocket.TextMessage, msg)
+}
+
+func send_binary_message(connection *websocket.Conn, msg []byte) {
+	connection.WriteMessage(websocket.BinaryMessage, msg)
 }
 
 func build_command_result(builder *flatbuffers.Builder, curr_cmd *cmd) flatbuffers.UOffsetT {
@@ -161,8 +174,40 @@ func build_command_result(builder *flatbuffers.Builder, curr_cmd *cmd) flatbuffe
 	message.CommandResultAddGpu(builder, gpu)
 	message.CommandResultAddRam(builder, ram)
 	message.CommandResultAddTime(builder, int32(curr_cmd.execution_time))
-
 	return message.CommandResultEnd(builder)
+}
+
+func send_hardware() {
+
+	v, _ := mem.VirtualMemory()
+	c, _ := cpu.Info()
+	h, _ := host.Info()
+
+	builder := flatbuffers.NewBuilder(0)
+
+	os := builder.CreateString(h.OS)
+	cpu := builder.CreateString(c[0].ModelName)
+	gpu := builder.CreateString("???")
+	ram := builder.CreateString(strconv.FormatUint(v.Total, 10))
+
+	message.HardwareStart(builder)
+	message.HardwareAddOs(builder, os)
+	message.HardwareAddCpu(builder, cpu)
+	message.HardwareAddGpu(builder, gpu)
+	message.HardwareAddRam(builder, ram)
+
+	binHardware := message.HardwareEnd(builder)
+
+	message.MessageStart(builder)
+	message.MessageAddBody(builder, binHardware)
+	message.MessageAddType(builder, 6)
+
+	binMessage := message.MessageEnd(builder)
+
+	builder.Finish(binMessage)
+
+	send_binary_message(connectiongrabben, builder.FinishedBytes())
+	fmt.Println("finished sending hardware...")
 }
 
 func send_results() {
@@ -241,13 +286,19 @@ func send_results() {
 
 	message.ResultStart(builder)
 	// to-do: add total time for task
+	message.ResultAddTime(builder, int32(current_task.total_time))
 	message.ResultAddStages(builder, stages)
 	message.ResultAddArtifacts(builder, artifacts)
 	binResult := message.ResultEnd(builder)
 
-	builder.Finish(binResult)
+	message.MessageStart(builder)
+	message.MessageAddBody(builder, binResult)
+	message.MessageAddType(builder, 5)
+	binMessage := message.MessageEnd(builder)
 
-	send_message(connectiongrabben, builder.FinishedBytes())
+	builder.Finish(binMessage)
+
+	send_binary_message(connectiongrabben, builder.FinishedBytes())
 	fmt.Println("done sending results...")
 }
 
@@ -268,6 +319,7 @@ func run_task() {
 
 			// update current cmd struct
 			curr_cmd.execution_time = time.Now().Unix() - time_before
+			current_task.total_time += curr_cmd.execution_time
 			curr_cmd.output = out
 			curr_cmd.std_err = err
 			curr_cmd.status_code = status_code
@@ -286,7 +338,7 @@ func run_task() {
 
 	send_results()
 	// to-do: return results from execution
-	//send_message(connectiongrabben, []byte("200"))
+	//send_text_message(connectiongrabben, []byte("200"))
 }
 
 func execute_command(command string) ([]byte, []byte, int) {
@@ -429,8 +481,9 @@ func read_task(msg *message.Message) {
 			fmt.Println("current stage name:")
 			fmt.Println(string(current_stage.name))
 
-			task := task{stages: stages, artifacts: artifacts_list}
+			task := task{stages: stages, artifacts: artifacts_list, total_time: 0}
 			current_task = task
+
 			current_stage = stages[0]
 
 			/*
@@ -459,9 +512,7 @@ func read_task(msg *message.Message) {
 
 					}
 
-					// save current stage for later :)
-					current_stage := stage{name: string(s.Name()), data: data_list,
-						cmd_list: cmd_list, track_time: s.TrackTime(),
+					// save current stage for later :)nd_message(connectiongrabben, builder.FinishedBytes())
 						track_ram: s.TrackRam(), track_cpu: s.TrackCpu(),
 						track_gpu: s.TrackGpu(), comment: string(s.Comment())}
 
