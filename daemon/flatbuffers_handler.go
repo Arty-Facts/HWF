@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -139,67 +138,22 @@ func Build_hardware() []byte {
 }
 
 func Build_results(current_task *task) []byte {
-	var curr_cmd *cmd
-
-	var command_results []flatbuffers.UOffsetT
-	var stage_results []flatbuffers.UOffsetT
-	var artifacts_arr []flatbuffers.UOffsetT
 
 	builder := flatbuffers.NewBuilder(0)
 
-	// BUILD ALL COMMANDRESULTS
-	// to-do: move this to build_command_results
-	for i := 0; i < len(current_task.stages); i++ {
-		for j := 0; j < len(current_task.stages[i].cmd_list); j++ {
+	// build all the inner flatbuffers
+	command_results := build_command_result(builder, current_task)
+	stage_results := build_stage_results(builder, current_task.stages, command_results)
+	artifacts_arr := build_artifacts(builder, current_task)
 
-			curr_cmd = &current_task.stages[i].cmd_list[j]
-			cmd_result := Build_command_result(builder, curr_cmd)
+	return build_result(builder, current_task, &stage_results, &artifacts_arr)
+}
 
-			command_results = append(command_results, cmd_result)
-		}
-	}
-
-	// BUILD ALL STAGERESULTS
-	for i := 0; i < len(current_task.stages); i++ {
-		stage_name := builder.CreateString(current_task.stages[i].name)
-		// create cmd vector
-		message.StageResultStartCmdVector(builder, len(current_task.stages[i].cmd_list))
-		for _, command_result := range command_results {
-
-			builder.PrependUOffsetT(command_result)
-		}
-		cmd_vector := builder.EndVector(len(current_task.stages[i].cmd_list))
-
-		message.StageResultStart(builder)
-		message.StageResultAddCmd(builder, cmd_vector)
-		message.StageResultAddName(builder, stage_name)
-		stage_result := message.StageResultEnd(builder)
-
-		stage_results = append(stage_results, stage_result)
-	}
-
-	// BUILD ALL ARTIFACTS
-	for k := 0; k < len(current_task.artifacts); k++ {
-		file_name := builder.CreateString(current_task.artifacts[k])
-
-		// create file data byte vector
-		bytes, err := os.ReadFile(current_task.artifacts[k])
-		if err != nil {
-			// catch error here
-		}
-		arr := builder.CreateByteVector(bytes)
-
-		message.ArtifactStart(builder)
-		message.ArtifactAddFileName(builder, file_name)
-		message.ArtifactAddData(builder, arr)
-		artifact := message.ArtifactEnd(builder)
-
-		artifacts_arr = append(artifacts_arr, artifact)
-	}
+func build_result(builder *flatbuffers.Builder, current_task *task, stage_results *[]flatbuffers.UOffsetT, artifacts_arr *[]flatbuffers.UOffsetT) []byte {
 
 	// create stages vector
 	message.ResultStartStagesVector(builder, len(current_task.stages))
-	for _, stage_result := range stage_results {
+	for _, stage_result := range *stage_results {
 		builder.PrependUOffsetT(stage_result)
 	}
 	stages := builder.EndVector(len(current_task.stages))
@@ -207,13 +161,12 @@ func Build_results(current_task *task) []byte {
 	// create artifacts vector
 	message.ResultStartArtifactsVector(builder, len(current_task.artifacts))
 	fmt.Println("before artifacts loop")
-	for _, artifact := range artifacts_arr {
+	for _, artifact := range *artifacts_arr {
 		builder.PrependUOffsetT(artifact)
 	}
 	artifacts := builder.EndVector(len(current_task.artifacts))
 
 	message.ResultStart(builder)
-	// to-do: add total time for task
 	message.ResultAddTime(builder, int32(current_task.total_time))
 	message.ResultAddStages(builder, stages)
 	message.ResultAddArtifacts(builder, artifacts)
@@ -229,22 +182,87 @@ func Build_results(current_task *task) []byte {
 	return builder.FinishedBytes()
 }
 
-func Build_command_result(builder *flatbuffers.Builder, curr_cmd *cmd) flatbuffers.UOffsetT {
-	cmd := builder.CreateString(curr_cmd.command)
-	out := builder.CreateByteVector(curr_cmd.output)
-	err := builder.CreateByteVector(curr_cmd.std_err)
-	cpu := builder.CreateString("default")
-	gpu := builder.CreateString("default")
-	ram := builder.CreateString("default")
+func build_command_result(builder *flatbuffers.Builder, current_task *task) []flatbuffers.UOffsetT {
 
-	message.CommandResultStart(builder)
-	message.CommandResultAddCmd(builder, cmd)
-	message.CommandResultAddExit(builder, int32(curr_cmd.status_code))
-	message.CommandResultAddStdout(builder, out)
-	message.CommandResultAddStderr(builder, err)
-	message.CommandResultAddCpu(builder, cpu)
-	message.CommandResultAddGpu(builder, gpu)
-	message.CommandResultAddRam(builder, ram)
-	message.CommandResultAddTime(builder, int32(curr_cmd.execution_time))
-	return message.CommandResultEnd(builder)
+	var command_results []flatbuffers.UOffsetT
+	var curr_cmd *cmd
+
+	for i := 0; i < len(current_task.stages); i++ {
+		for j := 0; j < len(current_task.stages[i].cmd_list); j++ {
+
+			curr_cmd = &current_task.stages[i].cmd_list[j]
+
+			cmd := builder.CreateString(curr_cmd.command)
+			out := builder.CreateByteVector(curr_cmd.output)
+			err := builder.CreateByteVector(curr_cmd.std_err)
+			cpu := builder.CreateString("default")
+			gpu := builder.CreateString("default")
+			ram := builder.CreateString("default")
+
+			message.CommandResultStart(builder)
+			message.CommandResultAddCmd(builder, cmd)
+			message.CommandResultAddExit(builder, int32(curr_cmd.status_code))
+			message.CommandResultAddStdout(builder, out)
+			message.CommandResultAddStderr(builder, err)
+			message.CommandResultAddCpu(builder, cpu)
+			message.CommandResultAddGpu(builder, gpu)
+			message.CommandResultAddRam(builder, ram)
+			message.CommandResultAddTime(builder, int32(curr_cmd.execution_time))
+			cmd_result := message.CommandResultEnd(builder)
+
+			command_results = append(command_results, cmd_result)
+		}
+	}
+
+	return command_results
+}
+
+func build_stage_results(builder *flatbuffers.Builder, stages []stage, command_results []flatbuffers.UOffsetT) []flatbuffers.UOffsetT {
+	var stage_results []flatbuffers.UOffsetT
+
+	for i := 0; i < len(stages); i++ {
+		stage_name := builder.CreateString(stages[i].name)
+
+		// create cmd vector
+		message.StageResultStartCmdVector(builder, len(stages[i].cmd_list))
+		for _, command_result := range command_results {
+			builder.PrependUOffsetT(command_result)
+		}
+
+		cmd_vector := builder.EndVector(len(stages[i].cmd_list))
+
+		message.StageResultStart(builder)
+		message.StageResultAddCmd(builder, cmd_vector)
+		message.StageResultAddName(builder, stage_name)
+		stage_result := message.StageResultEnd(builder)
+
+		stage_results = append(stage_results, stage_result)
+	}
+
+	return stage_results
+}
+
+func build_artifacts(builder *flatbuffers.Builder, current_task *task) []flatbuffers.UOffsetT {
+
+	var artifacts_arr []flatbuffers.UOffsetT
+
+	for k := 0; k < len(current_task.artifacts); k++ {
+		file_name := builder.CreateString(current_task.artifacts[k])
+
+		// create file data byte vector
+		bytes, err := os.ReadFile(current_task.artifacts[k])
+		if err != nil {
+			// make sure to handle this error
+		}
+		arr := builder.CreateByteVector(bytes)
+
+		message.ArtifactStart(builder)
+		message.ArtifactAddFileName(builder, file_name)
+		message.ArtifactAddData(builder, arr)
+		artifact := message.ArtifactEnd(builder)
+
+		artifacts_arr = append(artifacts_arr, artifact)
+	}
+
+	return artifacts_arr
 }
