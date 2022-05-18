@@ -15,6 +15,8 @@ import (
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
 
+	"github.com/jaypipes/ghw"
+
 	message "test.com/test"
 )
 
@@ -183,11 +185,20 @@ func send_hardware() {
 	c, _ := cpu.Info()
 	h, _ := host.Info()
 
+	var gpu_info string
+	g, err := ghw.GPU()
+	if err != nil {
+		fmt.Println("Could not find GPU info: %v", err)
+		gpu_info = "N/A"
+	} else {
+		gpu_info = g.GraphicsCards[0].DeviceInfo.Vendor.Name + " " + g.GraphicsCards[0].DeviceInfo.Product.Name
+	}
+
 	builder := flatbuffers.NewBuilder(0)
 
 	os := builder.CreateString(h.OS)
 	cpu := builder.CreateString(c[0].ModelName)
-	gpu := builder.CreateString("???")
+	gpu := builder.CreateString(gpu_info)
 	ram := builder.CreateString(strconv.FormatUint(v.Total, 10))
 
 	message.HardwareStart(builder)
