@@ -61,7 +61,7 @@ table Result {
     time:int; 
     stages:[StageResult];
     artifacts:[Artifact];
-    hardware:[Hardware];
+    hardware:Hardware;
 }
 
 table StageResult {

@@ -634,20 +634,16 @@ def deserialize_result(message):
         #    result.artifacts[resultTable.Artifacts(i).FileName()] = os.getcwd + str(resultTable.Artifacts(i).FileName()) #TODO: is this right?
     
 
-    # print("hardware time")
-    # hardwareTable = resultTable.Hardware(0)
-    # print(resultTable.HardwareLength())
-    # print("saving specs")
-    # print(resultTable.Hardware(0).Os())
-    # print(hardwareTable.Os())
-    # result.hardware["os"] = hardwareTable.Os()
-    # print("spec2")
-    # result.hardware["cpu"] = hardwareTable.Cpu()
-    # print("spec3")
-    # result.hardware["gpu"] = hardwareTable.Gpu()
-    # print("spec4")
-    # result.hardware["ram"] = hardwareTable.Ram()
-
+    print("hardware time")
+    hardwareTable = resultTable.Hardware()
+    result.hardware["os"] = hardwareTable.Os()
+    print("spec2")
+    result.hardware["cpu"] = hardwareTable.Cpu()
+    print("spec3")
+    result.hardware["gpu"] = hardwareTable.Gpu()
+    print("spec4")
+    result.hardware["ram"] = hardwareTable.Ram()
+    print(hardwareTable.Cpu())
     print("hardware done")
     return result
 

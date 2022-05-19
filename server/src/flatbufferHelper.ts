@@ -120,36 +120,48 @@ export class FlatbufferHelper
                 artifacts.push(schema.Artifact.endArtifact(builder))
             }
 
-            for (let hardware of result.hardware)
-            {
-                let cpu = builder.createString(hardware.cpu)
-                let gpu = builder.createString(hardware.gpu)
-                let os = builder.createString(hardware.os)
-                let ram = builder.createString(hardware.ram)
+            // for (let hardware of result.hardware)
+            // {
+            let cpu = builder.createString(result.hardware.cpu)
+            let gpu = builder.createString(result.hardware.gpu)
+            let os = builder.createString(result.hardware.os)
+            let ram = builder.createString(result.hardware.ram)
 
-                schema.Hardware.startHardware(builder)
-                schema.Hardware.addCpu(builder, cpu)
-                schema.Hardware.addGpu(builder, gpu)
-                schema.Hardware.addOs(builder, os)
-                schema.Hardware.addRam(builder, ram)
-                hardwares.push(schema.Hardware.endHardware(builder))
-            }
-
-
+            schema.Hardware.startHardware(builder)
+            schema.Hardware.addCpu(builder, cpu)
+            schema.Hardware.addGpu(builder, gpu)
+            schema.Hardware.addOs(builder, os)
+            schema.Hardware.addRam(builder, ram)
+            let doneHardware = schema.Hardware.endHardware(builder)
+                
+            // }
+ 
             //create result
             let stagevec = schema.Result.createStagesVector(builder, stage_results)
             let artifactvec = schema.Result.createArtifactsVector(builder, artifacts)
-            let hwvec = schema.Result.createHardwareVector(builder, hardwares)
+            
             
             schema.Result.startResult(builder)
             schema.Result.addTime(builder, result.time)
             schema.Result.addStages(builder, stagevec)
             schema.Result.addArtifacts(builder, artifactvec)
-            schema.Result.addHardware(builder, hwvec)
+            schema.Result.addHardware(builder, doneHardware)
             let res = schema.Result.endResult(builder)
 
             resultList.push(res)
 
+           
+    
+            // //create result
+            // let stagevec = schema.Result.createStagesVector(builder, stage_results)
+            // let artifactvec = schema.Result.createArtifactsVector(builder, artifacts)
+            
+            // schema.Result.startResult(builder)
+            // schema.Result.addTime(builder, result.time)
+            // schema.Result.addStages(builder, stagevec)
+            // schema.Result.addArtifacts(builder, artifactvec)
+            // schema.Result.addHardware(builder, result.hardware)
+            // let res = schema.Result.endResult(builder)
             //builder.finish(res)
             
             //return builder.asUint8Array()
@@ -268,32 +280,26 @@ export class FlatbufferHelper
             artifacts.push(schema.Artifact.endArtifact(builder))
         }
 
-        for (let hardware of result.hardware)
-        {
-            let cpu = builder.createString(hardware.cpu)
-            let gpu = builder.createString(hardware.gpu)
-            let os = builder.createString(hardware.os)
-            let ram = builder.createString(hardware.ram)
+        let cpu = builder.createString(result.hardware.cpu)
+        let gpu = builder.createString(result.hardware.gpu)
+        let os = builder.createString(result.hardware.os)
+        let ram = builder.createString(result.hardware.ram)
 
-            schema.Hardware.startHardware(builder)
-            schema.Hardware.addCpu(builder, cpu)
-            schema.Hardware.addGpu(builder, gpu)
-            schema.Hardware.addOs(builder, os)
-            schema.Hardware.addRam(builder, ram)
-            hardwares.push(schema.Hardware.endHardware(builder))
-        }
-
-
+        schema.Hardware.startHardware(builder)
+        schema.Hardware.addCpu(builder, cpu)
+        schema.Hardware.addGpu(builder, gpu)
+        schema.Hardware.addOs(builder, os)
+        schema.Hardware.addRam(builder, ram)
+        let doneHardware = schema.Hardware.endHardware(builder)
         //create result
         let stagevec = schema.Result.createStagesVector(builder, stage_results)
         let artifactvec = schema.Result.createArtifactsVector(builder, artifacts)
-        let hwvec = schema.Result.createHardwareVector(builder, hardwares)
         
         schema.Result.startResult(builder)
         schema.Result.addTime(builder, result.time)
         schema.Result.addStages(builder, stagevec)
         schema.Result.addArtifacts(builder, artifactvec)
-        schema.Result.addHardware(builder, hwvec)
+        schema.Result.addHardware(builder, doneHardware)
         let res = schema.Result.endResult(builder)
         
         
@@ -527,13 +533,12 @@ class Result
     public time:number
     public stageResults:StageResult[]
     public artifacts:Artifact[]
-    public hardware:Hardware[]
+    public hardware:Hardware
 
     constructor(fbResult:schema.Result)
     {
         this.stageResults = []
         this.artifacts = []
-        this.hardware = []
 
         if (fbResult != null)
         {
@@ -546,11 +551,8 @@ class Result
             {
                 this.artifacts.push(new Artifact(fbResult.artifacts(i)!))
             }
-            for (let i = 0; i < fbResult.hardwareLength(); i++)
-            {
-                this.hardware.push(new Hardware(fbResult.hardware(i)!))
-            }
-
+ 
+            this.hardware = new Hardware(fbResult.hardware()!)
         }
     }
 }

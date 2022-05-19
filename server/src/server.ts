@@ -7,6 +7,7 @@ import { dbAdapter } from "./db/mongo_db"
 import cors from "cors"
 
 import { FlatbufferHelper, Task, GetResult, Hardware} from "./flatbufferHelper"
+import { removeAllListeners } from "process"
 const fbHelper = new FlatbufferHelper()
 
 const app = express()
@@ -67,6 +68,7 @@ class Agent {
         this.isIdle = false 
 
         if (id){
+        this.currentTask = id
         responseSocket.send(`424 ${id}`)
     }
     }
@@ -115,6 +117,8 @@ class LoadBalancer {
     }
 
     retryQueuedTasks(){
+        console.log("WE'RE RETRYING!!!!!!!!!!!!!!!")
+        if (this.queue.contents.length == 0) {return}
         console.log("Retrying all queued tasks")
         if (this.priorityType == "lifo") {
             this.queue.contents.reverse().forEach(tuple => {
@@ -186,17 +190,16 @@ function sendToUser(user:WebSocket, data:any): void {
 
 //TODO: fix message type, shouldn't be "any"
 function findAgentForTask(message:any): Agent | null {
-
-    let task = message.task
+    console.log(message)
+    let task = message.messageBody as Task
     console.log("Finding agent for this task:")
     console.log(task)
     for (let agent of agents) {
         if ( //TODO: Make this less hardcoded, loop through both instead?
-                //agent.specs.os == task.hardware["os"] &&
-                //agent.specs.cpu == task.hardware["cpu"] &&
-                //agent.specs.gpu == task.hardware["gpu"] &&
-                //agent.specs.ram == task.hardware["ram"]
-                true
+                (agent.specs.os == task.hardware["os"] || task.hardware["os"] == "any" ) &&
+                (agent.specs.cpu == task.hardware["cpu"] || task.hardware["cpu"] == "any" )  &&
+                (agent.specs.gpu == task.hardware["gpu"] || task.hardware["gpu"] == "any" ) &&
+                (agent.specs.ram == task.hardware["ram"] || task.hardware["ram"] == "any" )
             ) 
             {
                 return agent
@@ -323,7 +326,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
             case 1: {
                 let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
-
+                console.log(readableMessage)
                 let agent = findAgentForTask(readableMessage)
                 
                 if (agent == null) {
@@ -369,15 +372,22 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 console.log("THIS IS 2!!!! *kicks*")
                 let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
             
-                let results = []
+                let results:string[] = []
                 console.log("id list:")
                 console.log((readableMessage.messageBody as GetResult).id_list)
                 for ( let id of (readableMessage.messageBody as GetResult).id_list){
                     results.push( await db.getResult(id))
                 }
+                console.log("=======================RESULTS ============================0")
                 console.log(results)
                 console.log(typeof(results[0]))
-                fbHelper.buildFlatbufferResult(JSON.stringify(results[0]))
+                console.log("!!!!!!!!!!!!!!!!!!!!!!!! NO MORE RESULS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
+                var serializedResults = fbHelper.buildFlatbufferResultList(results)
+                
+                console.log(serializedResults)
+                ws.send(serializedResults)
+
                 //Build a flatbuffer thingy for each result, we get a json object from the db
                 //Send each result back to the pythonapi
                 break
