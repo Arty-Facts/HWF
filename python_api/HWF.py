@@ -572,6 +572,8 @@ def deserialize_result(message):
 
         with open(resultTable.Artifacts(i).FileName(), "wb") as file:
             os.write(file, resultTable.Artifacts(i).Data())
+
+    #TODO: get hardware here!!
             
     return result
 

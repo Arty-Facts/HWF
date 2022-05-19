@@ -97,7 +97,7 @@ func Read_task(msg *message.Message) task {
 	return task{}
 }
 
-func Build_hardware() []byte {
+func build_hardware(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	v, _ := mem.VirtualMemory()
 	c, _ := cpu.Info()
 	h, _ := host.Info()
@@ -111,8 +111,6 @@ func Build_hardware() []byte {
 		gpu_info = g.GraphicsCards[0].DeviceInfo.Vendor.Name + " " + g.GraphicsCards[0].DeviceInfo.Product.Name
 	}
 
-	builder := flatbuffers.NewBuilder(0)
-
 	os := builder.CreateString(h.OS)
 	cpu := builder.CreateString(c[0].ModelName)
 	gpu := builder.CreateString(gpu_info)
@@ -124,7 +122,13 @@ func Build_hardware() []byte {
 	message.HardwareAddGpu(builder, gpu)
 	message.HardwareAddRam(builder, ram)
 
-	binHardware := message.HardwareEnd(builder)
+	return message.HardwareEnd(builder)
+}
+
+func Build_hardware() []byte {
+	builder := flatbuffers.NewBuilder(0)
+
+	binHardware := build_hardware(builder)
 
 	message.MessageStart(builder)
 	message.MessageAddBody(builder, binHardware)
@@ -151,6 +155,9 @@ func Build_results(current_task *task) []byte {
 
 func build_result(builder *flatbuffers.Builder, current_task *task, stage_results *[]flatbuffers.UOffsetT, artifacts_arr *[]flatbuffers.UOffsetT) []byte {
 
+	// create hardware flatbuffer
+	hardware := build_hardware(builder)
+
 	// create stages vector
 	message.ResultStartStagesVector(builder, len(current_task.stages))
 	for _, stage_result := range *stage_results {
@@ -170,6 +177,7 @@ func build_result(builder *flatbuffers.Builder, current_task *task, stage_result
 	message.ResultAddTime(builder, int32(current_task.total_time))
 	message.ResultAddStages(builder, stages)
 	message.ResultAddArtifacts(builder, artifacts)
+	message.ResultAddHardware(builder, hardware)
 	binResult := message.ResultEnd(builder)
 
 	message.MessageStart(builder)

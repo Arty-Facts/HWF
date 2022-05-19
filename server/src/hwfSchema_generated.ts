@@ -1331,21 +1331,12 @@ artifactsLength():number {
 };
 
 /**
- * @param number index
  * @param schema.Hardware= obj
- * @returns schema.Hardware
+ * @returns schema.Hardware|null
  */
-hardware(index: number, obj?:schema.Hardware):schema.Hardware|null {
+hardware(obj?:schema.Hardware):schema.Hardware|null {
   var offset = this.bb!.__offset(this.bb_pos, 10);
-  return offset ? (obj || new schema.Hardware()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
-};
-
-/**
- * @returns number
- */
-hardwareLength():number {
-  var offset = this.bb!.__offset(this.bb_pos, 10);
-  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
+  return offset ? (obj || new schema.Hardware()).__init(this.bb!.__indirect(this.bb_pos + offset), this.bb!) : null;
 };
 
 /**
@@ -1431,27 +1422,6 @@ static addHardware(builder:flatbuffers.Builder, hardwareOffset:flatbuffers.Offse
 
 /**
  * @param flatbuffers.Builder builder
- * @param Array.<flatbuffers.Offset> data
- * @returns flatbuffers.Offset
- */
-static createHardwareVector(builder:flatbuffers.Builder, data:flatbuffers.Offset[]):flatbuffers.Offset {
-  builder.startVector(4, data.length, 4);
-  for (var i = data.length - 1; i >= 0; i--) {
-    builder.addOffset(data[i]);
-  }
-  return builder.endVector();
-};
-
-/**
- * @param flatbuffers.Builder builder
- * @param number numElems
- */
-static startHardwareVector(builder:flatbuffers.Builder, numElems:number) {
-  builder.startVector(4, numElems, 4);
-};
-
-/**
- * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
 static endResult(builder:flatbuffers.Builder):flatbuffers.Offset {
@@ -1459,14 +1429,6 @@ static endResult(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static createResult(builder:flatbuffers.Builder, time:number, stagesOffset:flatbuffers.Offset, artifactsOffset:flatbuffers.Offset, hardwareOffset:flatbuffers.Offset):flatbuffers.Offset {
-  Result.startResult(builder);
-  Result.addTime(builder, time);
-  Result.addStages(builder, stagesOffset);
-  Result.addArtifacts(builder, artifactsOffset);
-  Result.addHardware(builder, hardwareOffset);
-  return Result.endResult(builder);
-}
 }
 }
 /**
