@@ -84,7 +84,7 @@ func connect() *websocket.Conn {
 	// 	Path:   "/",
 	// }
 
-	server_url := "ws://localhost:9000?os=windows11&gpu=rtx4090&cpu=r9_9999x&ram=400gb" //os.Getenv("HWF_SERVER_URL")
+	server_url := "ws://localhost:9000" //os.Getenv("HWF_SERVER_URL")
 	//server_url := "ws://localhost:9000"
 
 	docker_server_url := os.Getenv("HWF_SERVER_URL")

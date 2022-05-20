@@ -36,6 +36,7 @@ table GetResult {
 
 table GetHardwarePool {
     hardware:[string];
+    hardware_result:[Hardware];
     
 }
 

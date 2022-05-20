@@ -149,19 +149,6 @@ class CommandResult:
         self.ram = ""
         self.time = ""
 
-class HardwarePool:
-    def __init__(self):
-        self.hardware = {}
-
-    def get(*args):
-        result = []
-        if "gpu" in args:
-            #for gpu in self.hardware["gpu"]:
-            #   result.push([gpu])
-            return result
-        #TODO: finish this!
-
-
 class Hub:
     def __init__(self, ip_address=None):
         self.ip_address = ip_address
@@ -195,7 +182,7 @@ class Hub:
 
     def on_message(self, ws, message):
 
-        print(type(message))
+        
         if isinstance(message, str):
             received = message.split()
 
@@ -219,6 +206,11 @@ class Hub:
             elif received[0] == "404":
                 print("no matching agents available at this time :((")
 
+            elif received[0] == "500":
+                print("An error occured in the hub when handling your request:")
+                print(message)
+            else:
+                print(message)
         elif isinstance(message, bytes):
             self.recieved_result = deserialize_message(message)
 
@@ -231,12 +223,12 @@ class Hub:
             # handle flatbuffers here!!!!!
 
         # unlock the wait since we got response
-        print("unlocking")
+        
         self.locked = False
 
 
     def on_error(self, ws, error):
-        print(":D:D:D:D::D:D::D:D")
+        print("Error! :D:D:D:D::D:D::D:D")
         print(error)
 
     def on_close(self, ws):
@@ -246,7 +238,6 @@ class Hub:
         print("connection opened :)")
         
     async def connect(self):
-        #When fully implemented use self.ip_address, for now we connect to localhost 3001.
         
         # 2022-04-29
         #self.socket.connect(self.ip_address)
@@ -281,23 +272,33 @@ class Hub:
         while self.locked:
             time.sleep(0.2)
         
-        print("get_result out of lock state")
+
         result = self.recieved_result
         self.recieved_result = ""
+
         return result
 
-    def get_hardware_pool(self): #TODO: Implement me!
-
-        hw = HardwarePool()
-
+    async def get_hardware_pool(self): #TODO: Implement me!
+        print("Getting hardware pool")
         buffer = _build_message(GET_HARDWARE_POOL, "")
-        pass
+        
+        self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
+        print("locking hwpool")
+        self.locked = True
+
+        while self.locked:
+            time.sleep(0.2)
+        
+        result = self.recieved_result
+        self.recieved_result = ""
+
+        return result
 
     def dispatch_async(self, hardware=None, task=None, priority=0): #outside mvp
         pass
 
     async def dispatch(self, hardware=None, task=None, priority=0, cpu=None, gpu=None, os=None):
-
+        
         self.current_task = task
 
         print("building task...")
@@ -544,16 +545,14 @@ def _build_get_result(builder, jobs):
 
 def _build_get_hardware_pool(builder, hardware):
 
-    FbGetHardwarePool.Start()
-    done = FbGetHardwarePool.End()
+    FbGetHardwarePool.Start(builder)
+    done = FbGetHardwarePool.End(builder)
     return builder, done
 
 def deserialize_message(buffer):
 
     message = FbMessage.Message.GetRootAs(buffer , 0)
     type = message.BodyType()
-    print("TYPE IS")
-    print(type)
     if type == FbMessageBody.MessageBody().Result:
         result = deserialize_result(message)
         return result
@@ -564,12 +563,29 @@ def deserialize_message(buffer):
 
     elif type == FbMessageBody.MessageBody().GetHardwarePool:
 
-        # result = deserialize_getHardwarePool(message)
-        pass
+        result = deserialize_getHardwarePool(message)
+        return result
+        
     else:
         print("Tried deserializing a message of an invalid type")
         return -1
 
+def deserialize_getHardwarePool(message):
+    results = []
+    hardwarePoolTable = FbGetHardwarePool.GetHardwarePool()
+    hardwarePoolTable.Init(message.Body().Bytes, message.Body().Pos)
+
+    for i in range(hardwarePoolTable.HardwareResultLength()):
+        hw = {}
+        resultTable = hardwarePoolTable.HardwareResult(i)
+        
+        hw["os"] = resultTable.Os()
+        hw["cpu"] = resultTable.Cpu()
+        hw["gpu"] = resultTable.Gpu()
+        hw["ram"] = resultTable.Ram()
+
+        results.append(hw)
+    return results
 def deserialize_resultList(message):
 
     results = []
@@ -578,8 +594,7 @@ def deserialize_resultList(message):
 
     for i in range(resultListTable.TasksLength()):
         results.append(deserialize_result(resultListTable.Tasks(i)))
-        print("done deserializing a task")
-    print("deserialize(resultList) returning")
+
     return results
 
 def deserialize_result(message):
@@ -592,7 +607,7 @@ def deserialize_result(message):
     resultTable = message
     if resultTable.Time() > 0:
         result.time = resultTable.Time()
-    print("beginning deserializeiielzile result")
+    
     i = 0
     for i in range(resultTable.StagesLength()):
         
@@ -604,7 +619,7 @@ def deserialize_result(message):
 
         x = 0
         while x < stageTable.CmdLength():
-            print("cmd time")
+            
             cmd = CommandResult()
             cmdTable = stageTable.Cmd(x)
             cmd.cmd = cmdTable.Cmd()
@@ -623,83 +638,20 @@ def deserialize_result(message):
         result.stage[stageTable.Name()] = stage
 
     #TODO: artifacts, save on disk, then save path under key (file name) in result.artifacts
-    print("artifact time")
+    
 
-    print(resultTable.ArtifactsLength())
+    
     for i in range(resultTable.ArtifactsLength()):
-        print(resultTable.Artifacts(i).DataAsNumpy())
-        print(resultTable.Artifacts(i).FileName())
         with open(resultTable.Artifacts(i).FileName(), "wb") as file:
-            print("testing")
-            print(bytearray(resultTable.Artifacts(i).DataAsNumpy()))
             file.write(bytearray(resultTable.Artifacts(i).DataAsNumpy()))
         
-        #    result.artifacts[resultTable.Artifacts(i).FileName()] = os.getcwd + str(resultTable.Artifacts(i).FileName()) #TODO: is this right?
-    
-
-    print("hardware time")
+          
+            result.artifacts[resultTable.Artifacts(i).FileName()] = str(os.getcwd) + str(resultTable.Artifacts(i).FileName()) #TODO: is this right?
     hardwareTable = resultTable.Hardware()
     result.hardware["os"] = hardwareTable.Os()
-    print("spec2")
     result.hardware["cpu"] = hardwareTable.Cpu()
-    print("spec3")
     result.hardware["gpu"] = hardwareTable.Gpu()
-    print("spec4")
     result.hardware["ram"] = hardwareTable.Ram()
-    print(hardwareTable.Cpu())
-    print("hardware done")
+    
+    
     return result
-
-#for testing only
-def temp():
-
-    builder = flatbuffers.Builder(0)
-    cpu = builder.CreateString("i7 7777k")
-    gpu = builder.CreateString("RTX999999TI")
-    os = builder.CreateString("Windows 2")
-    ram = builder.CreateString("1Kb")
-    
-    
-    FbHardware.Start()
-    FbHardware.AddCpu(builder, cpu )
-    FbHardware.AddGpu(builder, gpu )
-    FbHardware.AddOs(builder,  os)
-    FbHardware.AddRam(builder,  ram)
-    hardware = FbHardware.end(builder)
-
-    FbStage
-
-    FbResult.Start(builder)
-    FbResult.AddTime(builder, 420)
-    FbResult.AddHardware(builder, hardware)
-
-    resultbuf = FbResult.End(builder)
-
-    FbResult.Start(builder)
-    FbResult.AddTime(builder, 999)
-    FbResult.AddHardware(builder, hardware)
-
-    resultbuf2 = FbResult.End(builder)
-    
-
-    FbResultList.Start(builder)
-    FbResultList.StartTasksVector(builder, 2)
-    builder.PrependUOffsetTRelative(resultbuf)
-    builder.PrependUOffsetTRelative(resultbuf2)
-    taskVector = builder.EndVector()
-    FbResultList.AddTasks(builder, taskVector)
-    resultListBuf = FbResultList.End()
-
-    FbMessage.Start(builder)
-    FbMessage.AddBodyType(builder, FbMessageBody.MessageBody.ResultList)
-    FbMessage.AddBody(builder, resultListBuf)
-    done = FbMessage.End(builder)
-    builder.Finish(allDone)
-
-    buf = builder.Output()
-
-    print( deserialize_message(buf))
-
-if __name__ == "__main__":
-    temp()
-    print("done")

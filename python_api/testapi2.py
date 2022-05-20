@@ -1,4 +1,3 @@
-#import HWF
 import time
 import HWF as HWF #För att testa nya schemat
 import asyncio
@@ -42,32 +41,20 @@ async def main():
     id_test = []
 
     hub = HWF.Hub(ip_address="ws://localhost:3001")
-    await hub.connect()
-
-    id_test.append(await hub.dispatch(task=task1))
     
-    time.sleep(5)
+    await hub.connect()
+    id_test.append(await hub.dispatch(task=task1))
     results = await hub.get_result(id_test)
-    print("All done with get_result() :)")
-    print(results[0].hardware)
-    print(results[0].time)
-    print(results[0].stage)
-    for stage in results[0].stage:
-        print(stage)
+    #print(results[0].time)
+    #print(results[0].artifacts)
+    #print("HELP")
+    result = await hub.get_hardware_pool()
 
-    #await hub.dispatch(task=task1)
-
-    #await hub.dispatch(task=task1)
-
-    #await hub.dispatch(task=task1)
-
-
-# "NoneType" object has no attribute "dispatch"??
-# with HWF.Hub(ip_address="ws://localhost:3001") as hub:
-#     hub.dispatch(task=task1)
-
-#main()
-
+    print(result)
+    print("hej")
+    hub.disconnect()
+    
 asyncio.run(main())
+
 
     

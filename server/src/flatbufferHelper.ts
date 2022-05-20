@@ -21,21 +21,19 @@ export class FlatbufferHelper
 
         let resultList:number[] = []
         let builder = new flatbuffers.Builder(0);
-        console.log("====================STRING LIST TIME )=========================0a")
-        console.log(stringList)
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!NO MORE LISTAITIAEJAP!!!!!!!!!!!!!!!!!!")
+        // console.log("====================STRING LIST TIME )=========================0a")
+        // console.log(stringList)
+        // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!NO MORE LISTAITIAEJAP!!!!!!!!!!!!!!!!!!")
 
         stringList.forEach(resultString => {
             
-        
-        // for (let resultString in stringList){
-            console.log("TYPE TIEM")
-            console.log(typeof resultString)
-            console.log(resultString)
+            // console.log("TYPE TIEM")
+            // console.log(typeof resultString)
+            // console.log(resultString)
             let resultStringIFY = JSON.stringify(resultString)
             let result = JSON.parse(resultStringIFY)
-            console.log(result)
-            console.log("========================================LIST HERE===============================================")
+            // console.log(result)
+            // console.log("========================================LIST HERE===============================================")
             //console.log(result)
 
             let stage_results = []
@@ -56,12 +54,12 @@ export class FlatbufferHelper
                     let cpu = builder.createString(commandResult.cpu)
                     let gpu = builder.createString(commandResult.gpu)
                     let ram = builder.createString(commandResult.ram)
-                    console.log("Kolla stderrARRAY!!")
-                    console.log(typeof(commandResult.stderr))
-                    console.log(commandResult.stderr)
-                    console.log("Kolla stdoutARRAY!!")
-                    console.log(typeof(commandResult.stdout))
-                    console.log(commandResult.stdout)
+                    // console.log("Kolla stderrARRAY!!")
+                    // console.log(typeof(commandResult.stderr))
+                    // console.log(commandResult.stderr)
+                    // console.log("Kolla stdoutARRAY!!")
+                    // console.log(typeof(commandResult.stdout))
+                    // console.log(commandResult.stdout)
                     //console.log(Object.values(commandResult.stdout))
                     if (commandResult.stdout === null || commandResult.stdout === undefined || commandResult.stdout == null || commandResult.stdout == undefined)
                     {
@@ -149,29 +147,8 @@ export class FlatbufferHelper
             let res = schema.Result.endResult(builder)
 
             resultList.push(res)
-
-           
-    
-            // //create result
-            // let stagevec = schema.Result.createStagesVector(builder, stage_results)
-            // let artifactvec = schema.Result.createArtifactsVector(builder, artifacts)
-            
-            // schema.Result.startResult(builder)
-            // schema.Result.addTime(builder, result.time)
-            // schema.Result.addStages(builder, stagevec)
-            // schema.Result.addArtifacts(builder, artifactvec)
-            // schema.Result.addHardware(builder, result.hardware)
-            // let res = schema.Result.endResult(builder)
-            //builder.finish(res)
-            
-            //return builder.asUint8Array()
         });
-
-        // let fixedBuffers:schema.Result[] = []
-        // bufferList.forEach(buf => {
-        //     fixedBuffers.push(schema.Result.getRootAsResult(new flatbuffers.ByteBuffer(buf)))
-        // });
-            
+    
         let a = schema.ResultList.createTasksVector(builder, resultList)
 
         schema.ResultList.startResultList(builder)
@@ -179,7 +156,6 @@ export class FlatbufferHelper
         let doneResultList = schema.ResultList.endResultList(builder)
 
         schema.Message.startMessage(builder)
-        //schema.Message.addType(builder, 6) not used
         schema.Message.addBodyType(builder, schema.MessageBody.ResultList)
         schema.Message.addBody(builder, doneResultList)
         let pleasebedone = schema.Message.endMessage(builder)
@@ -216,12 +192,12 @@ export class FlatbufferHelper
                 let cpu = builder.createString(commandResult.cpu)
                 let gpu = builder.createString(commandResult.gpu)
                 let ram = builder.createString(commandResult.ram)
-                console.log("Kolla stderrARRAY!!")
-                console.log(typeof(commandResult.stderr))
-                console.log(commandResult.stderr)
-                console.log("Kolla stdoutARRAY!!")
-                console.log(typeof(commandResult.stdout))
-                console.log(commandResult.stdout)
+                // console.log("Kolla stderrARRAY!!")
+                // console.log(typeof(commandResult.stderr))
+                // console.log(commandResult.stderr)
+                // console.log("Kolla stdoutARRAY!!")
+                // console.log(typeof(commandResult.stdout))
+                // console.log(commandResult.stdout)
                 //console.log(Object.values(commandResult.stdout))
                 if (commandResult.stdout === null || commandResult.stdout === undefined || commandResult.stdout == null || commandResult.stdout == undefined)
                 {
@@ -307,7 +283,42 @@ export class FlatbufferHelper
         
         return builder.asUint8Array()
     }
+
+    buildFlatbufferHardwareList(hardware:{"gpu": string, "cpu": string, "os": string, "ram": string}[]){
+
+        let hardwareList:number[] = []
+        let builder = new flatbuffers.Builder(0)
+        hardware.forEach(element => {
+    
+            let os = builder.createString(element.os)
+            let cpu = builder.createString(element.cpu)
+            let gpu = builder.createString(element.gpu)
+            let ram = builder.createString(element.ram)
+    
+            schema.Hardware.startHardware(builder)
+            schema.Hardware.addOs(builder, os)
+            schema.Hardware.addCpu(builder, cpu)
+            schema.Hardware.addGpu(builder, gpu)
+            schema.Hardware.addRam(builder, ram)
+            hardwareList.push(schema.Hardware.endHardware(builder))
+        });
+        
+        let hwResultVec = schema.GetHardwarePool.createHardwareResultVector(builder, hardwareList)
+        schema.GetHardwarePool.startGetHardwarePool(builder)
+        schema.GetHardwarePool.addHardwareResult(builder, hwResultVec)
+        let hwPoolBuf = schema.GetHardwarePool.endGetHardwarePool(builder)
+    
+        schema.Message.startMessage(builder)
+        schema.Message.addBodyType(builder, schema.MessageBody.GetHardwarePool)
+        schema.Message.addBody(builder, hwPoolBuf)
+        let doneMessage = schema.Message.endMessage(builder)
+    
+        builder.finish(doneMessage)
+    
+        return builder.asUint8Array()
+    }
 }
+
 
 /*
 {
