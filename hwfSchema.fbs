@@ -31,7 +31,6 @@ table Task {
 
 table GetResult {
     id_list:[string];
-
 }
 
 table GetHardwarePool {
@@ -62,7 +61,6 @@ table Result {
 table StageResult {
     cmd:[CommandResult];
     name:string;
-    
 }
 
 table CommandResult {
