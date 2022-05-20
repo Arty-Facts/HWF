@@ -47,6 +47,11 @@ BUFFER_SIZE = MEMORY // FILE_BUFFER_SIZE
 # 50 MB
 #BUFFER_SIZE = 500000000
 
+# TODO (att testa):
+# Kan en stage innehålla flera HWF.Data()?
+# Kan en task innehålla flera HWF.Artifacts()?
+# Fixa with x as y:
+# Testa mer specifika fall
 
 # NOTE TO FUTUTE SELF:
 # vi bytte ut websocket mot websocketapp för att vi
@@ -101,9 +106,7 @@ class TaskResult:
     def __init__(self):
     
         self.stage = {} # {"stagename": StageResult}
-        print("111")
         self.time = self.resultTime()
-        print("222")
         self.artifacts = {} # {"name.txt": "C:/Path/To/File/name.txt"}
         self.hardware = {}#TODO: Put this in the schema
     
@@ -283,7 +286,7 @@ class Hub:
         self.recieved_result = ""
         return result
 
-    def get_hardware_pool(self): #outside mvp
+    def get_hardware_pool(self): #TODO: Implement me!
 
         hw = HardwarePool()
 
