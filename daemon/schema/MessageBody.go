@@ -12,6 +12,9 @@ const (
 	MessageBodyGetResult       MessageBody = 2
 	MessageBodyGetHardwarePool MessageBody = 3
 	MessageBodyFile            MessageBody = 4
+	MessageBodyResult          MessageBody = 5
+	MessageBodyResultList      MessageBody = 6
+	MessageBodyHardware        MessageBody = 7
 )
 
 var EnumNamesMessageBody = map[MessageBody]string{
@@ -20,6 +23,9 @@ var EnumNamesMessageBody = map[MessageBody]string{
 	MessageBodyGetResult:       "GetResult",
 	MessageBodyGetHardwarePool: "GetHardwarePool",
 	MessageBodyFile:            "File",
+	MessageBodyResult:          "Result",
+	MessageBodyResultList:      "ResultList",
+	MessageBodyHardware:        "Hardware",
 }
 
 var EnumValuesMessageBody = map[string]MessageBody{
@@ -28,6 +34,9 @@ var EnumValuesMessageBody = map[string]MessageBody{
 	"GetResult":       MessageBodyGetResult,
 	"GetHardwarePool": MessageBodyGetHardwarePool,
 	"File":            MessageBodyFile,
+	"Result":          MessageBodyResult,
+	"ResultList":      MessageBodyResultList,
+	"Hardware":        MessageBodyHardware,
 }
 
 func (v MessageBody) String() string {

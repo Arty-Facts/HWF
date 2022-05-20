@@ -22,6 +22,7 @@ import schema.File as FbFile
 import schema.Hardware as FbHardware
 import schema.Data as FbData
 import schema.Result as FbResult
+import schema.ResultList as FbResultList
 
 TASK = 1
 RESULT = 2
@@ -46,6 +47,11 @@ BUFFER_SIZE = MEMORY // FILE_BUFFER_SIZE
 # 50 MB
 #BUFFER_SIZE = 500000000
 
+# TODO (att testa):
+# Kan en stage innehålla flera HWF.Data()?
+# Kan en task innehålla flera HWF.Artifacts()?
+# Fixa with x as y:
+# Testa mer specifika fall
 
 # NOTE TO FUTUTE SELF:
 # vi bytte ut websocket mot websocketapp för att vi
@@ -100,11 +106,11 @@ class TaskResult:
     def __init__(self):
     
         self.stage = {} # {"stagename": StageResult}
-        self.time = time()
+        self.time = self.resultTime()
         self.artifacts = {} # {"name.txt": "C:/Path/To/File/name.txt"}
-        self.hardware #TODO: Put this in the schema
-
-    def time(self, targetStage = None):
+        self.hardware = {}#TODO: Put this in the schema
+    
+    def resultTime(self, targetStage = None):
         time = 0
         if (targetStage):
             time = self.stage[targetStage].time
@@ -116,10 +122,11 @@ class TaskResult:
 
 # "Stages" are contained in Result, unlike "Stage" which is to be sent to the hub
 class StageResult:
-    def __init__(self, name, commands):
-        self.name = name
-        self.time = self.time()
+    def __init__(self):
+        self.name = ""
         self.cmd = {} # {"commandname": {"stdout": "blabla", "exit": 0}}
+        self.time = self.time()
+        
 
     def time(self, targetCmd = None):
         time = 0
@@ -133,14 +140,27 @@ class StageResult:
 
 class CommandResult:
     def __init__(self):
-        self.cmd
-        self.exit
-        self.stdout
-        self.stderr
-        self.cpu
-        self.gpu
-        self.ram
-        self.time
+        self.cmd = ""
+        self.exit = ""
+        self.stdout = ""
+        self.stderr = ""
+        self.cpu = ""
+        self.gpu = ""
+        self.ram = ""
+        self.time = ""
+
+class HardwarePool:
+    def __init__(self):
+        self.hardware = {}
+
+    def get(*args):
+        result = []
+        if "gpu" in args:
+            #for gpu in self.hardware["gpu"]:
+            #   result.push([gpu])
+            return result
+        #TODO: finish this!
+
 
 class Hub:
     def __init__(self, ip_address=None):
@@ -175,6 +195,7 @@ class Hub:
 
     def on_message(self, ws, message):
 
+        print(type(message))
         if isinstance(message, str):
             received = message.split()
 
@@ -198,6 +219,9 @@ class Hub:
             elif received[0] == "404":
                 print("no matching agents available at this time :((")
 
+        elif isinstance(message, bytes):
+            self.recieved_result = deserialize_message(message)
+
         elif isinstance(message, bytearray):
             self.recieved_result = deserialize_message(message)
 
@@ -207,6 +231,7 @@ class Hub:
             # handle flatbuffers here!!!!!
 
         # unlock the wait since we got response
+        print("unlocking")
         self.locked = False
 
 
@@ -256,11 +281,16 @@ class Hub:
         while self.locked:
             time.sleep(0.2)
         
+        print("get_result out of lock state")
         result = self.recieved_result
         self.recieved_result = ""
         return result
 
-    def get_hardware_pool(self): #outside mvp
+    def get_hardware_pool(self): #TODO: Implement me!
+
+        hw = HardwarePool()
+
+        buffer = _build_message(GET_HARDWARE_POOL, "")
         pass
 
     def dispatch_async(self, hardware=None, task=None, priority=0): #outside mvp
@@ -341,7 +371,8 @@ def _build_message(msg_type, data):
     FbMessage.MessageStart(builder)
     FbMessage.MessageAddType(builder, msg_type)
     FbMessage.MessageAddBodyType(builder, body_type)
-    FbMessage.MessageAddBody(builder, done_body)
+    if (done_body):
+        FbMessage.MessageAddBody(builder, done_body)
 
 
     message = FbMessage.MessageEnd(builder)
@@ -512,84 +543,158 @@ def _build_get_result(builder, jobs):
 
 
 def _build_get_hardware_pool(builder, hardware):
-    pass
+
+    FbGetHardwarePool.Start()
+    done = FbGetHardwarePool.End()
+    return builder, done
 
 def deserialize_message(buffer):
 
-    message = FbMessage.Message.GetRootAs(buffer ,0)
+    message = FbMessage.Message.GetRootAs(buffer , 0)
     type = message.BodyType()
-
+    print("TYPE IS")
+    print(type)
     if type == FbMessageBody.MessageBody().Result:
         result = deserialize_result(message)
         return result
-        
+    
+    elif type == FbMessageBody.MessageBody().ResultList:
+        result = deserialize_resultList(message)
+        return result
+
+    elif type == FbMessageBody.MessageBody().GetHardwarePool:
+
+        # result = deserialize_getHardwarePool(message)
+        pass
     else:
         print("Tried deserializing a message of an invalid type")
         return -1
 
+def deserialize_resultList(message):
+
+    results = []
+    resultListTable = FbResultList.ResultList()
+    resultListTable.Init(message.Body().Bytes, message.Body().Pos)
+
+    for i in range(resultListTable.TasksLength()):
+        results.append(deserialize_result(resultListTable.Tasks(i)))
+        print("done deserializing a task")
+    print("deserialize(resultList) returning")
+    return results
+
 def deserialize_result(message):
-
+    
     result = TaskResult()
+    
+    # resultTable = FbResult.Result()
+    # resultTable.Init(message.Body().Bytes, message.Body().Pos)
 
-    resultTable = FbResult.Result()
-    resultTable.Init(message.Body().Bytes, message.Body().Pos)
-
+    resultTable = message
     if resultTable.Time() > 0:
         result.time = resultTable.Time()
-
+    print("beginning deserializeiielzile result")
     i = 0
-    while i < resultTable.StagesLength():
+    for i in range(resultTable.StagesLength()):
         
         stage = StageResult()
 
         stageTable = resultTable.Stages(i)
 
-        stage.name = stageTable.Name()
+        stage.name = stageTable.Name() #TODO: What is a task has duplicate stage names?
 
         x = 0
         while x < stageTable.CmdLength():
-            
+            print("cmd time")
             cmd = CommandResult()
             cmdTable = stageTable.Cmd(x)
             cmd.cmd = cmdTable.Cmd()
             cmd.exit = cmdTable.Exit()
-            cmd.stdout = cmdTable.Stdout()
-            cmd.stderr = cmdTable.Stderr()
+            cmd.stdout = cmdTable.Stdout(cmdTable.StdoutLength())
+            cmd.stderr = cmdTable.Stderr(cmdTable.StderrLength())
             cmd.os = cmdTable.Os()
             cmd.cpu = cmdTable.Cpu()
             cmd.gpu = cmdTable.Gpu()
             cmd.ram = cmdTable.Ram()
             cmd.time = cmdTable.Time()
 
-            stage.cmd[cmdTable.Name()] = cmd
+            stage.cmd[cmdTable.Cmd()] = cmd
             x += 1
 
         result.stage[stageTable.Name()] = stage
-        i += 1
 
     #TODO: artifacts, save on disk, then save path under key (file name) in result.artifacts
-    for i in range(resultTable.ArtifactsLength()):
+    print("artifact time")
 
+    print(resultTable.ArtifactsLength())
+    for i in range(resultTable.ArtifactsLength()):
+        print(resultTable.Artifacts(i).DataAsNumpy())
+        print(resultTable.Artifacts(i).FileName())
         with open(resultTable.Artifacts(i).FileName(), "wb") as file:
-            os.write(file, resultTable.Artifacts(i).Data())
-            
+            print("testing")
+            print(bytearray(resultTable.Artifacts(i).DataAsNumpy()))
+            file.write(bytearray(resultTable.Artifacts(i).DataAsNumpy()))
+        
+        #    result.artifacts[resultTable.Artifacts(i).FileName()] = os.getcwd + str(resultTable.Artifacts(i).FileName()) #TODO: is this right?
+    
+
+    print("hardware time")
+    hardwareTable = resultTable.Hardware()
+    result.hardware["os"] = hardwareTable.Os()
+    print("spec2")
+    result.hardware["cpu"] = hardwareTable.Cpu()
+    print("spec3")
+    result.hardware["gpu"] = hardwareTable.Gpu()
+    print("spec4")
+    result.hardware["ram"] = hardwareTable.Ram()
+    print(hardwareTable.Cpu())
+    print("hardware done")
     return result
 
 #for testing only
 def temp():
 
     builder = flatbuffers.Builder(0)
+    cpu = builder.CreateString("i7 7777k")
+    gpu = builder.CreateString("RTX999999TI")
+    os = builder.CreateString("Windows 2")
+    ram = builder.CreateString("1Kb")
     
+    
+    FbHardware.Start()
+    FbHardware.AddCpu(builder, cpu )
+    FbHardware.AddGpu(builder, gpu )
+    FbHardware.AddOs(builder,  os)
+    FbHardware.AddRam(builder,  ram)
+    hardware = FbHardware.end(builder)
+
+    FbStage
+
     FbResult.Start(builder)
     FbResult.AddTime(builder, 420)
+    FbResult.AddHardware(builder, hardware)
+
     resultbuf = FbResult.End(builder)
+
+    FbResult.Start(builder)
+    FbResult.AddTime(builder, 999)
+    FbResult.AddHardware(builder, hardware)
+
+    resultbuf2 = FbResult.End(builder)
     
 
+    FbResultList.Start(builder)
+    FbResultList.StartTasksVector(builder, 2)
+    builder.PrependUOffsetTRelative(resultbuf)
+    builder.PrependUOffsetTRelative(resultbuf2)
+    taskVector = builder.EndVector()
+    FbResultList.AddTasks(builder, taskVector)
+    resultListBuf = FbResultList.End()
+
     FbMessage.Start(builder)
-    FbMessage.AddBodyType(builder, FbMessageBody.MessageBody.Result)
-    FbMessage.AddBody(builder, resultbuf)
+    FbMessage.AddBodyType(builder, FbMessageBody.MessageBody.ResultList)
+    FbMessage.AddBody(builder, resultListBuf)
     done = FbMessage.End(builder)
-    builder.Finish(done)
+    builder.Finish(allDone)
 
     buf = builder.Output()
 

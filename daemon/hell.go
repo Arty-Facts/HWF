@@ -6,16 +6,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strconv"
 	"time"
 
-	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/mem"
-
-	"github.com/jaypipes/ghw"
 
 	message "test.com/test"
 )
@@ -61,10 +54,27 @@ type task struct {
 	total_time       int64
 }
 
-var current_stage stage
 var current_task task
 
 var connectiongrabben *websocket.Conn
+
+func send_text_message(connection *websocket.Conn, msg []byte) {
+	connection.WriteMessage(websocket.TextMessage, msg)
+}
+
+func send_binary_message(connection *websocket.Conn, msg []byte) {
+	connection.WriteMessage(websocket.BinaryMessage, msg)
+}
+
+func send_hardware() {
+	send_binary_message(connectiongrabben, Build_hardware())
+	fmt.Println("finished sending hardware...")
+}
+
+func send_results() {
+	send_binary_message(connectiongrabben, Build_results(&current_task))
+	fmt.Println("done sending results...")
+}
 
 //connect to the server via websockets
 func connect() *websocket.Conn {
@@ -113,17 +123,12 @@ func listen(connection *websocket.Conn) {
 
 	for {
 		select {
+		// if received_bytes contains something
 		case data := <-received_bytes:
-			// if received_bytes contains something
-
-			//send_text_message(connection, []byte("Received data, now processing..."))
-
 			read_message(data)
 
-			//send_message(connection, []byte("Done reading data."))
-
+		// if we got an error during read
 		case err := <-errCh:
-			// if we got an error during read
 			fmt.Println(err)
 			break
 		}
@@ -131,12 +136,9 @@ func listen(connection *websocket.Conn) {
 }
 
 func main() {
+
 	// init the map for all open output files
 	open_files = make(map[string]*os.File)
-	current_stage := 0
-
-	// debug to remove compilation warning DELETE THIS
-	fmt.Println(current_stage)
 
 	connection := connect()
 
@@ -148,173 +150,6 @@ func main() {
 
 	// wait for requests from server
 	listen(connection)
-
-}
-
-func send_text_message(connection *websocket.Conn, msg []byte) {
-	connection.WriteMessage(websocket.TextMessage, msg)
-}
-
-func send_binary_message(connection *websocket.Conn, msg []byte) {
-	connection.WriteMessage(websocket.BinaryMessage, msg)
-}
-
-func build_command_result(builder *flatbuffers.Builder, curr_cmd *cmd) flatbuffers.UOffsetT {
-	cmd := builder.CreateString(curr_cmd.command)
-	out := builder.CreateByteVector(curr_cmd.output)
-	err := builder.CreateByteVector(curr_cmd.std_err)
-	cpu := builder.CreateString("default")
-	gpu := builder.CreateString("default")
-	ram := builder.CreateString("default")
-
-	message.CommandResultStart(builder)
-	message.CommandResultAddCmd(builder, cmd)
-	message.CommandResultAddExit(builder, int32(curr_cmd.status_code))
-	message.CommandResultAddStdout(builder, out)
-	message.CommandResultAddStderr(builder, err)
-	message.CommandResultAddCpu(builder, cpu)
-	message.CommandResultAddGpu(builder, gpu)
-	message.CommandResultAddRam(builder, ram)
-	message.CommandResultAddTime(builder, int32(curr_cmd.execution_time))
-	return message.CommandResultEnd(builder)
-}
-
-func send_hardware() {
-
-	v, _ := mem.VirtualMemory()
-	c, _ := cpu.Info()
-	h, _ := host.Info()
-
-	var gpu_info string
-	g, err := ghw.GPU()
-	if err != nil {
-		fmt.Println("Could not find GPU info: %v", err)
-		gpu_info = "N/A"
-	} else {
-		gpu_info = g.GraphicsCards[0].DeviceInfo.Vendor.Name + " " + g.GraphicsCards[0].DeviceInfo.Product.Name
-	}
-
-	builder := flatbuffers.NewBuilder(0)
-
-	os := builder.CreateString(h.OS)
-	cpu := builder.CreateString(c[0].ModelName)
-	gpu := builder.CreateString(gpu_info)
-	ram := builder.CreateString(strconv.FormatUint(v.Total, 10))
-
-	message.HardwareStart(builder)
-	message.HardwareAddOs(builder, os)
-	message.HardwareAddCpu(builder, cpu)
-	message.HardwareAddGpu(builder, gpu)
-	message.HardwareAddRam(builder, ram)
-
-	binHardware := message.HardwareEnd(builder)
-
-	message.MessageStart(builder)
-	message.MessageAddBody(builder, binHardware)
-	message.MessageAddType(builder, 6)
-
-	binMessage := message.MessageEnd(builder)
-
-	builder.Finish(binMessage)
-
-	send_binary_message(connectiongrabben, builder.FinishedBytes())
-	fmt.Println("finished sending hardware...")
-}
-
-func send_results() {
-	var curr_cmd *cmd
-
-	var command_results []flatbuffers.UOffsetT
-	var stage_results []flatbuffers.UOffsetT
-	var artifacts_arr []flatbuffers.UOffsetT
-
-	builder := flatbuffers.NewBuilder(0)
-
-	// BUILD ALL COMMANDRESULTS
-	// to-do: move this to build_command_results
-	for i := 0; i < len(current_task.stages); i++ {
-		for j := 0; j < len(current_task.stages[i].cmd_list); j++ {
-
-			curr_cmd = &current_task.stages[i].cmd_list[j]
-			cmd_result := build_command_result(builder, curr_cmd)
-
-			command_results = append(command_results, cmd_result)
-		}
-	}
-
-	// BUILD ALL STAGERESULTS
-	for i := 0; i < len(current_task.stages); i++ {
-		stage_name := builder.CreateString(current_task.stages[i].name)
-		// create cmd vector
-		message.StageResultStartCmdVector(builder, len(current_task.stages[i].cmd_list))
-		for _, command_result := range command_results {
-
-			builder.PrependUOffsetT(command_result)
-		}
-		cmd_vector := builder.EndVector(len(current_task.stages[i].cmd_list))
-
-		message.StageResultStart(builder)
-		message.StageResultAddCmd(builder, cmd_vector)
-		message.StageResultAddName(builder, stage_name)
-		stage_result := message.StageResultEnd(builder)
-
-		stage_results = append(stage_results, stage_result)
-	}
-
-	// BUILD ALL ARTIFACTS
-	for k := 0; k < len(current_task.artifacts); k++ {
-		file_name := builder.CreateString(current_task.artifacts[k])
-
-		// create file data byte vector
-		bytes, err := os.ReadFile(current_task.artifacts[k])
-		if err != nil {
-			// catch error here
-		}
-		arr := builder.CreateByteVector(bytes)
-
-		message.ArtifactStart(builder)
-		message.ArtifactAddFileName(builder, file_name)
-		message.ArtifactAddData(builder, arr)
-		artifact := message.ArtifactEnd(builder)
-
-		artifacts_arr = append(artifacts_arr, artifact)
-	}
-
-	// create stages vector
-	message.ResultStartStagesVector(builder, len(current_task.stages))
-	for _, stage_result := range stage_results {
-		builder.PrependUOffsetT(stage_result)
-	}
-	stages := builder.EndVector(len(current_task.stages))
-
-	// create artifacts vector
-	message.ResultStartArtifactsVector(builder, len(current_task.artifacts))
-	fmt.Println("before artifacts loop")
-	for _, artifact := range artifacts_arr {
-		builder.PrependUOffsetT(artifact)
-	}
-	artifacts := builder.EndVector(len(current_task.artifacts))
-
-	message.ResultStart(builder)
-	// to-do: add total time for task
-	message.ResultAddTime(builder, int32(current_task.total_time))
-	message.ResultAddStages(builder, stages)
-	message.ResultAddArtifacts(builder, artifacts)
-	binResult := message.ResultEnd(builder)
-
-	message.MessageStart(builder)
-	message.MessageAddBody(builder, binResult)
-	message.MessageAddType(builder, 5)
-	binMessage := message.MessageEnd(builder)
-
-	builder.Finish(binMessage)
-
-	send_binary_message(connectiongrabben, builder.FinishedBytes())
-	fmt.Println("done sending results...")
-}
-
-func build_result() {
-
 }
 
 func run_task() {
@@ -348,15 +183,10 @@ func run_task() {
 	debug_print_current_task()
 
 	send_results()
-	// to-do: return results from execution
-	//send_text_message(connectiongrabben, []byte("200"))
 }
 
 func execute_command(command string) ([]byte, []byte, int) {
 	cmd := exec.Command("bash", "-c", command)
-
-	// debug for error codes:
-	//cmd := exec.Command("bash", "-c", "python3 trash.py")
 
 	status_code := 0
 	std_err := []byte("")
@@ -364,8 +194,6 @@ func execute_command(command string) ([]byte, []byte, int) {
 	out, err := cmd.Output()
 
 	if err != nil {
-		// log.Fatal(err)
-
 		exitError, ok := err.(*exec.ExitError)
 		fmt.Println(exitError, ok)
 
@@ -391,173 +219,18 @@ func read_message(msg []byte) {
 	}()
 
 	fb_msg := message.GetRootAsMessage(msg, 0)
-	//var arr = make([]byte, test.DataLength())
 
 	switch msgType := fb_msg.Type(); msgType {
 	case 1:
-		read_task(fb_msg)
-	case 2:
-		read_result(fb_msg)
-	case 3:
-		read_hardwarepool(fb_msg)
+		fmt.Println("reading task...")
+		current_task = Read_task(fb_msg)
+		debug_print_current_task()
+		break
 	case 4:
-		read_file(fb_msg)
+		fmt.Println("reading file...")
+		saveFile(Read_file(fb_msg))
+		break
 	}
-
-	//fmt.Println(fb_msg.Type())
-}
-
-func read_task(msg *message.Message) {
-
-	fmt.Println("reading task...")
-
-	unionTable := new(flatbuffers.Table)
-
-	if msg.Body(unionTable) {
-
-		unionType := msg.BodyType()
-
-		if unionType == message.MessageBodyTask {
-			unionTask := new(message.Task)
-			unionTask.Init(unionTable.Bytes, unionTable.Pos)
-
-			//temp_stages := make([]*message.Stage, unionTask.StagesLength())
-			tempStage := new(message.Stage)
-			stages := make([]stage, 0)
-
-			// get all artifacts from task
-			var artifacts_list = make([]string, unionTask.ArtifactsLength())
-			for i := 0; i < unionTask.ArtifactsLength(); i++ {
-				artifacts_list[i] = string(unionTask.Artifacts(i))
-			}
-
-			// get all stages from the task
-			for i := 0; i < unionTask.StagesLength(); i++ {
-				fmt.Println("STAGE", i)
-
-				if unionTask.Stages(tempStage, i) {
-
-					/*
-						// execute the stage's commands=========
-						var results = make([][]byte, tempStage.CmdListLength())
-						for i := 0; i < tempStage.CmdListLength(); i++ {
-							//fmt.Println(string(tempStage.CmdList(i)))
-							result := execute_command(tempStage.CmdList(i))
-							results[i] = result
-						}
-
-						// print the results from cmd exec
-
-						for i, s := range results {
-							fmt.Println(i, string(s))
-						}
-						//======================================
-					*/
-
-					// get all cmds from stage
-					//var cmd_list = make([]string, tempStage.CmdListLength())
-					var cmd_list = make([]cmd, tempStage.CmdListLength())
-					for i := 0; i < tempStage.CmdListLength(); i++ {
-						//cmd_list[i] = string(tempStage.CmdList(i))
-						cmd_list[i] = cmd{command: string(tempStage.CmdList(i)), executed: false, std_err: nil, output: nil}
-					}
-
-					tempData := new(message.Data)
-
-					// get all file data from stage
-					var data_list = make([]file_data, tempStage.DataLength())
-					for i := 0; i < tempStage.DataLength(); i++ {
-
-						if tempStage.Data(tempData, i) {
-							fmt.Println("filename:")
-							fmt.Println(string(tempData.Filename()))
-
-							data_list[i] = file_data{path: string(tempData.Path()), filename: string(tempData.Filename()), downloaded: false}
-						}
-
-					}
-
-					// save current stage for later :)
-					temp_stage := stage{name: string(tempStage.Name()), data: data_list,
-						cmd_list: cmd_list, track_time: tempStage.TrackTime(),
-						track_ram: tempStage.TrackRam(), track_cpu: tempStage.TrackCpu(),
-						track_gpu: tempStage.TrackGpu(), comment: string(tempStage.Comment())}
-
-					stages = append(stages, temp_stage)
-
-				}
-			}
-
-			fmt.Println("loaded stage into current stage")
-			fmt.Println("current stage name:")
-			fmt.Println(string(current_stage.name))
-
-			task := task{stages: stages, artifacts: artifacts_list, total_time: 0}
-			current_task = task
-
-			current_stage = stages[0]
-
-			/*
-				// set current task to first stage of task
-				if len(temp_stages) > 0 {
-					s := temp_stages[0]
-
-					// get all cmds from stage
-					var cmd_list = make([]string, s.CmdListLength())
-					for i := 0; i < s.CmdListLength(); i++ {
-						cmd_list[i] = string(s.CmdList(i))
-					}
-
-					tempData := new(message.Data)
-
-					// get all file data from stage
-					var data_list = make([]file_data, s.DataLength())
-					for i := 0; i < s.DataLength(); i++ {
-
-						if s.Data(tempData, i) {
-							fmt.Println("filename:")
-							fmt.Println(string(tempData.Filename()))
-
-							data_list[i] = file_data{path: string(tempData.Path()), filename: string(tempData.Filename()), downloaded: false}
-						}
-
-					}
-
-					// save current stage for later :)nd_message(connectiongrabben, builder.FinishedBytes())
-						track_ram: s.TrackRam(), track_cpu: s.TrackCpu(),
-						track_gpu: s.TrackGpu(), comment: string(s.Comment())}
-
-					fmt.Println("loaded stage into current stage")
-					fmt.Println("current stage name:")
-					fmt.Println(string(current_stage.name))
-				}*/
-
-		}
-	}
-
-	/*
-		msgTask := msg.Task(new(message.Task))
-		msgStage := new(message.Stage)
-
-		msgTask.Stages(msgStage, 0)
-
-		// TO-DO: Wait before executing the commands!!!!
-		// iterate over cmd and execute all commands
-		var results = make([][]byte, msgStage.CmdListLength())
-		for i := 0; i < msgStage.CmdListLength(); i++ {
-			fmt.Println(string(msgStage.CmdList(i)))
-			result := execute_command(msgStage.CmdList(i))
-			results[i] = result
-		}
-
-		// print the results from cmd exec
-		for i, s := range results {
-			fmt.Println(i, s)
-		}
-	*/
-
-	debug_print_current_task()
-
 }
 
 func debug_print_current_task() {
@@ -576,101 +249,16 @@ func debug_print_current_task() {
 	}
 }
 
-// this function might be useless, don't think daemon is going to
-// receive a message like this... :(
-func read_hardwarepool(msg *message.Message) {
-
-	fmt.Println("reading hardware...")
-
-	unionTable := new(flatbuffers.Table)
-
-	if msg.Body(unionTable) {
-
-		unionType := msg.BodyType()
-
-		if unionType == message.MessageBodyGetHardwarePool {
-			unionHardware := new(message.GetHardwarePool)
-			unionHardware.Init(unionTable.Bytes, unionTable.Pos)
-
-			// TO-DO: what are we going to do with the unionHardware?
-			// do something here
-		}
-	}
-
-	/*
-		msgHardware := msg.GetHardwarePool(new(message.GetHardwarePool))
-
-		// TO-DO: use hardware info idk XD
-		//fmt.Println(string(msgHardware.Hardware()))
-		// print everyting in the hardware
-		for i := 0; i < msgHardware.HardwareLength(); i++ {
-			fmt.Println(string(msgHardware.Hardware(i)))
-		}*/
-}
-
-func read_result(msg *message.Message) {
-
-	fmt.Println("reading result...")
-
-	unionTable := new(flatbuffers.Table)
-
-	if msg.Body(unionTable) {
-
-		unionType := msg.BodyType()
-
-		if unionType == message.MessageBodyGetResult {
-			unionResult := new(message.GetResult)
-			unionResult.Init(unionTable.Bytes, unionTable.Pos)
-
-			// TO-DO: what are we going to do with the unionResult?
-			// do something here
-		}
-	}
-
-	/*
-		msgResult := msg.GetResult(new(message.GetResult))
-
-		// print everyting in the result
-		for i := 0; i < msgResult.IdListLength(); i++ {
-			fmt.Println(string(msgResult.IdList(i)))
-		}*/
-}
-
-func read_file(msg *message.Message) {
-
-	fmt.Println("reading file...")
-
-	unionTable := new(flatbuffers.Table)
-
-	if msg.Body(unionTable) {
-
-		unionType := msg.BodyType()
-
-		if unionType == message.MessageBodyFile {
-			unionFile := new(message.File)
-			unionFile.Init(unionTable.Bytes, unionTable.Pos)
-
-			saveFile(unionFile)
-		}
-	}
-
-	//msgFile := msg.Body(new(message.File))
-	//msgFile := msg.File(new(message.File))
-
-}
-
 // returns an open file or opens new file instead
 func getOutputFile(filename string) *os.File {
 	output_file, opened := open_files[filename]
 
 	if !opened {
-		//fmt.Println("opening new file...")
 		output_file, err := os.OpenFile(string(filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 		if err != nil {
 			log.Fatal(err)
 		} else {
-			//fmt.Println("saving to map...")
 			// save the opened file to the map
 			open_files[filename] = output_file
 			return output_file
@@ -695,7 +283,6 @@ func saveFile(msgFile *message.File) {
 	if output_file == nil {
 		fmt.Println("big trouble idk")
 	}
-	//output_file.Write(arr)
 
 	if eof {
 		output_file.Close()
@@ -705,8 +292,7 @@ func saveFile(msgFile *message.File) {
 
 		// check if all files downloaded for stage
 		if check_and_set_downloaded(string(filename)) {
-			// EXECUTE ALL COMMANDS HERE >:)
-			fmt.Println("ALL FILES ARE NOW DOWNLOADED YAY :D")
+			fmt.Println("all files have been downloaded successfully!")
 
 			// we know all files are downloaded, it's a go time!!!!!!
 			run_task()
@@ -744,11 +330,4 @@ func check_and_set_downloaded(filename string) bool {
 	}
 
 	return status
-}
-
-// WIP
-func run_daemon() {
-	// to make a background thread?
-	//ctx := context.Background()
-
 }
