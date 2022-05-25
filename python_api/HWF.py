@@ -81,16 +81,10 @@ class Stage:
         self.name = name
         self.data = data
         self.cmd = cmd #Will be string or array of strings
-
-        # # file information
-        # self.packet_nr = 0
-        # self.transmitted_files = []
-
         self.track_time = track_time
         self.track_ram = track_ram
         self.track_cpu = track_cpu
         self.track_gpu = track_gpu
-
         self.comment = comment
 
 class Data:
@@ -106,11 +100,11 @@ class TaskResult:
     def __init__(self):
     
         self.stage = {} # {"stagename": StageResult}
-        self.time = self.resultTime()
+        self.time = self.timeTaken()
         self.artifacts = {} # {"name.txt": "C:/Path/To/File/name.txt"}
-        self.hardware = {}#TODO: Put this in the schema
+        self.hardware = {}
     
-    def resultTime(self, targetStage = None):
+    def timeTaken(self, targetStage = None):
         time = 0
         if (targetStage):
             time = self.stage[targetStage].time
@@ -125,17 +119,17 @@ class StageResult:
     def __init__(self):
         self.name = ""
         self.cmd = {} # {"commandname": {"stdout": "blabla", "exit": 0}}
-        self.time = self.time()
+        self.time = self.timeTaken()
         
-
-    def time(self, targetCmd = None):
+    #calculate total time taken for all contained commands
+    def timeTaken(self, targetCmd = None):
         time = 0
         if(targetCmd):
             time = self.cmd[targetCmd].time
         else:
             for cmd in self.cmd:
                 time += cmd.time
-        #calculate total time taken for all contained commands
+        
         return time
 
 class CommandResult:
@@ -158,17 +152,16 @@ class Hub:
                     on_error   = lambda ws,msg: self.on_error(ws, msg),
                     on_close   = lambda ws:     self.on_close(ws),
                     on_open    = lambda ws:     self.on_open(ws))
-
         self.current_task = None
         self.tasks = {}
         self.current_task_id = None
-
         self.locked = False
         self.recieved_result = []
 
         #threading.Thread(target=self.socket.run_forever, args=(None, None, 60, 30), daemon=True).start()
         #self.connect()
 
+    #TODO: Implement these two
     def __enter__(self):
         #self.connect()
         pass
@@ -192,19 +185,22 @@ class Hub:
                 # to-do: maybe this needs to be done elsewhere as well?
                 self.current_task_id = received[1]
 
-                print("task was received and accepted, time to send files")
+                print("Task was received and accepted, sending files")
                 self.send_files(received[1])
 
             elif received[0] == "242":
                 self.tasks[received[1]] = self.current_task
-                print("task was queued, might send files later :)")
+                print("Task was queued on the hub")
+                #print("task was queued, might send files later :)")
 
             elif received[0] == "424":
-                print("ok here we go time to send files :-O")
+                print("Recieved OK from hub to begin file transfer")
+                #print("ok here we go time to send files :-O")
                 self.send_files(received[1])
 
             elif received[0] == "404":
-                print("no matching agents available at this time :((")
+                print("The hub could not find any fitting agents for this task")
+                #print("no matching agents available at this time :((")
 
             elif received[0] == "500":
                 print("An error occured in the hub when handling your request:")
@@ -220,12 +216,8 @@ class Hub:
         else:
             print("Error: Recieved a response of an invalid type")
 
-            # handle flatbuffers here!!!!!
-
         # unlock the wait since we got response
-        
         self.locked = False
-
 
     def on_error(self, ws, error):
         print("Error! :D:D:D:D::D:D::D:D")
@@ -256,6 +248,7 @@ class Hub:
         self.socket.run_forever(ping_timeout=100)
 
     def disconnect(self):
+        self.socket.keep_running = False
         self.socket.close()
         pass
 
@@ -263,7 +256,7 @@ class Hub:
         pass
     
     async def get_result(self, job_ids, wait=True):
-
+        print("Getting results from hub")
         buffer = _build_message(GET_RESULT, job_ids)
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
 
@@ -278,12 +271,12 @@ class Hub:
 
         return result
 
-    async def get_hardware_pool(self): #TODO: Implement me!
-        print("Getting hardware pool")
+    async def get_hardware_pool(self):
+        print("Getting hardware pool from hub")
         buffer = _build_message(GET_HARDWARE_POOL, "")
         
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
-        print("locking hwpool")
+        
         self.locked = True
 
         while self.locked:
@@ -302,23 +295,18 @@ class Hub:
         self.current_task = task
 
         print("building task...")
-
-        # send task to hub
-        buffer = _build_message(TASK, task)
-        #self.socket.send_binary(buffer)
+        buffer = _build_message(TASK, task)        
 
         print("sending task...")
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
 
+        print("Task sent! awaiting response...")
 
-        print("task sent! awaiting response...")
-        self.locked = True
-         
+        self.locked = True         
         while self.locked:
             time.sleep(0.2)
 
         return self.current_task_id
-
         
     def send_files(self, id):
         # process each file in the data vector
@@ -344,8 +332,6 @@ class Hub:
         buffer = _build_message(FILE, [byte, filename, nr, eof])
         #self.socket.send_binary(buffer)  
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
-
-  
 
 def _build_message(msg_type, data):
     
@@ -542,7 +528,6 @@ def _build_get_result(builder, jobs):
     
     return builder, done_file 
 
-
 def _build_get_hardware_pool(builder, hardware):
 
     FbGetHardwarePool.Start(builder)
@@ -600,9 +585,6 @@ def deserialize_resultList(message):
 def deserialize_result(message):
     
     result = TaskResult()
-    
-    # resultTable = FbResult.Result()
-    # resultTable.Init(message.Body().Bytes, message.Body().Pos)
 
     resultTable = message
     if resultTable.Time() > 0:
@@ -636,8 +618,6 @@ def deserialize_result(message):
             x += 1
 
         result.stage[stageTable.Name()] = stage
-
-    #TODO: artifacts, save on disk, then save path under key (file name) in result.artifacts
     
 
     
@@ -646,7 +626,7 @@ def deserialize_result(message):
             file.write(bytearray(resultTable.Artifacts(i).DataAsNumpy()))
         
           
-            result.artifacts[resultTable.Artifacts(i).FileName()] = str(os.getcwd) + str(resultTable.Artifacts(i).FileName()) #TODO: is this right?
+            result.artifacts[resultTable.Artifacts(i).FileName()] = str(os.getcwd) + str(resultTable.Artifacts(i).FileName())
     hardwareTable = resultTable.Hardware()
     result.hardware["os"] = hardwareTable.Os()
     result.hardware["cpu"] = hardwareTable.Cpu()

@@ -64,12 +64,12 @@ export class FlatbufferHelper
                     if (commandResult.stdout === null || commandResult.stdout === undefined || commandResult.stdout == null || commandResult.stdout == undefined)
                     {
                         stdout = schema.CommandResult.createStdoutVector(builder, [])
-                        console.log("hello hi we are here")
+                        //console.log("hello hi we are here")
                     }
                     else 
                     {
-                        console.log("stout else, ie not null")
-                        console.log(commandResult.stdout)
+                        //console.log("stout else, ie not null")
+                        //console.log(commandResult.stdout)
                         stdout = schema.CommandResult.createStdoutVector(builder, Object.values(commandResult.stdout))
                     }
                     
@@ -79,8 +79,8 @@ export class FlatbufferHelper
                     }
                     else 
                     {
-                        console.log("sterr else, ie not null")
-                        console.log(commandResult.stderr)
+                        //console.log("sterr else, ie not null")
+                        //console.log(commandResult.stderr)
                         stderr = schema.CommandResult.createStderrVector(builder, Object.values(commandResult.stderr))
                     }
                     
@@ -173,7 +173,6 @@ export class FlatbufferHelper
     {
         let builder = new flatbuffers.Builder(0);
         let result = JSON.parse(resultString)
-        console.log(result.st)
         let stage_results = []
         let command_results = []
         let artifacts = []
@@ -202,12 +201,12 @@ export class FlatbufferHelper
                 if (commandResult.stdout === null || commandResult.stdout === undefined || commandResult.stdout == null || commandResult.stdout == undefined)
                 {
                     stdout = schema.CommandResult.createStdoutVector(builder, [])
-                    console.log("hello hi we are here")
+                    //console.log("hello hi we are here")
                 }
                 else 
                 {
-                    console.log("stout else, ie not null")
-                    console.log(commandResult.stdout)
+                    //console.log("stout else, ie not null")
+                    //console.log(commandResult.stdout)
                     stdout = schema.CommandResult.createStdoutVector(builder, Object.values(commandResult.stdout))
                 }
                 
@@ -217,8 +216,8 @@ export class FlatbufferHelper
                 }
                 else 
                 {
-                    console.log("sterr else, ie not null")
-                    console.log(commandResult.stderr)
+                    //console.log("sterr else, ie not null")
+                    //console.log(commandResult.stderr)
                     stderr = schema.CommandResult.createStderrVector(builder, Object.values(commandResult.stderr))
                 }
                 
@@ -379,13 +378,13 @@ class Message
     constructor(buf:flatbuffers.ByteBuffer)
     {
         let fbMessage = schema.Message.getRootAsMessage(buf)   
-        console.log(fbMessage.type())
+        //console.log(fbMessage.type())
         switch(fbMessage.type()){
             case 1:{
                 let temp = fbMessage.body(new schema.Task() as flatbuffers.Table)
                 let task = temp as schema.Task
                 this.messageBody = new Task(task)
-                console.log("After Task created")
+                //console.log("After Task created")
                 break
             }
             case 2:{

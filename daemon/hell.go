@@ -68,12 +68,12 @@ func send_binary_message(connection *websocket.Conn, msg []byte) {
 
 func send_hardware() {
 	send_binary_message(connectiongrabben, Build_hardware())
-	fmt.Println("finished sending hardware...")
+	fmt.Println("Finished sending hardware.")
 }
 
 func send_results() {
 	send_binary_message(connectiongrabben, Build_results(&current_task))
-	fmt.Println("done sending results...")
+	fmt.Println("Done sending results.")
 }
 
 //connect to the server via websockets
@@ -83,7 +83,7 @@ func connect() *websocket.Conn {
 	// 	Host:   os.Getenv("HWF_SERVER_URL"),
 	// 	Path:   "/",
 	// }
-
+		fmt.Println("Connecting to server...")
 	server_url := "ws://localhost:9000" //os.Getenv("HWF_SERVER_URL")
 	//server_url := "ws://localhost:9000"
 
@@ -104,6 +104,7 @@ func connect() *websocket.Conn {
 	}
 
 	connectiongrabben = connection
+	fmt.Println("Connection Successful!")
 	return connection
 }
 
@@ -172,7 +173,7 @@ func run_task() {
 			curr_cmd.executed = true
 
 			// debug prints:
-			fmt.Println("<output: " + string(out) + ">")
+			//fmt.Println("<output: " + string(out) + ">")
 			if err != nil {
 				fmt.Println("err: " + string(err) + ">")
 				fmt.Println("status code: " + string(status_code) + ">")
@@ -180,7 +181,7 @@ func run_task() {
 		}
 	}
 
-	debug_print_current_task()
+	//debug_print_current_task()
 
 	send_results()
 }
@@ -222,12 +223,12 @@ func read_message(msg []byte) {
 
 	switch msgType := fb_msg.Type(); msgType {
 	case 1:
-		fmt.Println("reading task...")
+		//fmt.Println("reading task...")
 		current_task = Read_task(fb_msg)
 		debug_print_current_task()
 		break
 	case 4:
-		fmt.Println("reading file...")
+		fmt.Println("Reading recieved file")
 		saveFile(Read_file(fb_msg))
 		break
 	}
@@ -270,10 +271,10 @@ func getOutputFile(filename string) *os.File {
 
 func saveFile(msgFile *message.File) {
 	filename := msgFile.Filename()
-	packetnr := msgFile.Packetnumber()
+	//packetnr := msgFile.Packetnumber()
 	eof := msgFile.Eof()
-
-	fmt.Println(string(filename), packetnr, eof)
+	
+	//fmt.Println(string(filename), packetnr, eof)
 
 	// save file to disk
 	arr := msgFile.DataBytes()

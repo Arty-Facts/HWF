@@ -170,10 +170,8 @@ function sendToUser(user:WebSocket, data:any): void {
 
 //TODO: fix message type, shouldn't be "any"
 function findAgentForTask(message:any): Agent | null {
-    console.log(message)
     let task = message.messageBody as Task
-    console.log("Finding agent for this task:")
-    console.log(task)
+    console.log("Finding agent for task")
     for (let agent of agents) {
         if ( //TODO: Make this less hardcoded, loop through both instead?
                 (agent.specs.os == task.hardware["os"] || task.hardware["os"] == "any" ) &&
@@ -213,7 +211,7 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
         throw new Error("Could not read ip of connecting agent, was undefined")
     }
 
-    console.log(`\nNew Daemon connected from [${ip}].`)
+    console.log(`\nNew Daemon connected from agent with ip: [${ip}].`)
     
     let lookupResult:boolean|Agent = doesAgentExist(ip)
     if (!lookupResult) {
@@ -221,7 +219,7 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
         agent = await createAgent(ws, ip, req!)
     }
     else{
-        console.log("IP recognized, welcome back mr.agent")
+        console.log("IP recognized, retrieving saved agent data")
         agent = lookupResult as Agent
         agent.isIdle = true
 
@@ -288,19 +286,19 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
             case 1: {
                 let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
-                console.log(readableMessage)
+                //console.log(readableMessage)
                 let agent = findAgentForTask(readableMessage)
                 
                 if (agent == null) {
 
 
-                    console.log("no fitting agent could be found for this task")
+                    console.log("No fitting agent could be found for this task")
                     ws.send("404")
                 }
 
                 else if (!agent.isConnected) {
                     targetAgent = agent!
-                    console.log("Matching agent found, but it is not connected to the hub, queueing task")
+                    console.log("Matching agent found, but it is not connected to the hub. Adding task to queue")
                     let id = await db.addTask(JSON.stringify(readableMessage.messageBody))
                     balancer.queue.enqueue(binaryMessage, ws, id)
                     ws.send(`242 ${id}`)
@@ -308,7 +306,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
                 else if (agent.isIdle) {
                     targetAgent = agent!
-                    console.log("agent for task found, sending data")
+                    console.log("Agent for task found, sending data")
                     agent.send(binaryMessage, ws)
                     agent.taskStartTime = currentDate
 
@@ -323,7 +321,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
                 else {
 
-                    console.log("agent is busy, adding task to queue")
+                    console.log("Agent was found, but is busy. Adding task to queue")
                     let id = await db.addTask(JSON.stringify(readableMessage.messageBody))
                     balancer.queue.enqueue(binaryMessage, ws, id)
                     ws.send(`242 ${id}`)
@@ -331,12 +329,10 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 break
             }
             case 2: {
-                console.log("THIS IS 2!!!! *kicks*")
+                console.log(`User at ${req.socket.remoteAddress} requested results`)
                 let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
             
                 let results:string[] = []
-                console.log("id list:")
-                console.log((readableMessage.messageBody as GetResult).id_list)
                 for ( let id of (readableMessage.messageBody as GetResult).id_list){
                     try {
                         results.push( await db.getResult(id))
@@ -345,17 +341,14 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                         console.log(e)
                     }
                 }
-                console.log("=======================RESULTS ============================0")
-                console.log(results)
-                console.log("!!!!!!!!!!!!!!!!!!!!!!!! NO MORE RESULS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 if (results == undefined || undefined! in results){
-                    console.log("Trying to serialize something undefined")
+                    console.log("Error: Trying to serialize something undefined")
                     ws.send("500 The results retrieved from the database was undefined")
                     return
                 }
                 var serializedResults = fbHelper.buildFlatbufferResultList(results)
                 
-                console.log(serializedResults)
+                
                 ws.send(serializedResults)
 
                 //Build a flatbuffer thingy for each result, we get a json object from the db
@@ -363,6 +356,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 break
             }
             case 3: {
+                console.log(`User at ${req.socket.remoteAddress} requested a list of connected hardware`)
                 let hardware:{"os":string, "gpu": string, "cpu": string, "ram": string}[] = []
                 agents.forEach( (agent) => {
                     hardware.push(
@@ -380,7 +374,6 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 break
             }
             case 4: {
-                console.log("this is 4 :)")
 
                 // to-do: send this to the correct agent!!!!!
                 targetAgent.send(binaryMessage, ws)

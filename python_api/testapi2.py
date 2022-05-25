@@ -46,13 +46,13 @@ async def main():
     id_test.append(await hub.dispatch(task=task1))
     results = await hub.get_result(id_test)
     #print(results[0].time)
-    #print(results[0].artifacts)
+    print(results[0].artifacts)
     #print("HELP")
     result = await hub.get_hardware_pool()
 
     print(result)
-    print("hej")
-    hub.disconnect()
+    #print("hej")
+    #hub.disconnect()
     
 asyncio.run(main())
 
