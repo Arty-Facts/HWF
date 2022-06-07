@@ -190,6 +190,7 @@ class Hub:
 
             elif received[0] == "242":
                 self.tasks[received[1]] = self.current_task
+                self.current_task_id = received[1]
                 print("Task was queued on the hub")
                 #print("task was queued, might send files later :)")
 
@@ -384,8 +385,8 @@ def _build_task(builder, task):
         
         stage_vector = builder.EndVector()
 
-
-    if len(task.artifacts) > 0:
+    artifact_vector = ""
+    if task.artifacts:
         for artifact in task.artifacts:
             for file in artifact.files:
                 serialized_artifacts.append(builder.CreateString(file))
@@ -401,7 +402,8 @@ def _build_task(builder, task):
     FbTask.TaskStart(builder)
     FbTask.TaskAddHardware(builder, done_hardware)
     FbTask.TaskAddStages(builder, stage_vector)
-    FbTask.TaskAddArtifacts(builder, artifact_vector)
+    if artifact_vector:
+        FbTask.TaskAddArtifacts(builder, artifact_vector)
     done_task = FbTask.TaskEnd(builder)
 
     return builder, done_task
@@ -421,7 +423,7 @@ def _build_hardware(builder, cpu=None, gpu=None, os=None, ram=None):
 
 def _build_stage(builder, stage):
 
-    if len(stage.cmd) > 0:
+    if stage.cmd:
         cmd_serialized = []
         if type(stage.cmd) == list:
             for cmd in stage.cmd:
@@ -438,13 +440,13 @@ def _build_stage(builder, stage):
 
         cmd_vector = builder.EndVector()
 
-
     fb_stage_name = builder.CreateString(stage.name)
     fb_stage_comment = builder.CreateString(stage.comment)
 
     # build all data flatbuffers
     datas = []
-    if len(stage.data):
+    data_vector = []
+    if stage.data:
         for dat in stage.data:
             builder, built_data = _build_data(builder, dat.path, dat.filename)
             datas.append(built_data)
@@ -598,7 +600,7 @@ def deserialize_result(message):
 
         stageTable = resultTable.Stages(i)
 
-        stage.name = stageTable.Name() #TODO: What is a task has duplicate stage names?
+        stage.name = stageTable.Name() #TODO: What if a task has duplicate stage names?
 
         x = 0
         while x < stageTable.CmdLength():
