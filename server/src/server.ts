@@ -469,9 +469,9 @@ app.get('/queuedtasks', (req:Request, res:Response) => {
 })
 
 userServer.listen(3001, () => {
-    console.log("Userserver listening on port: 3001")
+    console.log("[Hub]: Listening for Clients on port: 3001")
 })
 
 server.listen(9000, () => {
-    console.log("Listening on port: 9000") 
+    console.log("[Hub]: Listening for Agents on port: 9000") 
 })
