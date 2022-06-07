@@ -51,7 +51,7 @@ export class dbAdapter <T extends dbInterface> {
                 this.daemons = this.db.collection("daemons")
                 this.results = this.db.collection("results")
 
-                console.log(`Connected to Database at: ${this.SERVER_URL}`)
+                console.log(`[Hub]: Connected to Database at: ${this.SERVER_URL}`)
                 // debug: now try finding the newly added task
                 //this.findTask("622b23e7bec9c63a78067581")
 
@@ -113,7 +113,7 @@ export class dbAdapter <T extends dbInterface> {
     //to-do: add specs + other fields?
     async addDaemon(agent:string):Promise<string> {
         let result = await this.daemons.insertOne(JSON.parse(agent))
-        console.log(`Inserted new Daemon successfully with ID[${result.insertedId.toString()}]`)
+        console.log(`[Hub]: Added new Daemon to the database with ID[${result.insertedId.toString()}].`)
         //console.log(await this.getTask(result.insertedId.toString()))
         return result.insertedId.toString();
     }
@@ -125,7 +125,7 @@ export class dbAdapter <T extends dbInterface> {
             return agent != null? agent : undefined;
         }
         catch(error) {
-            console.log('error finding agent with id!');
+            console.log(`[Hub]: Error finding agent with ID [${id}]`);
             console.error(error);
         }
         
@@ -135,14 +135,13 @@ export class dbAdapter <T extends dbInterface> {
         try {
             let result = await this.tasks.insertOne(JSON.parse(task))
             
-            console.log(`Inserted new Task successfully with ID[${result.insertedId.toString()}]`)
+            console.log(`[Hub]: Added new Task to database with ID [${result.insertedId.toString()}].`)
             //console.log(await this.getTask(result.insertedId.toString()))
             
             return result.insertedId.toString(); 
         }
         catch(error) {
-            console.log('error adding task to db!');
-            console.error(error);
+            console.log(`[Hub]: Error adding Task to db.\n\tError [${error}]`);
             return "ERROR";
         }
     }
@@ -154,8 +153,7 @@ export class dbAdapter <T extends dbInterface> {
             return task != null? JSON.parse(JSON.stringify(task)) : undefined
         }
         catch(error) {
-            console.log('error finding task with id!');
-            console.error(error);
+            console.log(`[Hub]: Error finding Task with id [${id}].\n\tError [${error}]`);
 
             return undefined;
         }
@@ -169,18 +167,15 @@ export class dbAdapter <T extends dbInterface> {
 
             if (result)
             {
-                console.log("deleted a task")
-                console.log(result)
+                console.log(`[Hub]: Task [${id}] deleted.\n\t Result [${result}]`)
             }
             else {
-                console.log("deleting failed")
+                console.log(`[Hub]: Couldn't delete Task [${id}].`)
             }
         }
         catch(error){
-            console.log('wrong id')
-            console.error(error);
+            console.log(`[Hub]: Error deleting Task with ID [${id}].\n\tError [${error}]`);
         }
-
     }
 
     async addResult(task_id: string, res:string) {
@@ -188,7 +183,7 @@ export class dbAdapter <T extends dbInterface> {
             let temp = JSON.parse(res)
             temp["_id"]=new ObjectId(task_id)
             let result = await this.results.insertOne(temp)
-            console.log(`Inserted new Result successfully with ID[${result.insertedId.toString()}]`)
+            console.log(`[Hub]: Added new Result to database with ID [${result.insertedId.toString()}].`)
             let bla = await this.getResult(result.insertedId.toString())
             // console.log(bla)
             // console.log(bla.stageResults[0])
@@ -198,8 +193,7 @@ export class dbAdapter <T extends dbInterface> {
         }
         catch(error)
         {
-            console.log('error adding Result to db!');
-            console.error(error);
+            console.log(`[Hub]: Error adding Result to database.\n\tError [${error}]`);
             return "ERROR";
         }
     }
@@ -217,10 +211,7 @@ export class dbAdapter <T extends dbInterface> {
         }
         catch(error)
         {
-            console.log('error finding Result with id!');
-            console.log(id)
-            console.error(error);
-
+            console.log(`[Hub]: Error finding Result with id [${id}].\n\tError [${error}]`);
             return undefined;
         }
     }
