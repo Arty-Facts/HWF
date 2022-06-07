@@ -1,23 +1,23 @@
-total 38792
+total 53456
 drwxrwxr-x  7 nils nils     4096 maj 19 15:55 .
-drwxrwxr-x 12 nils nils     4096 maj 19 15:55 ..
+drwxrwxr-x 12 nils nils     4096 maj 20 09:08 ..
 -rw-rw-r--  1 nils nils     7792 maj  4 19:00 bye.go
 -rw-rw-r--  1 nils nils      420 apr 29 12:35 Dockerfile
 drwxrwxr-x  3 nils nils     4096 maj  4 19:00 filetest
 -rw-rw-r--  1 nils nils     2351 maj  5 13:11 filetest.go
 -rw-rw-r--  1 nils nils     7941 maj 19 15:55 flatbuffers_handler.go
--rw-rw-r--  1 nils nils     1257 maj 19 16:17 fog.txt
+-rw-rw-r--  1 nils nils     1257 maj 25 08:44 fog.txt
 -rw-rw-r--  1 nils nils     1155 maj 18 16:01 go.mod
 -rw-rw-r--  1 nils nils     5521 maj 18 16:01 go.sum
--rw-rw-r--  1 nils nils     6987 maj 19 15:55 hell.go
+-rw-rw-r--  1 nils nils     7031 maj 25 08:39 hell.go
 -rw-rw-r--  1 nils nils   103488 apr 27 15:32 hellgo.png
 drwxrwxr-x  2 nils nils     4096 apr 27 15:32 HelloWorld
--rw-rw-r--  1 nils nils     1257 maj 19 16:17 hog.txt
--rw-rw-r--  1 nils nils        0 maj 19 16:20 log.txt
+-rw-rw-r--  1 nils nils     1257 maj 25 08:44 hog.txt
+-rw-rw-r--  1 nils nils        0 maj 25 08:47 log.txt
 drwxrwxr-x  2 nils nils     4096 maj  4 19:00 Message
 -rw-rw-r--  1 nils nils      325 apr 27 15:32 README.md
-drwxrwxr-x  2 nils nils     4096 maj 18 16:03 schema
--rw-r--r--  1 nils nils 13172302 maj 19 16:20 spoderm4n222222222222.jpg
--rw-r--r--  1 nils nils 13172302 maj 19 16:20 spoderm4n2222333333222.jpg
--rw-r--r--  1 nils nils 13172302 maj 19 16:20 spoderm4n.jpg
+drwxrwxr-x  2 nils nils     4096 maj 20 02:47 schema
+-rw-r--r--  1 nils nils 18174442 maj 25 08:47 spoderm4n222222222222.jpg
+-rw-r--r--  1 nils nils 18174442 maj 25 08:47 spoderm4n2222333333222.jpg
+-rw-r--r--  1 nils nils 18174442 maj 25 08:47 spoderm4n.jpg
 drwxrwxr-x  2 nils nils     4096 apr 27 15:32 tests

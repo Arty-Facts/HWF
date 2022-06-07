@@ -21,21 +21,19 @@ export class FlatbufferHelper
 
         let resultList:number[] = []
         let builder = new flatbuffers.Builder(0);
-        console.log("====================STRING LIST TIME )=========================0a")
-        console.log(stringList)
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!NO MORE LISTAITIAEJAP!!!!!!!!!!!!!!!!!!")
+        // console.log("====================STRING LIST TIME )=========================0a")
+        // console.log(stringList)
+        // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!NO MORE LISTAITIAEJAP!!!!!!!!!!!!!!!!!!")
 
         stringList.forEach(resultString => {
             
-        
-        // for (let resultString in stringList){
-            console.log("TYPE TIEM")
-            console.log(typeof resultString)
-            console.log(resultString)
+            // console.log("TYPE TIEM")
+            // console.log(typeof resultString)
+            // console.log(resultString)
             let resultStringIFY = JSON.stringify(resultString)
             let result = JSON.parse(resultStringIFY)
-            console.log(result)
-            console.log("========================================LIST HERE===============================================")
+            // console.log(result)
+            // console.log("========================================LIST HERE===============================================")
             //console.log(result)
 
             let stage_results = []
@@ -56,22 +54,22 @@ export class FlatbufferHelper
                     let cpu = builder.createString(commandResult.cpu)
                     let gpu = builder.createString(commandResult.gpu)
                     let ram = builder.createString(commandResult.ram)
-                    console.log("Kolla stderrARRAY!!")
-                    console.log(typeof(commandResult.stderr))
-                    console.log(commandResult.stderr)
-                    console.log("Kolla stdoutARRAY!!")
-                    console.log(typeof(commandResult.stdout))
-                    console.log(commandResult.stdout)
+                    // console.log("Kolla stderrARRAY!!")
+                    // console.log(typeof(commandResult.stderr))
+                    // console.log(commandResult.stderr)
+                    // console.log("Kolla stdoutARRAY!!")
+                    // console.log(typeof(commandResult.stdout))
+                    // console.log(commandResult.stdout)
                     //console.log(Object.values(commandResult.stdout))
                     if (commandResult.stdout === null || commandResult.stdout === undefined || commandResult.stdout == null || commandResult.stdout == undefined)
                     {
                         stdout = schema.CommandResult.createStdoutVector(builder, [])
-                        console.log("hello hi we are here")
+                        //console.log("hello hi we are here")
                     }
                     else 
                     {
-                        console.log("stout else, ie not null")
-                        console.log(commandResult.stdout)
+                        //console.log("stout else, ie not null")
+                        //console.log(commandResult.stdout)
                         stdout = schema.CommandResult.createStdoutVector(builder, Object.values(commandResult.stdout))
                     }
                     
@@ -81,8 +79,8 @@ export class FlatbufferHelper
                     }
                     else 
                     {
-                        console.log("sterr else, ie not null")
-                        console.log(commandResult.stderr)
+                        //console.log("sterr else, ie not null")
+                        //console.log(commandResult.stderr)
                         stderr = schema.CommandResult.createStderrVector(builder, Object.values(commandResult.stderr))
                     }
                     
@@ -149,29 +147,8 @@ export class FlatbufferHelper
             let res = schema.Result.endResult(builder)
 
             resultList.push(res)
-
-           
-    
-            // //create result
-            // let stagevec = schema.Result.createStagesVector(builder, stage_results)
-            // let artifactvec = schema.Result.createArtifactsVector(builder, artifacts)
-            
-            // schema.Result.startResult(builder)
-            // schema.Result.addTime(builder, result.time)
-            // schema.Result.addStages(builder, stagevec)
-            // schema.Result.addArtifacts(builder, artifactvec)
-            // schema.Result.addHardware(builder, result.hardware)
-            // let res = schema.Result.endResult(builder)
-            //builder.finish(res)
-            
-            //return builder.asUint8Array()
         });
-
-        // let fixedBuffers:schema.Result[] = []
-        // bufferList.forEach(buf => {
-        //     fixedBuffers.push(schema.Result.getRootAsResult(new flatbuffers.ByteBuffer(buf)))
-        // });
-            
+    
         let a = schema.ResultList.createTasksVector(builder, resultList)
 
         schema.ResultList.startResultList(builder)
@@ -179,7 +156,6 @@ export class FlatbufferHelper
         let doneResultList = schema.ResultList.endResultList(builder)
 
         schema.Message.startMessage(builder)
-        //schema.Message.addType(builder, 6) not used
         schema.Message.addBodyType(builder, schema.MessageBody.ResultList)
         schema.Message.addBody(builder, doneResultList)
         let pleasebedone = schema.Message.endMessage(builder)
@@ -197,7 +173,6 @@ export class FlatbufferHelper
     {
         let builder = new flatbuffers.Builder(0);
         let result = JSON.parse(resultString)
-        console.log(result.st)
         let stage_results = []
         let command_results = []
         let artifacts = []
@@ -216,22 +191,22 @@ export class FlatbufferHelper
                 let cpu = builder.createString(commandResult.cpu)
                 let gpu = builder.createString(commandResult.gpu)
                 let ram = builder.createString(commandResult.ram)
-                console.log("Kolla stderrARRAY!!")
-                console.log(typeof(commandResult.stderr))
-                console.log(commandResult.stderr)
-                console.log("Kolla stdoutARRAY!!")
-                console.log(typeof(commandResult.stdout))
-                console.log(commandResult.stdout)
+                // console.log("Kolla stderrARRAY!!")
+                // console.log(typeof(commandResult.stderr))
+                // console.log(commandResult.stderr)
+                // console.log("Kolla stdoutARRAY!!")
+                // console.log(typeof(commandResult.stdout))
+                // console.log(commandResult.stdout)
                 //console.log(Object.values(commandResult.stdout))
                 if (commandResult.stdout === null || commandResult.stdout === undefined || commandResult.stdout == null || commandResult.stdout == undefined)
                 {
                     stdout = schema.CommandResult.createStdoutVector(builder, [])
-                    console.log("hello hi we are here")
+                    //console.log("hello hi we are here")
                 }
                 else 
                 {
-                    console.log("stout else, ie not null")
-                    console.log(commandResult.stdout)
+                    //console.log("stout else, ie not null")
+                    //console.log(commandResult.stdout)
                     stdout = schema.CommandResult.createStdoutVector(builder, Object.values(commandResult.stdout))
                 }
                 
@@ -241,8 +216,8 @@ export class FlatbufferHelper
                 }
                 else 
                 {
-                    console.log("sterr else, ie not null")
-                    console.log(commandResult.stderr)
+                    //console.log("sterr else, ie not null")
+                    //console.log(commandResult.stderr)
                     stderr = schema.CommandResult.createStderrVector(builder, Object.values(commandResult.stderr))
                 }
                 
@@ -307,7 +282,42 @@ export class FlatbufferHelper
         
         return builder.asUint8Array()
     }
+
+    buildFlatbufferHardwareList(hardware:{"gpu": string, "cpu": string, "os": string, "ram": string}[]){
+
+        let hardwareList:number[] = []
+        let builder = new flatbuffers.Builder(0)
+        hardware.forEach(element => {
+    
+            let os = builder.createString(element.os)
+            let cpu = builder.createString(element.cpu)
+            let gpu = builder.createString(element.gpu)
+            let ram = builder.createString(element.ram)
+    
+            schema.Hardware.startHardware(builder)
+            schema.Hardware.addOs(builder, os)
+            schema.Hardware.addCpu(builder, cpu)
+            schema.Hardware.addGpu(builder, gpu)
+            schema.Hardware.addRam(builder, ram)
+            hardwareList.push(schema.Hardware.endHardware(builder))
+        });
+        
+        let hwResultVec = schema.GetHardwarePool.createHardwareResultVector(builder, hardwareList)
+        schema.GetHardwarePool.startGetHardwarePool(builder)
+        schema.GetHardwarePool.addHardwareResult(builder, hwResultVec)
+        let hwPoolBuf = schema.GetHardwarePool.endGetHardwarePool(builder)
+    
+        schema.Message.startMessage(builder)
+        schema.Message.addBodyType(builder, schema.MessageBody.GetHardwarePool)
+        schema.Message.addBody(builder, hwPoolBuf)
+        let doneMessage = schema.Message.endMessage(builder)
+    
+        builder.finish(doneMessage)
+    
+        return builder.asUint8Array()
+    }
 }
+
 
 /*
 {
@@ -368,13 +378,13 @@ class Message
     constructor(buf:flatbuffers.ByteBuffer)
     {
         let fbMessage = schema.Message.getRootAsMessage(buf)   
-        console.log(fbMessage.type())
+        //console.log(fbMessage.type())
         switch(fbMessage.type()){
             case 1:{
                 let temp = fbMessage.body(new schema.Task() as flatbuffers.Table)
                 let task = temp as schema.Task
                 this.messageBody = new Task(task)
-                console.log("After Task created")
+                //console.log("After Task created")
                 break
             }
             case 2:{

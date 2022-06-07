@@ -26,7 +26,7 @@ export class dbAdapter <T extends dbInterface> {
     constructor() {
 
         if(process.env.HWF_DB_URL){
-            console.log("env variable is " + process.env.HWF_DB_URL)
+            //console.log("env variable is " + process.env.HWF_DB_URL)
             this.SERVER_URL = process.env.HWF_DB_URL }//"mongodb://database:27017/test"
         else{
             //throw "HWF_DB_URL environment variable can't be read!"
@@ -136,7 +136,7 @@ export class dbAdapter <T extends dbInterface> {
             let result = await this.tasks.insertOne(JSON.parse(task))
             
             console.log(`Inserted new Task successfully with ID[${result.insertedId.toString()}]`)
-            console.log(await this.getTask(result.insertedId.toString()))
+            //console.log(await this.getTask(result.insertedId.toString()))
             
             return result.insertedId.toString(); 
         }
@@ -190,9 +190,9 @@ export class dbAdapter <T extends dbInterface> {
             let result = await this.results.insertOne(temp)
             console.log(`Inserted new Result successfully with ID[${result.insertedId.toString()}]`)
             let bla = await this.getResult(result.insertedId.toString())
-            console.log(bla)
-            console.log(bla.stageResults[0])
-            console.log(bla.stageResults[0].cmd[0])
+            // console.log(bla)
+            // console.log(bla.stageResults[0])
+            // console.log(bla.stageResults[0].cmd[0])
             
             return result.insertedId.toString(); 
         }
@@ -206,13 +206,13 @@ export class dbAdapter <T extends dbInterface> {
 
     async getResult(id:string) {
         try {
-            console.log("i getResult")
-            console.log(id)
-            console.log(new ObjectId(id))
+            // console.log("i getResult")
+            // console.log(id)
+            // console.log(new ObjectId(id))
             const result = await this.results.findOne({_id: new ObjectId(id)})
             
-            console.log(result)
-            console.log(JSON.parse(JSON.stringify(result)))
+            // console.log(result)
+            // console.log(JSON.parse(JSON.stringify(result)))
             return result != null? JSON.parse(JSON.stringify(result)) : undefined
         }
         catch(error)

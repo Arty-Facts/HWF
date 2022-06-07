@@ -18,6 +18,7 @@
 All of the following classes and functions are defined in `HWF.py`. These are what you will use to create tasks, send them to their correct destination, and retrieve various information from the hub. This is not an exhaustive list of all classes and functions in HWF.py, but only the ones you should need to make use of.
 
 ### dispatch()
+should be await'ed
 
 ### Hub()
 This class is what will be used to create a websocket connection to a hub, and to then send or retrieve information to/from it. 
@@ -28,7 +29,7 @@ This class is what will be used to create a websocket connection to a hub, and t
 **Functions (only relevant ones listed)**:
 
 ###  Hub.get_result(job_ids, wait)
-Retrieve the results for some job ID(s) from the hub.
+Retrieve the results for some job ID(s) from the hub. Should be await'ed
 
 **Arguments**:
 * Job_ids(string or list of strings): a task-ID or list of task-IDs (returned from from `dispatch()`) for which the hub should send back the results of.
@@ -37,7 +38,7 @@ Retrieve the results for some job ID(s) from the hub.
 **Returns:** A `ResultList()` object
 
 ### Hub.get_hardware_pool(*hardware)
-**Arguments:**
+**Arguments:** should be await'ed
 
 **Returns:**
 ### Task( *actions [Stage() or Artifacts()], hardware)

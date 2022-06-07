@@ -891,10 +891,28 @@ hardwareLength():number {
 };
 
 /**
+ * @param number index
+ * @param schema.Hardware= obj
+ * @returns schema.Hardware
+ */
+hardwareResult(index: number, obj?:schema.Hardware):schema.Hardware|null {
+  var offset = this.bb!.__offset(this.bb_pos, 6);
+  return offset ? (obj || new schema.Hardware()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
+};
+
+/**
+ * @returns number
+ */
+hardwareResultLength():number {
+  var offset = this.bb!.__offset(this.bb_pos, 6);
+  return offset ? this.bb!.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
  * @param flatbuffers.Builder builder
  */
 static startGetHardwarePool(builder:flatbuffers.Builder) {
-  builder.startObject(1);
+  builder.startObject(2);
 };
 
 /**
@@ -928,6 +946,35 @@ static startHardwareVector(builder:flatbuffers.Builder, numElems:number) {
 
 /**
  * @param flatbuffers.Builder builder
+ * @param flatbuffers.Offset hardwareResultOffset
+ */
+static addHardwareResult(builder:flatbuffers.Builder, hardwareResultOffset:flatbuffers.Offset) {
+  builder.addFieldOffset(1, hardwareResultOffset, 0);
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param Array.<flatbuffers.Offset> data
+ * @returns flatbuffers.Offset
+ */
+static createHardwareResultVector(builder:flatbuffers.Builder, data:flatbuffers.Offset[]):flatbuffers.Offset {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param flatbuffers.Builder builder
+ * @param number numElems
+ */
+static startHardwareResultVector(builder:flatbuffers.Builder, numElems:number) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param flatbuffers.Builder builder
  * @returns flatbuffers.Offset
  */
 static endGetHardwarePool(builder:flatbuffers.Builder):flatbuffers.Offset {
@@ -935,9 +982,10 @@ static endGetHardwarePool(builder:flatbuffers.Builder):flatbuffers.Offset {
   return offset;
 };
 
-static createGetHardwarePool(builder:flatbuffers.Builder, hardwareOffset:flatbuffers.Offset):flatbuffers.Offset {
+static createGetHardwarePool(builder:flatbuffers.Builder, hardwareOffset:flatbuffers.Offset, hardwareResultOffset:flatbuffers.Offset):flatbuffers.Offset {
   GetHardwarePool.startGetHardwarePool(builder);
   GetHardwarePool.addHardware(builder, hardwareOffset);
+  GetHardwarePool.addHardwareResult(builder, hardwareResultOffset);
   return GetHardwarePool.endGetHardwarePool(builder);
 }
 }
