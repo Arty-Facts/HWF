@@ -41,11 +41,11 @@ async def main():
     await hub.connect()
     idList.append(await hub.dispatch(task=slowTask))
     idList.append(await hub.dispatch(task=queuedTask))
-    print("idlist is", idList)
+    print(f"[queueTest.py]: idlist is [{idList}] ")
     sleep(20)
     results = await hub.get_result(idList)
     for task in results:
         if task.artifacts:
-            print(task.artifacts)
+            print(f"[queueTest.py]: {task.artifacts}")
 
 asyncio.run(main())

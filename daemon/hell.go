@@ -257,7 +257,7 @@ func getOutputFile(filename string) *os.File {
 	output_file, opened := open_files[filename]
 
 	if !opened {
-		output_file, err := os.OpenFile(string(filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		output_file, err := os.OpenFile(string(filename), os.O_TRUNC|os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 		if err != nil {
 			log.Fatal(err)

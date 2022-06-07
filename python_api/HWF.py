@@ -392,7 +392,7 @@ def _build_task(builder, task):
 
     artifact_vector = ""
     if task.artifacts:
-        print("in artifacts IF")
+        #print("in artifacts IF")
         for artifact in task.artifacts:
             for file in artifact.files:
                 serialized_artifacts.append(builder.CreateString(file))

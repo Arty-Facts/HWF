@@ -33,7 +33,7 @@ export default function Home() {
       catch (err) {
         console.log(err)
       }
-    },5000); //set time interval in ms
+    },100); //set time interval in ms
     return ()=>{
       clearInterval(timer);
     }

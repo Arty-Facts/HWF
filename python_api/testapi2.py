@@ -47,13 +47,14 @@ async def main():
     results = await hub.get_result(id_test)
     #print(results[0].time)
     if(len(results)>0):    
-        print(results[0].artifacts)
+        print(f"[testapi2]: {results[0].artifacts}")
     
     
     #print("HELP")
     result = await hub.get_hardware_pool()
 
-    print(result)
+    
+    print(f"[testapi2]: {result}")
     #print("hej")
     #hub.disconnect()
     
