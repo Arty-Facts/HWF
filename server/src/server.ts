@@ -335,17 +335,30 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 let results:string[] = []
                 for ( let id of (readableMessage.messageBody as GetResult).id_list){
                     try {
-                        results.push( await db.getResult(id))
+                        console.log("get result hämta från db")
+                        let tempResult = await db.getResult(id)
+                        if (tempResult != undefined)
+                        {
+                            results.push(tempResult)
+                        }
                     }
                     catch (e) {
+                        console.log("get result error")
                         console.log(e)
                     }
                 }
-                if (results == undefined || undefined! in results){
+                /*
+                if (results == undefined || results.includes(undefined)){
                     console.log("Error: Trying to serialize something undefined")
                     ws.send("500 The results retrieved from the database was undefined")
                     return
                 }
+                */
+                //console.log(results)
+                results.forEach(element => {
+                    console.log(element)
+                    console.log(typeof(element))
+                });
                 var serializedResults = fbHelper.buildFlatbufferResultList(results)
                 
                 

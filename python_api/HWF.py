@@ -530,13 +530,14 @@ def _build_get_result(builder, jobs):
 
 def _build_get_hardware_pool(builder, hardware):
 
-    FbGetHardwarePool.Start(builder)
-    done = FbGetHardwarePool.End(builder)
+    #FbGetHardwarePool.Start(builder)
+    FbGetHardwarePool.GetHardwarePoolStart(builder)
+    done = FbGetHardwarePool.GetHardwarePoolEnd(builder)
     return builder, done
 
 def deserialize_message(buffer):
 
-    message = FbMessage.Message.GetRootAs(buffer , 0)
+    message = FbMessage.Message.GetRootAsMessage(buffer , 0)
     type = message.BodyType()
     if type == FbMessageBody.MessageBody().Result:
         result = deserialize_result(message)
