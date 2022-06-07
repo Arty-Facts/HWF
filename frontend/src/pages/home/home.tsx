@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 
 export default function Home() {
   
-  let serverUrl = "http://localhost:3001"
+  var serverUrl = "http://localhost:3001"
   // if (process.env.REACT_APP_HWF_SERVER_URL){
   // var serverUrl:string = process.env.REACT_APP_HWF_SERVER_URL;}
   // else {throw "Can't read HWF_SERVER_URL environment variable. Is it empty?"}
@@ -19,13 +19,11 @@ export default function Home() {
     const timer = setInterval(async ()=>{
       try {
         
-        const taskList = await axios.get(serverUrl + `/queuedtasks`); 
-        console.log(taskList)
-        setTaskList(taskList.data); //axios automatically parses json data so we don't have to handle it manually
-
-      }
-      catch (err) {
+          const taskList = await axios.get(serverUrl + `/queuedtasks`); 
+          setTaskList(taskList.data); //axios automatically parses json data so we don't have to handle it manually
+      } catch (err) {
         console.log(err);
+        setTaskList([])
       }
 
       try {

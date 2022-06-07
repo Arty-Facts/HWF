@@ -185,29 +185,28 @@ class Hub:
                 # to-do: maybe this needs to be done elsewhere as well?
                 self.current_task_id = received[1]
 
-                print("Task was received and accepted, sending files")
+                print("[Client]: Task was received and accepted by the Hub. Begin sending files.")
                 self.send_files(received[1])
 
             elif received[0] == "242":
                 self.tasks[received[1]] = self.current_task
                 self.current_task_id = received[1]
-                print("Task was queued on the hub")
+                print("[Client]: Task was queued on the hub")
                 #print("task was queued, might send files later :)")
 
             elif received[0] == "424":
-                print("Recieved OK from hub to begin file transfer")
+                print("[Client]: Recieved OK from hub to begin file transfer")
                 #print("ok here we go time to send files :-O")
                 self.send_files(received[1])
 
             elif received[0] == "404":
-                print("The hub could not find any fitting agents for this task")
+                print("[Client]: The hub could not find any fitting agents for this task")
                 #print("no matching agents available at this time :((")
 
             elif received[0] == "500":
-                print("An error occured in the hub when handling your request:")
-                print(message)
+                print(f"[Client]: An error occured in the hub when handling the request [{message}]")
             else:
-                print(message)
+                print(f"[Client]: {message}\n")
         elif isinstance(message, bytes):
             self.recieved_result = deserialize_message(message)
 
@@ -215,20 +214,20 @@ class Hub:
             self.recieved_result = deserialize_message(message)
 
         else:
-            print("Error: Recieved a response of an invalid type")
+            print("[Client]: Received a response of an invalid type")
 
         # unlock the wait since we got response
         self.locked = False
 
     def on_error(self, ws, error):
-        print("Error! :D:D:D:D::D:D::D:D")
-        print(error)
+        print(f"[Client]: Error [{error}]")
+        
 
     def on_close(self, ws):
-        print("connection CLOSED :(")
+        print("[Client]: Connection closed.")
 
     def on_open(self, ws):
-        print("connection opened :)")
+        print("[Client]: Connected to Hub")
         
     async def connect(self):
         
@@ -256,8 +255,8 @@ class Hub:
     def get(self, *hardware): #outside mvp
         pass
     
-    async def get_result(self, job_ids, wait=True):
-        print("Getting results from hub")
+    async def get_result(self, job_ids, wait=True):        
+        print("\n[Client]: Retrieving result from Hub.")
         buffer = _build_message(GET_RESULT, job_ids)
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
 
@@ -273,7 +272,7 @@ class Hub:
         return result
 
     async def get_hardware_pool(self):
-        print("Getting hardware pool from hub")
+        print("\n[Client]: Retrieving hardware pool from Hub")
         buffer = _build_message(GET_HARDWARE_POOL, "")
         
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
@@ -295,13 +294,14 @@ class Hub:
         
         self.current_task = task
 
-        print("building task...")
+        print("\n[Client]: Building task.")
+        
         buffer = _build_message(TASK, task)        
 
-        print("sending task...")
+        
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
 
-        print("Task sent! awaiting response...")
+        print("\n[Client]: Task sent to Hub.")
 
         self.locked = True         
         while self.locked:
@@ -318,6 +318,7 @@ class Hub:
             for current_file in current_stage.data:
                 
                 self.process_file(current_file)
+        print("[Client]: All files sent to Hub.")
 
     def process_file(self, data):
         file = open(data.path, "rb")
@@ -333,7 +334,7 @@ class Hub:
         file.close()
 
     def dispatch_file(self, byte, filename, nr, eof=False):
-        print("dispatching", nr)
+        #print("dispatching", nr)
         buffer = _build_message(FILE, [byte, filename, nr, eof])
         #self.socket.send_binary(buffer)  
         self.socket.send(buffer, ws.ABNF.OPCODE_BINARY)
@@ -357,7 +358,7 @@ def _build_message(msg_type, data):
         builder, done_body = _build_file(builder, data[0], data[1], data[2], data[3])
         body_type =FbMessageBody.MessageBody.File
     else:
-        print("Unknown message type number. Aborting...")
+        print("[Client]: Unknown message type number. Aborting...")
         return
     
     FbMessage.MessageStart(builder)
@@ -481,7 +482,7 @@ def _build_stage(builder, stage):
     FbStage.StageAddComment(builder, fb_stage_comment)
 
     done_stage = FbStage.StageEnd(builder)
-
+    print(f"[Client]: Building stage [{stage.name}]")
     return builder, done_stage
 
 def _build_data(builder, path, filename):
@@ -560,7 +561,7 @@ def deserialize_message(buffer):
         return result
         
     else:
-        print("Tried deserializing a message of an invalid type")
+        print("[Client]: Cannot deserialize messages of that type.")
         return -1
 
 def deserialize_getHardwarePool(message):

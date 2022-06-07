@@ -84,7 +84,7 @@ class Queue {
             }
         }); 
         //TODO: FIX THIS 
-            console.log("Could not find tuple to be removed in the queue") 
+            console.log("[Hub]: Could not find tuple to be removed in the queue") 
     }
         
     size(): number {
@@ -107,7 +107,6 @@ class LoadBalancer {
             this.queue.contents.reverse().forEach(tuple => {
                 let agent = findAgentForTask(fbHelper.readFlatbufferBinary(tuple[0]))
                 if (agent != null && agent.isIdle ) {
-                    console.log(`Sending task ${tuple[2]}, to agent`)
                     agent.send(tuple[0], tuple[1], tuple[2])
                     this.queue.dequeue(tuple)
                     return
@@ -151,6 +150,11 @@ class LoadBalancer {
     }
 }
 
+var agents:Agent[] = []
+var balancer = new LoadBalancer("fifo")
+balancer.queue = new Queue()
+let currentDate = new Date()
+
 async function createAgent(socket:WebSocket, ip:string, req:IncomingMessage): Promise<Agent> {
 
     let agent = new Agent(socket)
@@ -172,7 +176,7 @@ function sendToUser(user:WebSocket, data:any): void {
 //TODO: fix message type, shouldn't be "any"
 function findAgentForTask(message:any): Agent | null {
     let task = message.messageBody as Task
-    console.log("Finding agent for task")
+    console.log("\n[Hub]: Finding agent for task.")
     for (let agent of agents) {
         if ( //TODO: Make this less hardcoded, loop through both instead?
                 (agent.specs.os == task.hardware["os"] || task.hardware["os"] == "any" ) &&
@@ -199,10 +203,7 @@ function doesAgentExist(connectingIp:string):boolean|Agent {
 
 
 
-var agents:Agent[] = []
-var balancer = new LoadBalancer("fifo")
-balancer.queue = new Queue()
-let currentDate = new Date()
+
 
 wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
     var agent:Agent
@@ -212,15 +213,15 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
         throw new Error("Could not read ip of connecting agent, was undefined")
     }
 
-    console.log(`\nNew Daemon connected from agent with ip: [${ip}].`)
+    console.log(`\n[Hub]: New Daemon connected with ip: [${ip}].`)
     
     let lookupResult:boolean|Agent = doesAgentExist(ip)
     if (!lookupResult) {
-        console.log("IP not recognized from before, creating new agent object")
+        console.log("[Hub]: IP not recognized, creating new agent.")
         agent = await createAgent(ws, ip, req!)
     }
     else{
-        console.log("IP recognized, retrieving saved agent data")
+        console.log("[Hub]: IP recognized, retrieving saved agent.")
         agent = lookupResult as Agent
         agent.isIdle = true
 
@@ -239,6 +240,7 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
         
         switch (fbHelper.getFlatbufferType(binaryMessage)){
             case 5: {
+                console.log(`\n[Hub]: Received Result from agent [${agent.ip}].`)
                 agent.isIdle = true
                 
         
@@ -255,8 +257,7 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
                 agent.specs["gpu"] = hw.gpu
                 agent.specs["ram"] = hw.ram
 
-                console.log("received specs from daemon:")
-                console.log(agent.specs)
+                console.log(`[Hub]: Received specs from daemon\n       OS:  [${agent.specs.os}]\n       CPU: [${agent.specs.cpu}]\n       GPU: [${agent.specs.gpu}]\n       RAM: [${agent.specs.ram}]`)
 
                 balancer.retryQueuedTasks()
                 break
@@ -267,7 +268,7 @@ wss.on('connection', async (ws:WebSocket, req:IncomingMessage) => {
     })
     
     ws.on('close', () => {
-        console.log(`Agent from"${agent.ip}" disconnected`)
+        console.log(`[Hub]: Agent with IP [${agent.ip}] disconnected`)
         agent.isConnected = false
     })
 })
@@ -293,13 +294,13 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 if (agent == null) {
 
 
-                    console.log("No fitting agent could be found for this task")
+                    console.log("[Hub]: No agent matched the requirements of the task.")
                     ws.send("404")
                 }
 
                 else if (!agent.isConnected) {
                     targetAgent = agent!
-                    console.log("Matching agent found, but it is not connected to the hub. Adding task to queue")
+                    console.log("[Hub]: Matching non-connected agent found. Adding task to queue.")
                     let id = await db.addTask(JSON.stringify(readableMessage.messageBody))
                     balancer.queue.enqueue(binaryMessage, ws, id)
                     ws.send(`242 ${id}`)
@@ -307,7 +308,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
                 else if (agent.isIdle) {
                     targetAgent = agent!
-                    console.log("Agent for task found, sending data")
+                    console.log("[Hub]: Agent found for task, sending data.")
                     agent.send(binaryMessage, ws)
                     agent.taskStartTime = currentDate
 
@@ -322,7 +323,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
                 else {
 
-                    console.log("Agent was found, but is busy. Adding task to queue")
+                    console.log("[Hub]: Busy agent found. Adding task to queue")
                     let id = await db.addTask(JSON.stringify(readableMessage.messageBody))
                     balancer.queue.enqueue(binaryMessage, ws, id)
                     ws.send(`242 ${id}`)
@@ -330,35 +331,46 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 break
             }
             case 2: {
-                console.log(`User at ${req.socket.remoteAddress} requested results`)
+                console.log(`\n[Hub]: Results requested from client [${req.socket.remoteAddress}]`)
                 let readableMessage = fbHelper.readFlatbufferBinary(binaryMessage)
             
                 let results:string[] = []
                 for ( let id of (readableMessage.messageBody as GetResult).id_list){
                     try {
-                        results.push( await db.getResult(id))
+                        //console.log("get result hämta från db")
+                        let tempResult = await db.getResult(id)
+                        if (tempResult != undefined)
+                        {
+                            results.push(tempResult)
+                        }
                     }
                     catch (e) {
-                        console.log(e)
+                        console.log(`get result error [${e}]`)
                     }
                 }
-                if (results == undefined || undefined! in results){
+                /*
+                if (results == undefined || results.includes(undefined)){
                     console.log("Error: Trying to serialize something undefined")
                     ws.send("500 The results retrieved from the database was undefined")
                     return
                 }
-                console.log("uhhh")
+                */
+                //console.log(results)
+                console.log(`[Hub]: Retrieving results from Database.`)
+                results.forEach(element => {
+                    console.log(element)                
+                });
                 var serializedResults = fbHelper.buildFlatbufferResultList(results)
-                console.log("minkis")
+                
                 
                 ws.send(serializedResults)
-
+                console.log(`[Hub]: Results sent to client [${req.socket.remoteAddress}].`)
                 //Build a flatbuffer thingy for each result, we get a json object from the db
                 //Send each result back to the pythonapi
                 break
             }
             case 3: {
-                console.log(`User at ${req.socket.remoteAddress} requested a list of connected hardware`)
+                console.log(`\n[Hub]: Hardware info requested by client [${req.socket.remoteAddress}].`)
                 let hardware:{"os":string, "gpu": string, "cpu": string, "ram": string}[] = []
                 agents.forEach( (agent) => {
                     hardware.push(
@@ -373,6 +385,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
 
                 let serializedHardware = fbHelper.buildFlatbufferHardwareList(hardware)
                 ws.send(serializedHardware)
+                console.log(`[Hub]: Hardware info sent to client [${req.socket.remoteAddress}].`)
                 break
             }
             case 4: {
@@ -453,6 +466,7 @@ app.get('/queuedtasks', (req:Request, res:Response) => {
             "stagenames": stageNames,
             "artifacts": (fbMessage.messageBody as Task).artifacts
         });
+
         
     }
 
