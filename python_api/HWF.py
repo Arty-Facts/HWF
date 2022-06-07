@@ -310,9 +310,13 @@ class Hub:
         return self.current_task_id
         
     def send_files(self, id):
+        
         # process each file in the data vector
         for current_stage in self.tasks[id].stages:
+            if not current_stage.data:
+                return
             for current_file in current_stage.data:
+                
                 self.process_file(current_file)
 
     def process_file(self, data):
@@ -387,6 +391,7 @@ def _build_task(builder, task):
 
     artifact_vector = ""
     if task.artifacts:
+        print("in artifacts IF")
         for artifact in task.artifacts:
             for file in artifact.files:
                 serialized_artifacts.append(builder.CreateString(file))
