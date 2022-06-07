@@ -3,16 +3,16 @@ import "./task.css"
 export default function Task(task:any){
     console.log("TASK IS:")
     console.log(task)
-    if (task == undefined) {
+    if (task === undefined) {
         return (
-            <h2>No task found</h2>
+            <h2>No tasks found</h2>
         )
     }
     else {
         return (
             <ul className = "task">
                 <li><b>---Stages---</b></li>
-                <li><b>not shown yet</b></li>
+                <li>{task.task.stagenames}</li>
                 <li><b>---Target Hardware---</b></li>
                 <li><b>os: </b>{task.task.target_hardware.os}</li>
                 <li><b>cpu: </b>{task.task.target_hardware.cpu}</li>

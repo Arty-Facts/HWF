@@ -18,13 +18,13 @@ export default function Home() {
   useEffect(()=>{
     const timer = setInterval(async ()=>{
       try {
-        if(taskList !== null){
-            const taskList = await axios.get(serverUrl + `/queuedtasks`); 
-            setTaskList(taskList.data); //axios automatically parses json data so we don't have to handle it manually
-        } else {
-            console.log("Shits fucked yo!")
-        }
-      } catch (err) {
+        
+        const taskList = await axios.get(serverUrl + `/queuedtasks`); 
+        console.log(taskList)
+        setTaskList(taskList.data); //axios automatically parses json data so we don't have to handle it manually
+
+      }
+      catch (err) {
         console.log(err);
       }
 
