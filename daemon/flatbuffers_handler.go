@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	"os"
 	"strconv"
 
@@ -53,7 +53,7 @@ func Read_task(msg *message.Message) task {
 
 			// get all stages from the task
 			for i := 0; i < unionTask.StagesLength(); i++ {
-				fmt.Println("STAGE", i)
+				//fmt.Println("STAGE", i)
 
 				if unionTask.Stages(tempStage, i) {
 
@@ -71,8 +71,8 @@ func Read_task(msg *message.Message) task {
 					for i := 0; i < tempStage.DataLength(); i++ {
 
 						if tempStage.Data(tempData, i) {
-							fmt.Println("filename:")
-							fmt.Println(string(tempData.Filename()))
+							//fmt.Println("filename:")
+							//fmt.Println(string(tempData.Filename()))
 
 							data_list[i] = file_data{path: string(tempData.Path()), filename: string(tempData.Filename()), downloaded: false}
 						}
@@ -105,7 +105,7 @@ func build_hardware(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	var gpu_info string
 	g, err := ghw.GPU()
 	if err != nil {
-		fmt.Println("Could not find GPU info: %v", err)
+		//fmt.Println("Could not find GPU info: %v", err)
 		gpu_info = "N/A"
 	} else {
 		gpu_info = g.GraphicsCards[0].DeviceInfo.Vendor.Name + " " + g.GraphicsCards[0].DeviceInfo.Product.Name
@@ -167,7 +167,7 @@ func build_result(builder *flatbuffers.Builder, current_task *task, stage_result
 
 	// create artifacts vector
 	message.ResultStartArtifactsVector(builder, len(current_task.artifacts))
-	fmt.Println("before artifacts loop")
+	//fmt.Println("before artifacts loop")
 	for _, artifact := range *artifacts_arr {
 		builder.PrependUOffsetT(artifact)
 	}

@@ -68,12 +68,12 @@ func send_binary_message(connection *websocket.Conn, msg []byte) {
 
 func send_hardware() {
 	send_binary_message(connectiongrabben, Build_hardware())
-	fmt.Println("Finished sending hardware.")
+	fmt.Println("[Daemon]: Hardware specs sent to Hub.\n")
 }
 
 func send_results() {
 	send_binary_message(connectiongrabben, Build_results(&current_task))
-	fmt.Println("Done sending results.")
+	fmt.Println("[Daemon]: Results sent to Hub.")
 }
 
 //connect to the server via websockets
@@ -83,7 +83,7 @@ func connect() *websocket.Conn {
 	// 	Host:   os.Getenv("HWF_SERVER_URL"),
 	// 	Path:   "/",
 	// }
-		fmt.Println("Connecting to server...")
+		fmt.Println("[Daemon]: Connecting to Hub...")
 	server_url := "ws://localhost:9000" //os.Getenv("HWF_SERVER_URL")
 	//server_url := "ws://localhost:9000"
 
@@ -104,7 +104,7 @@ func connect() *websocket.Conn {
 	}
 
 	connectiongrabben = connection
-	fmt.Println("Connection Successful!")
+	fmt.Println("[Daemon]: Connected!")
 	return connection
 }
 
@@ -154,11 +154,13 @@ func main() {
 }
 
 func run_task() {
-
+	fmt.Println("\n[Daemon]: Task started.\n")
 	var curr_cmd *cmd
 
 	for i := 0; i < len(current_task.stages); i++ {
+		fmt.Println("[Daemon]: Stage started [" + string(current_task.stages[i].name) + "]")
 		for j := 0; j < len(current_task.stages[i].cmd_list); j++ {
+			fmt.Println("[Daemon]: Executing command [" + current_task.stages[i].cmd_list[j].command + "]")
 			curr_cmd = &current_task.stages[i].cmd_list[j]
 
 			time_before := time.Now().Unix()
@@ -174,15 +176,17 @@ func run_task() {
 
 			// debug prints:
 			//fmt.Println("<output: " + string(out) + ">")
-			if err != nil {
-				fmt.Println("err: " + string(err) + ">")
-				fmt.Println("status code: " + string(status_code) + ">")
+			//if err != nil {
+			if len(err) > 0 {
+				fmt.Println("[Daemon]: Error " + string(err) + ">")
+				fmt.Println("[Daemon]: Status code: " + string(status_code) + ">")
 			}
 		}
+		fmt.Println("")	
 	}
-
+	
 	//debug_print_current_task()
-
+	fmt.Println("[Daemon]: Task done.\n")
 	send_results()
 }
 
@@ -207,15 +211,13 @@ func execute_command(command string) ([]byte, []byte, int) {
 
 func read_message(msg []byte) {
 
-	fmt.Println("reading message...")
-
 	// right now execute_command is the only
 	// function that can panic, so we know that's
 	// where the error was caused - change this later
 	// if more panics were added
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Panic while executing command:", r)
+			fmt.Println("[Daemon]: Panic while executing command:", r)
 		}
 	}()
 
@@ -223,26 +225,26 @@ func read_message(msg []byte) {
 
 	switch msgType := fb_msg.Type(); msgType {
 	case 1:
-		//fmt.Println("reading task...")
+		fmt.Println("[Daemon]: Task received.")
+		
 		current_task = Read_task(fb_msg)
-		debug_print_current_task()
+		//debug_print_current_task()
 		break
 	case 4:
-		fmt.Println("Reading recieved file")
 		saveFile(Read_file(fb_msg))
 		break
 	}
 }
 
 func debug_print_current_task() {
-	fmt.Println("DEBUG PRINT CURRENT TASK")
+	fmt.Println("[Daemon]: DEBUG PRINT CURRENT TASK")
 	fmt.Println(current_task)
 
-	fmt.Println("Artifacts:")
+	fmt.Println("[Daemon]: Artifacts:")
 	fmt.Println(current_task.artifacts)
 
 	for i := 0; i < len(current_task.stages); i++ {
-		fmt.Println("Stage", i)
+		fmt.Println("[Daemon]: Stage", i)
 		stage := current_task.stages[i]
 		fmt.Println(stage.name)
 		fmt.Println(stage.cmd_list)
@@ -282,7 +284,7 @@ func saveFile(msgFile *message.File) {
 	// save arr to output file
 	output_file := getOutputFile(string(filename))
 	if output_file == nil {
-		fmt.Println("big trouble idk")
+		fmt.Println("[Daemon]: big trouble idk")
 	}
 
 	if eof {
@@ -293,7 +295,7 @@ func saveFile(msgFile *message.File) {
 
 		// check if all files downloaded for stage
 		if check_and_set_downloaded(string(filename)) {
-			fmt.Println("all files have been downloaded successfully!")
+			fmt.Println("[Daemon]: All required files received.")
 
 			// we know all files are downloaded, it's a go time!!!!!!
 			run_task()
