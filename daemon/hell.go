@@ -225,7 +225,7 @@ func read_message(msg []byte) {
 
 	switch msgType := fb_msg.Type(); msgType {
 	case 1:
-		fmt.Println("[Daemon]: Task received.")
+		fmt.Println("\n[Daemon]: Task received.")
 		
 		current_task = Read_task(fb_msg)
 		//debug_print_current_task()
