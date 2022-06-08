@@ -188,6 +188,8 @@ class Hub:
                 print("[Client]: Task was received and accepted by the Hub. Begin sending files.")
                 self.send_files(received[1])
 
+                self.locked = False
+
             elif received[0] == "242":
                 self.tasks[received[1]] = self.current_task
                 self.current_task_id = received[1]
@@ -199,25 +201,36 @@ class Hub:
                 #print("ok here we go time to send files :-O")
                 self.send_files(received[1])
 
+                self.locked = False
+
             elif received[0] == "404":
                 print("[Client]: The hub could not find any fitting agents for this task")
                 #print("no matching agents available at this time :((")
+                self.locked = False
 
             elif received[0] == "500":
                 print(f"[Client]: An error occured in the hub when handling the request [{message}]")
+                self.locked = False
+
             else:
                 print(f"[Client]: {message}\n")
+
+                self.locked = False
+
         elif isinstance(message, bytes):
             self.recieved_result = deserialize_message(message)
+            self.locked = False
 
         elif isinstance(message, bytearray):
             self.recieved_result = deserialize_message(message)
+            self.locked = False
 
         else:
             print("[Client]: Received a response of an invalid type")
+            self.locked = False
 
         # unlock the wait since we got response
-        self.locked = False
+        # self.locked = False
 
     def on_error(self, ws, error):
         print(f"[Client]: Error [{error}]")

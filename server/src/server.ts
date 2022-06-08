@@ -117,7 +117,7 @@ class LoadBalancer {
         else if (this.priorityType == "fifo") {
             this.queue.contents.forEach(tuple => {
                 let agent = findAgentForTask(fbHelper.readFlatbufferBinary(tuple[0]))
-                if (agent != null && agent.isIdle ) {
+                if (agent != undefined && agent != null && agent.isIdle ) {
                     agent.send(tuple[0], tuple[1], tuple[2])
                     this.queue.dequeue(tuple)
                     return
@@ -322,7 +322,7 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 }
 
                 else {
-
+                    targetAgent = agent!
                     console.log("[Hub]: Busy agent found. Adding task to queue")
                     let id = await db.addTask(JSON.stringify(readableMessage.messageBody))
                     balancer.queue.enqueue(binaryMessage, ws, id)
@@ -358,7 +358,12 @@ userWss.on("connection", (ws:WebSocket, req:IncomingMessage) => {
                 //console.log(results)
                 console.log(`[Hub]: Retrieving results from Database.`)
                 results.forEach(element => {
-                    console.log(element)                
+                    console.log(element) 
+
+                    // element is actually a cursed JSON object saved in string[], use like this:
+                    //let obj = JSON.parse(JSON.stringify(element))
+                    //console.log(obj["_id"])  
+    
                 });
                 var serializedResults = fbHelper.buildFlatbufferResultList(results)
                 
